@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初信造就 220 問</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #C9A84C;
+            --ink: #1A1208;
+            --parchment: #F7F0E3;
+            --thread-red: #8B1A1A;
+            --smoke: #6B6355;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--ink); font-family: 'Noto Serif TC', serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* 頂部大主題分頁 (Tabs) */
+        .main-nav { background: rgba(26, 18, 8, 0.98); border-bottom: 1px solid var(--gold); display: flex; justify-content: center; padding: 15px 0; z-index: 100; }
+        .nav-tab { color: var(--parchment); text-decoration: none; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; padding: 10px 20px; opacity: 0.6; cursor: pointer; transition: 0.3s; }
+        .nav-tab.active { opacity: 1; border-bottom: 2px solid var(--gold); color: var(--gold); }
+
+        .wrapper { display: flex; flex: 1; overflow: hidden; }
+
+        /* 左側小主題選單 (動態切換) */
+        .sidebar { width: 320px; background: #231B12; border-right: 1px solid rgba(201, 168, 76, 0.2); overflow-y: auto; padding: 30px 20px; }
+        .sidebar-content { display: none; }
+        .sidebar-content.active { display: block; }
+        
+        .sidebar-group { margin-bottom: 35px; }
+        .group-title { color: var(--gold); font-size: 13px; letter-spacing: 2px; border-bottom: 1px solid rgba(201, 168, 76, 0.2); padding-bottom: 8px; margin-bottom: 15px; display: block; font-weight: 700; }
+        .sub-topic-link { display: block; color: rgba(247, 240, 227, 0.6); text-decoration: none; font-size: 15px; padding: 10px 0; transition: 0.3s; line-height: 1.5; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .sub-topic-link:hover { color: var(--parchment); padding-left: 8px; background: rgba(201, 168, 76, 0.05); }
+
+        /* 右側內容顯示區 */
+        .content-area { flex: 1; background: var(--parchment); padding: 60px 40px; overflow-y: auto; }
+        .section-intro { margin-bottom: 40px; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+        .post-card { background: white; margin-bottom: 12px; padding: 20px 25px; border-left: 5px solid var(--gold); display: flex; align-items: center; text-decoration: none; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
+        .post-card:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .post-num { font-family: 'Cinzel', serif; font-weight: 700; width: 50px; color: var(--gold); font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <nav class="main-nav">
+        <div class="nav-tab active" onclick="switchTab('ch1')">Chapter 1 從罪人到聖徒</div>
+        <div class="nav-tab" onclick="switchTab('ch2')">Chapter 2 三合一的神</div>
+        <div class="nav-tab" onclick="switchTab('ch3')">Chapter 3 聖經和聖會</div>
+        <div class="nav-tab" onclick="switchTab('app')">Appendix 附錄</div>
+    </nav>
+
+    <div class="wrapper">
+        <aside class="sidebar">
+            
+            <div id="ch1" class="sidebar-content active">
+                <div class="sidebar-group">
+                    <span class="group-title">一、罪惡</span>
+                    <a class="sub-topic-link" onclick="loadPosts('sin1', '始祖犯罪', '第 1–6 問')">始祖犯罪 (1-6問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('sin2', '罪的意義', '第 7–9 問')">罪的意義 (7-9問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('sin3', '罪的結果', '第 10–12 問')">罪的結果 (10-12問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">二、救恩</span>
+					<a class="sub-topic-link" onclick="loadPosts('sav1', '救恩的重要', '第 13-14 問')">救恩的重要 (13-14問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('sav2', '信主之路', '第 15-23 問')">信主之路 (15-23問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('sav3', '得救釋義', '第 24-30 問')">得救釋義 (24-30問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">三、聖徒</span>
+					<a class="sub-topic-link" onclick="loadPosts('san1', '得救憑據', '第 31-32 問')">得救憑據 (31-32問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('san2', '得救以後', '第 33-36 問')">得救以後 (33-36問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('san3', '末後之事', '第 37-42 問')">末後之事 (37-42問)</a>
+                </div>
+            </div>
+
+            <div id="ch2" class="sidebar-content">
+                <div class="sidebar-group">
+                    <span class="group-title">一、聖父</span>
+					<a class="sub-topic-link" onclick="loadPosts('fat1', '「神」的信仰', '第 43-46 問')">「神」的信仰 (43-46問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('fat2', '「神」的認識', '第 47-54 問')">「神」的認識 (47-54問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('fat3', '神的誡命', '第 55-70 問')">神的誡命 (55-70問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">二、聖子</span>
+					<a class="sub-topic-link" onclick="loadPosts('son1', '信仰的根基', '第 71-79 問')">信仰的根基 (71-79問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('son2', '受難和復活', '第 80-85 問')">受難和復活 (80-85問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('son3', '升天和再來', '第 86-92 問')">升天和再來 (86-92問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">三、聖靈</span>
+					<a class="sub-topic-link" onclick="loadPosts('spi1', '位格', '第 93-95 問')">位格 (93-95問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('spi2', '工作', '第 96-97 問')">工作 (96-97問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('spi3', '施洗和充滿', '第 98-102 問')">施洗和充滿 (98-102問)</a>
+                </div>
+            </div>
+
+            <div id="ch3" class="sidebar-content">
+                <div class="sidebar-group">
+                    <span class="group-title">一、聖經</span>
+					<a class="sub-topic-link" onclick="loadPosts('bib1', '靈感和啟示', '第 103-104 問')">靈感和啟示 (103-104問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('bib2', '舊約和新約', '第 105-107 問')">舊約和新約 (105-107問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('bib3', '讀經生活', '第 108-114 問')">讀經生活 (108-114問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">二、聖會</span>
+					<a class="sub-topic-link" onclick="loadPosts('chu1', '正解', '第 115-117 問')">正解 (115-117問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('chu2', '聖職人員', '第 118-120 問')">聖職人員 (118-120問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('chu3', '聖禮', '第 121-128 問')">聖禮 (121-128問)</a>
+                </div>
+                <div class="sidebar-group">
+                    <span class="group-title">三、聖徒生活與本分</span>
+					<a class="sub-topic-link" onclick="loadPosts('lif1', '聚會', '第 129-131 問')">聚會 (129-131問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif2', '基本責任', '第 132-138 問')">基本責任 (132-138問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif3', '祈禱', '第 139-147 問')">祈禱 (139-147問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif4', '傳福音', '第 148-151 問')">傳福音 (148-151問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif5', '神醫問題', '第 152-159 問')">神醫問題 (152-159問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif6', '旁門異端', '第 160-164 問')">旁門異端 (160-164問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('lif7', '處世之道', '第 165-172 問')">處世之道 (165-172問)</a>
+                </div>
+            </div>
+
+            <div id="app" class="sidebar-content">
+                <div class="sidebar-group">
+                    <span class="group-title" style="color: var(--thread-red);">附錄內容</span>
+					<a class="sub-topic-link" onclick="loadPosts('att1', '(一) 習題', '第 173-208 問')">(一) 習題 (173-208問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('att2', '(二) 使徒信經', '第 209 問')">(二) 使徒信經 (209問)</a>
+					<a class="sub-topic-link" onclick="loadPosts('att3', '得救釋義', '第 210-220 問')">(三) 怎樣學會禱告 (210-220問)</a>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div id="content-display">
+                <div class="section-intro">
+                    <h2 id="current-title" style="font-size: 28px; font-weight: 900;">歡迎進入初信造就</h2>
+                    <p id="current-subtitle" style="color: var(--smoke); margin-top: 8px;">請選擇左側主題開始探索</p>
+                </div>
+                <div class="list">
+                    <a href="q1.html" class="post-card">
+                        <span class="post-num">01</span>
+                        <span>神當初為什麼要造人？</span>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+	const posts = {
+	  // key 對應每個小主題
+	  sin1: [
+		{
+		  num: '01',
+		  title: '神當初為什麼要造人？',
+		  desc: '探討人被創造的目的，以及與神的關係從一開始的設計。',
+		  href: 'god-created-humans-threads.html'
+		},
+		{
+		  num: '02',
+		  title: '亞當夏娃是在什麼環境中生活？',
+		  desc: '伊甸園中的生活狀況，以及神所賜的豐盛與自由。',
+		  href: 'q2.html'
+		},
+		{
+		  num: '03',
+		  title: '神給亞當夏娃什麼吩咐？',
+		  desc: '神的命令與禁止的涵義，以及這命令背後的愛。',
+		  href: 'q3.html'
+		},
+	  ],
+	  sin2: [
+	  		{
+		  num: '01',
+		  title: '神當初為什麼要造人？',
+		  desc: '探討人被創造的目的，以及與神的關係從一開始的設計。',
+		  href: 'q1.html'
+		},
+		{
+		  num: '02',
+		  title: '亞當夏娃是在什麼環境中生活？',
+		  desc: '伊甸園中的生活狀況，以及神所賜的豐盛與自由。',
+		  href: 'q2.html'
+		},
+		{
+		  num: '03',
+		  title: '神給亞當夏娃什麼吩咐？',
+		  desc: '神的命令與禁止的涵義，以及這命令背後的愛。',
+		  href: 'q3.html'
+		},
+	  ],
+	  sin3: [
+	  		{
+		  num: '01',
+		  title: '神當初為什麼要造人？',
+		  desc: '探討人被創造的目的，以及與神的關係從一開始的設計。',
+		  href: 'q1.html'
+		},
+		{
+		  num: '02',
+		  title: '亞當夏娃是在什麼環境中生活？',
+		  desc: '伊甸園中的生活狀況，以及神所賜的豐盛與自由。',
+		  href: 'q2.html'
+		},
+		{
+		  num: '03',
+		  title: '神給亞當夏娃什麼吩咐？',
+		  desc: '神的命令與禁止的涵義，以及這命令背後的愛。',
+		  href: 'q3.html'
+		},
+	  ],
+	  sav1: [
+	  		{
+		  num: '01',
+		  title: '神當初為什麼要造人？',
+		  desc: '探討人被創造的目的，以及與神的關係從一開始的設計。',
+		  href: 'q1.html'
+		},
+		{
+		  num: '02',
+		  title: '亞當夏娃是在什麼環境中生活？',
+		  desc: '伊甸園中的生活狀況，以及神所賜的豐盛與自由。',
+		  href: 'q2.html'
+		},
+		{
+		  num: '03',
+		  title: '神給亞當夏娃什麼吩咐？',
+		  desc: '神的命令與禁止的涵義，以及這命令背後的愛。',
+		  href: 'q3.html'
+		},
+	  ],
+	};
+	
+	
+		function loadPosts(key, title, sub) {
+		  document.getElementById('current-title').textContent = title;
+		  document.getElementById('current-subtitle').textContent = sub;
+
+		  const list = document.querySelector('.list');
+		  
+		    if (!posts[key]) {
+				list.innerHTML = '<p style="color:var(--smoke); padding:20px;">（此主題內容尚未建立）</p>';
+				return;
+			}
+		  
+		  list.innerHTML = posts[key].map(p => `
+			<a href="${p.href}" class="post-card">
+			  <span class="post-num">${p.num}</span>
+			  <div>
+				<div style="font-weight:700; margin-bottom:4px;">${p.title}</div>
+				<div style="font-size:13px; color:var(--smoke);">${p.desc}</div>
+				<span style="display:inline-block; margin-top:8px; font-size:12px;
+				  border:1px solid var(--gold); color:var(--gold);
+				  padding:3px 10px; letter-spacing:1px;">
+				  Read More →
+				</span>
+			  </div>
+			</a>
+		  `).join('');
+		}
+
+        function switchTab(chapterId) {
+            // 1. 切換分頁標籤樣式
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 2. 切換左側選單內容
+            document.querySelectorAll('.sidebar-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(chapterId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
