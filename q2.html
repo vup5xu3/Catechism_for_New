@@ -134,7 +134,7 @@ body::before {
   background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
 }
 .card.final .card-title           { color: var(--gold); }
-.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .card-body p:not(.scripture-text):not(.scripture-ref) { color: rgba(247,240,227,0.85); }
 .card.final .scripture-text       { color: var(--gold-light); }
 .card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
 .card.final .scripture::before,
@@ -737,7 +737,7 @@ body::before {
       </div>
 
       <div class="scripture">
-        <p class="scripture-text">「你們立定心意，要歸向耶和華，他就必歸向你們。」</p>
+        <p class="scripture-text" style="color: var(--gold-light) !important;">「你們立定心意，要歸向耶和華，他就必歸向你們。」</p>
         <p class="scripture-ref">歷代志下 30:6</p>
       </div>
 
@@ -769,7 +769,7 @@ body::before {
       </div>
 
       <div class="scripture">
-        <p class="scripture-text">「所以，無論何人在基督裡，他就是新造的人，舊事已過，都變成新的了。」</p>
+        <p class="scripture-text" style="color: var(--gold-light) !important;">「所以，無論何人在基督裡，他就是新造的人，舊事已過，都變成新的了。」</p>
         <p class="scripture-ref">哥林多後書 5:17</p>
       </div>
 
