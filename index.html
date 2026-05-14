@@ -17,138 +17,327 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: var(--ink); font-family: 'Noto Serif TC', serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* 頂部大主題分頁 (Tabs) */
-        .main-nav { background: rgba(26, 18, 8, 0.98); border-bottom: 1px solid var(--gold); display: flex; justify-content: center; padding: 15px 0; z-index: 100; }
-        .nav-tab { color: var(--parchment); text-decoration: none; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; padding: 10px 20px; opacity: 0.6; cursor: pointer; transition: 0.3s; }
-        .nav-tab.active { opacity: 1; border-bottom: 2px solid var(--gold); color: var(--gold); }
+        /* ── 頂部大主題 Tab ── */
+        .main-nav {
+            background: rgba(26, 18, 8, 0.98);
+            border-bottom: 1px solid rgba(201,168,76,0.3);
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .nav-tab {
+            color: var(--parchment);
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            padding: 16px 20px;
+            opacity: 0.55;
+            cursor: pointer;
+            transition: 0.25s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+        .nav-tab:hover { opacity: 0.85; }
+        .nav-tab.active { opacity: 1; border-bottom-color: var(--gold); color: var(--gold); }
 
-        .wrapper { display: flex; flex: 1; overflow: hidden; }
+        /* ── 第二列：中主題 + 小主題下拉 ── */
+        .sub-nav {
+            background: #1E1509;
+            border-bottom: 1px solid rgba(201,168,76,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 24px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .sub-nav.hidden { display: none; }
 
-        /* 左側小主題選單 (動態切換) */
-        .sidebar { width: 320px; background: #231B12; border-right: 1px solid rgba(201, 168, 76, 0.2); overflow-y: auto; padding: 30px 20px; }
-        .sidebar-content { display: none; }
-        .sidebar-content.active { display: block; }
-        
-        .sidebar-group { margin-bottom: 35px; }
-        .group-title { color: var(--gold); font-size: 13px; letter-spacing: 2px; border-bottom: 1px solid rgba(201, 168, 76, 0.2); padding-bottom: 8px; margin-bottom: 15px; display: block; font-weight: 700; }
-        .sub-topic-link { display: block; color: rgba(247, 240, 227, 0.6); text-decoration: none; font-size: 15px; padding: 10px 0; transition: 0.3s; line-height: 1.5; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .sub-topic-link:hover { color: var(--parchment); padding-left: 8px; background: rgba(201, 168, 76, 0.05); }
+        .sub-nav label {
+            color: rgba(247,240,227,0.45);
+            font-size: 11px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
 
-        /* 右側內容顯示區 */
-        .content-area { flex: 1; background: var(--parchment); padding: 60px 40px; overflow-y: auto; }
-        .section-intro { margin-bottom: 40px; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
-        .post-card { background: white; margin-bottom: 12px; padding: 20px 25px; border-left: 5px solid var(--gold); display: flex; align-items: center; text-decoration: none; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; }
-        .post-card:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .post-num { font-family: 'Cinzel', serif; font-weight: 700; width: 50px; color: var(--gold); font-size: 18px; }
+        .sub-select {
+            background: rgba(201,168,76,0.08);
+            border: 1px solid rgba(201,168,76,0.35);
+            color: var(--parchment);
+            font-family: 'Noto Serif TC', serif;
+            font-size: 13px;
+            padding: 7px 32px 7px 12px;
+            border-radius: 2px;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C9A84C'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            transition: border-color 0.2s;
+            min-width: 140px;
+        }
+        .sub-select:focus { border-color: var(--gold); }
+        .sub-select option { background: #231B12; color: var(--parchment); }
+
+        .arrow-sep {
+            color: rgba(201,168,76,0.4);
+            font-size: 14px;
+        }
+
+        /* ── 內容區 ── */
+        .content-area {
+            flex: 1;
+            background: var(--parchment);
+            padding: 48px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .welcome-screen, .list-screen { width: 100%; max-width: 800px; }
+
+        /* ── 首頁歡迎區 ── */
+        .welcome-screen { }
+        .welcome-screen h1 {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+        .welcome-screen .subtitle {
+            color: var(--smoke);
+            font-size: 15px;
+            margin-bottom: 36px;
+            line-height: 1.8;
+        }
+        .chapter-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .chapter-card {
+            background: white;
+            border-left: 4px solid var(--gold);
+            padding: 20px 20px 18px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .chapter-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .chapter-card.appendix { border-left-color: var(--thread-red); }
+        .chapter-card .ch-label {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            color: var(--gold);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .chapter-card.appendix .ch-label { color: var(--thread-red); }
+        .chapter-card h3 { font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.5; }
+        .chapter-card p { font-size: 12px; color: var(--smoke); margin-top: 6px; }
+
+        /* ── 問題列表 ── */
+        .list-screen { display: none; }
+        .section-intro { margin-bottom: 28px; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+        .section-intro h2 { font-size: 26px; font-weight: 900; }
+        .section-intro p { color: var(--smoke); margin-top: 6px; font-size: 14px; }
+
+        .post-card {
+            background: white;
+            margin-bottom: 10px;
+            padding: 18px 22px;
+            border-left: 5px solid var(--gold);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--ink);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: 0.2s;
+        }
+        .post-card:hover { transform: translateX(4px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .post-num {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            min-width: 44px;
+            color: var(--gold);
+            font-size: 17px;
+            padding-top: 2px;
+        }
+        .post-body { flex: 1; }
+        .post-title { font-weight: 700; margin-bottom: 5px; font-size: 15px; line-height: 1.5; }
+        .post-desc { font-size: 12px; color: var(--smoke); line-height: 1.7; }
+        .post-more {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 11px;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 3px 10px;
+            letter-spacing: 1px;
+        }
+
+        /* ── 手機響應式 ── */
+        @media (max-width: 600px) {
+            .main-nav { justify-content: flex-start; overflow-x: auto; }
+            .nav-tab { font-size: 10.5px; padding: 14px 14px; letter-spacing: 1px; }
+            .sub-nav { padding: 8px 14px; gap: 8px; }
+            .sub-select { font-size: 12px; min-width: 120px; }
+            .content-area { padding: 24px 16px; }
+            .welcome-screen h1 { font-size: 24px; }
+            .chapter-cards { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- 大主題 Tab -->
     <nav class="main-nav">
-        <div class="nav-tab active" onclick="switchTab(event, 'ch1')">Chapter 1 從罪人到聖徒</div>
-        <div class="nav-tab" onclick="switchTab(event, 'ch2')">Chapter 2 三合一的神</div>
-        <div class="nav-tab" onclick="switchTab(event, 'ch3')">Chapter 3 聖經和聖會</div>
-        <div class="nav-tab" onclick="switchTab(event, 'app')">Appendix 附錄</div>
+        <div class="nav-tab active" data-chapter="home">初信造就</div>
+        <div class="nav-tab" data-chapter="ch1">Chapter 1 從罪人到聖徒</div>
+        <div class="nav-tab" data-chapter="ch2">Chapter 2 三合一的神</div>
+        <div class="nav-tab" data-chapter="ch3">Chapter 3 聖經和聖會</div>
+        <div class="nav-tab" data-chapter="app">Appendix 附錄</div>
     </nav>
 
-    <div class="wrapper">
-        <aside class="sidebar">
-            
-            <div id="ch1" class="sidebar-content active">
-                <div class="sidebar-group">
-                    <span class="group-title">一、罪惡</span>
-                    <a class="sub-topic-link" onclick="loadPosts('sin1', '始祖犯罪', '第 1–6 問')">始祖犯罪 (1-6問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('sin2', '罪的意義', '第 7–9 問')">罪的意義 (7-9問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('sin3', '罪的結果', '第 10–12 問')">罪的結果 (10-12問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">二、救恩</span>
-					<a class="sub-topic-link" onclick="loadPosts('sav1', '救恩的重要', '第 13-14 問')">救恩的重要 (13-14問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('sav2', '信主之路', '第 15-23 問')">信主之路 (15-23問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('sav3', '得救釋義', '第 24-30 問')">得救釋義 (24-30問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">三、聖徒</span>
-					<a class="sub-topic-link" onclick="loadPosts('san1', '得救憑據', '第 31-32 問')">得救憑據 (31-32問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('san2', '得救以後', '第 33-36 問')">得救以後 (33-36問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('san3', '末後之事', '第 37-42 問')">末後之事 (37-42問)</a>
-                </div>
-            </div>
-
-            <div id="ch2" class="sidebar-content">
-                <div class="sidebar-group">
-                    <span class="group-title">一、聖父</span>
-					<a class="sub-topic-link" onclick="loadPosts('fat1', '「神」的信仰', '第 43-46 問')">「神」的信仰 (43-46問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('fat2', '「神」的認識', '第 47-54 問')">「神」的認識 (47-54問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('fat3', '神的誡命', '第 55-70 問')">神的誡命 (55-70問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">二、聖子</span>
-					<a class="sub-topic-link" onclick="loadPosts('son1', '信仰的根基', '第 71-79 問')">信仰的根基 (71-79問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('son2', '受難和復活', '第 80-85 問')">受難和復活 (80-85問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('son3', '升天和再來', '第 86-92 問')">升天和再來 (86-92問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">三、聖靈</span>
-					<a class="sub-topic-link" onclick="loadPosts('spi1', '位格', '第 93-95 問')">位格 (93-95問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('spi2', '工作', '第 96-97 問')">工作 (96-97問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('spi3', '施洗和充滿', '第 98-102 問')">施洗和充滿 (98-102問)</a>
-                </div>
-            </div>
-
-            <div id="ch3" class="sidebar-content">
-                <div class="sidebar-group">
-                    <span class="group-title">一、聖經</span>
-					<a class="sub-topic-link" onclick="loadPosts('bib1', '靈感和啟示', '第 103-104 問')">靈感和啟示 (103-104問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('bib2', '舊約和新約', '第 105-107 問')">舊約和新約 (105-107問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('bib3', '讀經生活', '第 108-114 問')">讀經生活 (108-114問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">二、聖會</span>
-					<a class="sub-topic-link" onclick="loadPosts('chu1', '正解', '第 115-117 問')">正解 (115-117問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('chu2', '聖職人員', '第 118-120 問')">聖職人員 (118-120問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('chu3', '聖禮', '第 121-128 問')">聖禮 (121-128問)</a>
-                </div>
-                <div class="sidebar-group">
-                    <span class="group-title">三、聖徒生活與本分</span>
-					<a class="sub-topic-link" onclick="loadPosts('lif1', '聚會', '第 129-131 問')">聚會 (129-131問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif2', '基本責任', '第 132-138 問')">基本責任 (132-138問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif3', '祈禱', '第 139-147 問')">祈禱 (139-147問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif4', '傳福音', '第 148-151 問')">傳福音 (148-151問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif5', '神醫問題', '第 152-159 問')">神醫問題 (152-159問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif6', '旁門異端', '第 160-164 問')">旁門異端 (160-164問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('lif7', '處世之道', '第 165-172 問')">處世之道 (165-172問)</a>
-                </div>
-            </div>
-
-            <div id="app" class="sidebar-content">
-                <div class="sidebar-group">
-                    <span class="group-title" style="color: var(--thread-red);">附錄內容</span>
-					<a class="sub-topic-link" onclick="loadPosts('att1', '(一) 習題', '第 173-208 問')">(一) 習題 (173-206問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('att2', '(二) 使徒信經', '第 209 問')">(二) 使徒信經 (207問)</a>
-					<a class="sub-topic-link" onclick="loadPosts('att3', '得救釋義', '第 210-220 問')">(三) 怎樣學會禱告 (208-211問)</a>
-                </div>
-            </div>
-        </aside>
-
-        <main class="content-area">
-            <div id="content-display">
-                <div class="section-intro">
-                    <h2 id="current-title" style="font-size: 28px; font-weight: 900;">歡迎進入初信造就</h2>
-                    <p id="current-subtitle" style="color: var(--smoke); margin-top: 8px;">請選擇左側主題開始探索</p>
-                </div>
-                <div class="list">
-                    <a href="q1.html" class="post-card">
-                        <span class="post-num">01</span>
-                        <span>神造人的目的是什麼？</span>
-                    </a>
-                </div>
-            </div>
-        </main>
+    <!-- 中主題 + 小主題下拉（首頁時隱藏） -->
+    <div class="sub-nav hidden" id="sub-nav">
+        <label>中主題</label>
+        <select class="sub-select" id="mid-select" onchange="onMidChange()"></select>
+        <span class="arrow-sep">›</span>
+        <label>小主題</label>
+        <select class="sub-select" id="sub-select" onchange="onSubChange()"></select>
     </div>
 
+    <!-- 內容 -->
+    <main class="content-area" id="content-area">
+
+        <!-- 首頁 -->
+        <div class="welcome-screen" id="welcome-screen">
+            <h1>初信造就 211 問</h1>
+            <p class="subtitle">基督徒信仰的基本真理<br>請選擇上方章節開始探索，或從下方快速進入：</p>
+            <div class="chapter-cards" id="chapter-cards">
+                <div class="chapter-card" data-chapter="ch1">
+                    <div class="ch-label">CHAPTER 1</div>
+                    <h3>從罪人到聖徒</h3>
+                    <p>罪惡、救恩、聖徒生命 · 第 1–42 問</p>
+                </div>
+                <div class="chapter-card" data-chapter="ch2">
+                    <div class="ch-label">CHAPTER 2</div>
+                    <h3>三合一的神</h3>
+                    <p>聖父、聖子、聖靈 · 第 43–102 問</p>
+                </div>
+                <div class="chapter-card" data-chapter="ch3">
+                    <div class="ch-label">CHAPTER 3</div>
+                    <h3>聖經和聖會</h3>
+                    <p>聖經、教會、聖徒生活 · 第 103–172 問</p>
+                </div>
+                <div class="chapter-card appendix" data-chapter="app">
+                    <div class="ch-label">APPENDIX</div>
+                    <h3>附錄</h3>
+                    <p>習題、使徒信經、禱告 · 第 173–211 問</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 問題列表 -->
+        <div class="list-screen" id="list-screen">
+            <div class="section-intro">
+                <h2 id="current-title"></h2>
+                <p id="current-subtitle"></p>
+            </div>
+            <div id="post-list"></div>
+        </div>
+
+    </main>
+
     <script>
-	const posts = {
+    // ── 資料結構：章節 → 中主題 → 小主題 ──
+    const structure = {
+        ch1: {
+            label: 'Chapter 1 從罪人到聖徒',
+            groups: [
+                { label: '一、罪惡', subs: [
+                    { key: 'sin1', label: '始祖犯罪', range: '第 1–6 問' },
+                    { key: 'sin2', label: '罪的意義', range: '第 7–9 問' },
+                    { key: 'sin3', label: '罪的結果', range: '第 10–12 問' },
+                ]},
+                { label: '二、救恩', subs: [
+                    { key: 'sav1', label: '救恩的重要', range: '第 13–14 問' },
+                    { key: 'sav2', label: '信主之路', range: '第 15–23 問' },
+                    { key: 'sav3', label: '得救釋義', range: '第 24–30 問' },
+                ]},
+                { label: '三、聖徒', subs: [
+                    { key: 'san1', label: '得救憑據', range: '第 31–32 問' },
+                    { key: 'san2', label: '得救以後', range: '第 33–36 問' },
+                    { key: 'san3', label: '末後之事', range: '第 37–42 問' },
+                ]},
+            ]
+        },
+        ch2: {
+            label: 'Chapter 2 三合一的神',
+            groups: [
+                { label: '一、聖父', subs: [
+                    { key: 'fat1', label: '「神」的信仰', range: '第 43–46 問' },
+                    { key: 'fat2', label: '「神」的認識', range: '第 47–54 問' },
+                    { key: 'fat3', label: '神的誡命', range: '第 55–70 問' },
+                ]},
+                { label: '二、聖子', subs: [
+                    { key: 'son1', label: '信仰的根基', range: '第 71–79 問' },
+                    { key: 'son2', label: '受難和復活', range: '第 80–85 問' },
+                    { key: 'son3', label: '升天和再來', range: '第 86–92 問' },
+                ]},
+                { label: '三、聖靈', subs: [
+                    { key: 'spi1', label: '位格', range: '第 93–95 問' },
+                    { key: 'spi2', label: '工作', range: '第 96–97 問' },
+                    { key: 'spi3', label: '施洗和充滿', range: '第 98–102 問' },
+                ]},
+            ]
+        },
+        ch3: {
+            label: 'Chapter 3 聖經和聖會',
+            groups: [
+                { label: '一、聖經', subs: [
+                    { key: 'bib1', label: '靈感和啟示', range: '第 103–104 問' },
+                    { key: 'bib2', label: '舊約和新約', range: '第 105–107 問' },
+                    { key: 'bib3', label: '讀經生活', range: '第 108–114 問' },
+                ]},
+                { label: '二、聖會', subs: [
+                    { key: 'chu1', label: '正解', range: '第 115–117 問' },
+                    { key: 'chu2', label: '聖職人員', range: '第 118–120 問' },
+                    { key: 'chu3', label: '聖禮', range: '第 121–128 問' },
+                ]},
+                { label: '三、聖徒生活與本分', subs: [
+                    { key: 'lif1', label: '聚會', range: '第 129–131 問' },
+                    { key: 'lif2', label: '基本責任', range: '第 132–138 問' },
+                    { key: 'lif3', label: '祈禱', range: '第 139–147 問' },
+                    { key: 'lif4', label: '傳福音', range: '第 148–151 問' },
+                    { key: 'lif5', label: '神醫問題', range: '第 152–159 問' },
+                    { key: 'lif6', label: '旁門異端', range: '第 160–164 問' },
+                    { key: 'lif7', label: '處世之道', range: '第 165–172 問' },
+                ]},
+            ]
+        },
+        app: {
+            label: 'Appendix 附錄',
+            groups: [
+                { label: '附錄', subs: [
+                    { key: 'att1', label: '(一) 習題', range: '第 173–206 問' },
+                    { key: 'att2', label: '(二) 使徒信經', range: '第 207 問' },
+                    { key: 'att3', label: '(三) 怎樣學會禱告', range: '第 208–211 問' },
+                ]},
+            ]
+        }
+    };
+
+    // ── 問題資料 ──
+    const posts = {
 	  // key 對應每個小主題
 	  sin1: [
 		{
@@ -1434,61 +1623,139 @@
 		{
 		  num: '209',
 		  title: '禱告一如寫信，其有基本的格式：',
-		  desc: '一、稱謂 —— 稱呼天父；<br>二、內容 —— 認罪、陳述心意、感恩、求恩；<br>三、結束 —— 「奉主耶穌的名，阿們。」<br>禱告的格式大致如此，話語是活的，不是呆板的，但必須從心裏發出。<br>210.禱告舉例<br>(一) 求主光照<br>神阿！我承認世人都犯了罪，但我自己不能深知自己的罪，求祢使我得著聖靈的光照，明白自己的罪，好在神的面前誠心悔改，接受救恩。奉主耶穌的名禱告，阿們。<br>(二) 接受救恩<br>神阿！赦免我一切抵擋祢、背逆祢、厭棄祢的罪，我在祢面前深深懊悔，誠心接受主耶穌作我永遠的救主，求祢收留我。奉主耶穌的名祈求，阿們。<br>(三) 求主教導<br>親愛的天父，感謝祢賜給我寶貴的聖經，我的心渴慕祢的話，求父的靈感動我，光照我，引導我明白主的真理，使我愛祢更深。這樣祈求禱告是奉主耶穌的名，阿們。<br>(四) 求主解決難題<br>全能全知的神阿！祢是無所不能的，祢知道我一切的困難，我已經到了走頭無路的地步，沒有別的辦法，只有仰望祢，專心仰望祢。我的神阿！求祢憐憫我，拯救我。奉主的名祈求，阿們。<br>(五) 求主醫治<br>親愛的天父，我在病中雖然痛苦，求祢赦免我的家，饒恕我的過犯，醫治我的疾病，除掉魔鬼的作為，使我體驗基督復活得勝的能力，更加熱心事奉祢。父阿！我是屬祢的，從今以後，使我為主珍重自己的身體，好為主多做工，得主的喜悅，求父垂聽我的祈求。奉主耶穌的名，阿們。<br>(六) 願主旨意成全<br>父阿！祢的道路高過我的道路，祢的意念高過我的意念，我願走在祢的道路上，我願順服祢的旨意。祢知道我的心靈雖然願意，肉體卻很軟弱，求父帶領我行在祢的光中，緊緊跟隨主的腳步，緊握我的手，我就不致絆跌；用祢的話剛強我的心靈，我就可以勝過一切苦難和懼怕。父阿！有祢同在，我就不怕仇敵和黑夜；有祢同在，我就不怕消沈孤單。祢的豐盛都在基督裏，世界和偶像與我有甚麼干涉呢？父阿，感謝祢，祢的愛滿足我心，我願奉獻我心，遵行祢的旨意，求父悅納我的奉獻。禱告祈求是奉主耶穌的名，阿們。<br>(七) 感恩禱告<br>我父我神，祢的愛奇妙浩大，我的心大受感動，不知當用甚麼話感謝祢讚美祢。父阿！是祢在創世以前，在基督裏挑選了我，我才得有今天：祢曾救我脫離黑暗的權勢，把我遷到祢愛子的國裏。祢曾救我脫離一切的患難和危險，以及一切兇惡的試探。這無用的孩子算甚麼，竟蒙祢如此眷愛！他的軟弱、愚昧、祢早已知道，所以祢沒有丟棄，反倒體恤、撫養、顧惜。父阿！還有多久？還有多久？我們得與基督相遇空中，我們得住天上美家，我們得與眾聖事奉寶座之前。願祢的名被尊為聖，願祢的國降臨，願祢的旨意行在地上，如同行在天上。感恩禱告，都是奉主耶穌的名，阿們。',
+		  desc: '一、稱謂 —— 稱呼天父；<br>二、內容 —— 認罪、陳述心意、感恩、求恩；<br>三、結束 —— 「奉主耶穌的名，阿們。」<br>禱告的格式大致如此，話語是活的，不是呆板的，但必須從心裏發出。',
 		  href: 'q14.html'
 		},
 		{
 		  num: '210',
-		  title: '為恩？',
-		  desc: '一、）',
+		  title: '禱告舉例',
+		  desc: '(一) 求主光照<br>神阿！我承認世人都犯了罪，但我自己不能深知自己的罪，求祢使我得著聖靈的光照，明白自己的罪，好在神的面前誠心悔改，接受救恩。奉主耶穌的名禱告，阿們。<br>(二) 接受救恩<br>神阿！赦免我一切抵擋祢、背逆祢、厭棄祢的罪，我在祢面前深深懊悔，誠心接受主耶穌作我永遠的救主，求祢收留我。奉主耶穌的名祈求，阿們。<br>(三) 求主教導<br>親愛的天父，感謝祢賜給我寶貴的聖經，我的心渴慕祢的話，求父的靈感動我，光照我，引導我明白主的真理，使我愛祢更深。這樣祈求禱告是奉主耶穌的名，阿們。<br>(四) 求主解決難題<br>全能全知的神阿！祢是無所不能的，祢知道我一切的困難，我已經到了走頭無路的地步，沒有別的辦法，只有仰望祢，專心仰望祢。我的神阿！求祢憐憫我，拯救我。奉主的名祈求，阿們。<br>(五) 求主醫治<br>親愛的天父，我在病中雖然痛苦，求祢赦免我的家，饒恕我的過犯，醫治我的疾病，除掉魔鬼的作為，使我體驗基督復活得勝的能力，更加熱心事奉祢。父阿！我是屬祢的，從今以後，使我為主珍重自己的身體，好為主多做工，得主的喜悅，求父垂聽我的祈求。奉主耶穌的名，阿們。<br>(六) 願主旨意成全<br>父阿！祢的道路高過我的道路，祢的意念高過我的意念，我願走在祢的道路上，我願順服祢的旨意。祢知道我的心靈雖然願意，肉體卻很軟弱，求父帶領我行在祢的光中，緊緊跟隨主的腳步，緊握我的手，我就不致絆跌；用祢的話剛強我的心靈，我就可以勝過一切苦難和懼怕。父阿！有祢同在，我就不怕仇敵和黑夜；有祢同在，我就不怕消沈孤單。祢的豐盛都在基督裏，世界和偶像與我有甚麼干涉呢？父阿，感謝祢，祢的愛滿足我心，我願奉獻我心，遵行祢的旨意，求父悅納我的奉獻。禱告祈求是奉主耶穌的名，阿們。<br>(七) 感恩禱告<br>我父我神，祢的愛奇妙浩大，我的心大受感動，不知當用甚麼話感謝祢讚美祢。父阿！是祢在創世以前，在基督裏挑選了我，我才得有今天：祢曾救我脫離黑暗的權勢，把我遷到祢愛子的國裏。祢曾救我脫離一切的患難和危險，以及一切兇惡的試探。這無用的孩子算甚麼，竟蒙祢如此眷愛！他的軟弱、愚昧、祢早已知道，所以祢沒有丟棄，反倒體恤、撫養、顧惜。父阿！還有多久？還有多久？我們得與基督相遇空中，我們得住天上美家，我們得與眾聖事奉寶座之前。願祢的名被尊為聖，願祢的國降臨，願祢的旨意行在地上，如同行在天上。感恩禱告，都是奉主耶穌的名，阿們。',
 		  href: 'q14.html'
 		},
 		{
 		  num: '211',
 		  title: '禱告注意注意：',
-		  desc: '這些禱告的例子，不是作禱告文用的，千萬不要照著字句去背誦：',
+		  desc: '這些禱告的例子，不是作禱告文用的，千萬不要照著字句去背誦：<br>1. 學會禱告的最好方法就是「常常禱告」；<br>2. 無論大事小事，都可以放在禱告中；<br>3. 要為自己禱告，也要為別人禱告；<br>4. 除了隨事隨在禱告外，每天當有固定時間的禱告；<br>5. 常常參加祈禱會，跟愛主的人學禱告；<br>6. 熟讀聖經，把主的話豐豐富富的存在心裏。當你禱告時，聖靈必感動你很自然地用聖經上的話禱告，或憑聖經上的應許禱告。<br>',
 		  href: 'q14.html'
 		},
 	  ],
 	};
-	
-	
-		function loadPosts(key, title, sub) {
-		  document.getElementById('current-title').textContent = title;
-		  document.getElementById('current-subtitle').textContent = sub;
 
-		  const list = document.querySelector('.list');
-		  
-		    if (!posts[key]) {
-				list.innerHTML = '<p style="color:var(--smoke); padding:20px;">（此主題內容尚未建立）</p>';
-				return;
-			}
-		  
-		  list.innerHTML = posts[key].map(p => `
-			<a href="${p.href}" class="post-card">
-			  <span class="post-num">${p.num}</span>
-			  <div>
-				<div style="font-weight:700; margin-bottom:4px;">${p.title}</div>
-				<div style="font-size:13px; color:var(--smoke);">${p.desc || ''}</div>
-				<span style="display:inline-block; margin-top:8px; font-size:12px;
-				  border:1px solid var(--gold); color:var(--gold);
-				  padding:3px 10px; letter-spacing:1px;">
-				  Read More →
-				</span>
-			  </div>
-			</a>
-		  `).join('');
-		}
+    // ── 狀態 ──
+    let currentChapter = 'home';
 
-        function switchTab(event, chapterId) {
-            // 1. 切換分頁標籤樣式
-            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+    // ── 初始化 ──
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchChapter(tab.dataset.chapter));
+    });
+    document.getElementById('chapter-cards').addEventListener('click', e => {
+        const card = e.target.closest('.chapter-card');
+        if (card) switchChapter(card.dataset.chapter);
+    });
 
-            // 2. 切換左側選單內容
-            document.querySelectorAll('.sidebar-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(chapterId).classList.add('active');
+    function switchChapter(chapterId) {
+        currentChapter = chapterId;
+
+        // Tab 高亮
+        document.querySelectorAll('.nav-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.chapter === chapterId);
+        });
+
+        if (chapterId === 'home') {
+            showHome();
+        } else {
+            showChapter(chapterId);
         }
+    }
+
+    function showHome() {
+        document.getElementById('sub-nav').classList.add('hidden');
+        document.getElementById('welcome-screen').style.display = 'block';
+        document.getElementById('list-screen').style.display = 'none';
+        document.getElementById('content-area').scrollTop = 0;
+    }
+
+    function showChapter(chapterId) {
+        const ch = structure[chapterId];
+        const subNav = document.getElementById('sub-nav');
+        subNav.classList.remove('hidden');
+
+        // 填充中主題
+        const midSel = document.getElementById('mid-select');
+        midSel.innerHTML = '';
+        ch.groups.forEach((g, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = g.label;
+            midSel.appendChild(opt);
+        });
+
+        // 填充小主題（預設第一個中主題）
+        fillSubSelect(chapterId, 0);
+
+        // 隱藏首頁，顯示列表
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('list-screen').style.display = 'block';
+
+        // 載入預設：第一個中主題第一個小主題
+        const firstSub = ch.groups[0].subs[0];
+        loadPosts(firstSub.key, firstSub.label, firstSub.range);
+    }
+
+    function fillSubSelect(chapterId, midIdx) {
+        const subs = structure[chapterId].groups[midIdx].subs;
+        const subSel = document.getElementById('sub-select');
+        subSel.innerHTML = '';
+        subs.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.key;
+            opt.textContent = s.label + '　' + s.range;
+            subSel.appendChild(opt);
+        });
+    }
+
+    function onMidChange() {
+        const midIdx = parseInt(document.getElementById('mid-select').value);
+        fillSubSelect(currentChapter, midIdx);
+        // 自動載入小主題第一個
+        const firstSub = structure[currentChapter].groups[midIdx].subs[0];
+        loadPosts(firstSub.key, firstSub.label, firstSub.range);
+    }
+
+    function onSubChange() {
+        const key = document.getElementById('sub-select').value;
+        if (!key) return;
+        // 直接從 sub-select 的 selectedOption 拿 label/range
+        const sel = document.getElementById('sub-select');
+        const optText = sel.options[sel.selectedIndex].textContent;
+        // optText 格式是 "label　range"，用全形空格切
+        const parts = optText.split('　');
+        const label = parts[0] || key;
+        const range = parts[1] || '';
+        loadPosts(key, label, range);
+    }
+
+    function loadPosts(key, title, range) {
+        document.getElementById('current-title').textContent = title;
+        document.getElementById('current-subtitle').textContent = range || '';
+
+        const list = document.getElementById('post-list');
+        if (!posts[key] || posts[key].length === 0) {
+            list.innerHTML = '<p style="color:var(--smoke); padding:20px 0;">（此主題內容尚未建立）</p>';
+        } else {
+            list.innerHTML = posts[key].map(p => `
+                <a href="${p.href}" class="post-card">
+                    <span class="post-num">${p.num}</span>
+                    <div class="post-body">
+                        <div class="post-title">${p.title}</div>
+                        ${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
+                        <span class="post-more">閱讀全文 →</span>
+                    </div>
+                </a>
+            `).join('');
+        }
+        document.getElementById('content-area').scrollTop = 0;
+    }
     </script>
 </body>
 </html>
