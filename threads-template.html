@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!--
+═══════════════════════════════════════════════════════
+  THREADS 系列文章模板
+  設計風格：羊皮紙 × 金箔 × 深墨底
+  使用方法：
+    1. 修改 <title> 與 .site-header 的標題/副標題
+    2. 每篇文章 = 一個 <div class="chapter"> 包一個 <div class="card [顏色]">
+    3. 顏色選項：gold / red / deep / blue / purple / final
+    4. 章節之間用 <div class="thread-line"></div> 連接
+    5. 其餘內部元件見下方「元件清單」
+═══════════════════════════════════════════════════════
+-->
+
+<title>【系列標題】— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════
+   COLOR TOKENS — 不要隨意更動
+══════════════════════════════════ */
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════════
+   BACKGROUND TEXTURE（固定，不用改）
+══════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ══════════════════════════════════
+   SITE HEADER
+   ── 可修改：eyebrow / h1 / subtitle
+══════════════════════════════════ */
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+/* 標題中的金色強調字：<h1>主題<span>關鍵字</span></h1> */
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+/* ══════════════════════════════════
+   THREAD LINE — 章節間的連接線
+   用法：<div class="thread-line"></div>
+══════════════════════════════════ */
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+/* ══════════════════════════════════
+   CHAPTER WRAPPER
+   用法：<div class="chapter"> ... </div>
+══════════════════════════════════ */
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ══════════════════════════════════
+   CARD — 每篇文章的卡片容器
+   用法：<div class="card [顏色]"> ... </div>
+   顏色選項：gold / red / deep / blue / purple / final
+══════════════════════════════════ */
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* 左側色條 */
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+/* ── FINAL CARD 深色版 ── */
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+/* ══════════════════════════════════
+   CARD HEADER
+   必填：chapter-tag / card-title
+   選填：card-hook（副標語）
+══════════════════════════════════ */
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+/* 章節標籤：<div class="chapter-tag"><span class="num">1</span> 標籤文字</div> */
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+/* 圓形數字背景跟著卡片顏色走 */
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+/* 副標語（選用） */
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════
+   CARD BODY
+══════════════════════════════════ */
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+/* ══════════════════════════════════
+   元件一：HIGHLIGHT BOX 強調框
+   用法：
+   <div class="highlight">
+     <strong>小標題（選用）</strong>
+     內文……
+   </div>
+══════════════════════════════════ */
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+/* ══════════════════════════════════
+   元件二：SCRIPTURE 經文引用
+   用法：
+   <div class="scripture">
+     <p class="scripture-text">「……」</p>
+     <p class="scripture-ref">書名 章:節</p>
+   </div>
+══════════════════════════════════ */
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════
+   元件三：ANALOGY BOX 比喻框
+   用法：
+   <div class="analogy">
+     <span class="analogy-icon">🏡</span>
+     比喻文字……
+   </div>
+══════════════════════════════════ */
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ══════════════════════════════════
+   元件四：BIG QUOTE 大引言
+   用法：
+   <div class="big-quote">
+     引言文字
+     <cite>— 出處</cite>
+   </div>
+══════════════════════════════════ */
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+/* ══════════════════════════════════
+   元件五：TERM BOX 原文詞彙
+   用法：
+   <div class="term-box">
+     <div class="term-original">Hesed<br>希伯來原文</div>
+     <div class="term-desc">解釋文字……</div>
+   </div>
+══════════════════════════════════ */
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+/* ══════════════════════════════════
+   元件六：DEPTH LABELS 深度 / 淺白 標籤
+   用法：
+   <span class="depth-label deep-tag">📖 深度層次</span>
+   <span class="depth-label plain-tag">💡 淺白說明</span>
+══════════════════════════════════ */
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+/* ══════════════════════════════════
+   元件七：CONCENTRIC RINGS 同心圓列表
+   用法：
+   <div class="concentric">
+     <div class="concentric-ring r1">
+       <span class="ring-label">🌟 標籤</span>
+       說明文字
+     </div>
+     … (r1–r5 五個顏色層)
+   </div>
+══════════════════════════════════ */
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+/* ══════════════════════════════════
+   CARD DIVIDER 卡片內分隔線
+   用法：<div class="card-divider"></div>
+══════════════════════════════════ */
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+/* ══════════════════════════════════
+   SECTION GAP 章節間額外間距
+   用法：<div class="section-gap"></div>
+══════════════════════════════════ */
+.section-gap { height: 8px; }
+
+/* ══════════════════════════════════
+   SITE FOOTER
+══════════════════════════════════ */
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SITE HEADER — 修改這裡
+══════════════════════════════════ -->
+<header class="site-header">
+  <div class="eyebrow">系列標籤 · Series Label</div>
+  <h1>主標題<span>關鍵字</span></h1>
+  <p class="subtitle">副標題 · 說明文字</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章（範例：gold 卡片）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 章節標籤</div>
+      <h2 class="card-title">這裡是文章標題</h2>
+      <p class="card-hook">副標語或鉤子句——用一句話勾起讀者好奇心</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這裡是正文段落。可以直接放入文章內容，段落之間會自動留白。</p>
+
+      <!-- 元件一：強調框 -->
+      <div class="highlight">
+        <strong>小標題（選用）</strong>
+        強調框內容，適合放核心重點、補充說明或小結論。
+      </div>
+
+      <!-- 元件二：經文引用 -->
+      <div class="scripture">
+        <p class="scripture-text">「在這裡放入聖經經文……」</p>
+        <p class="scripture-ref">書名 章:節</p>
+      </div>
+
+      <!-- 深度標籤 -->
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>深度解析文字放這裡，可搭配原文詞彙元件。</p>
+
+      <!-- 元件五：原文詞彙 -->
+      <div class="term-box">
+        <div class="term-original">Hesed<br>希伯來文</div>
+        <div class="term-desc">這個字的深度解釋……盟約之愛的核心，即便對方不配仍然持守承諾的忠貞。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <!-- 淺白標籤 -->
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <!-- 元件三：比喻框 -->
+      <div class="analogy">
+        <span class="analogy-icon">🏡</span>
+        比喻文字放這裡，用生活化的圖像說明抽象概念。
+      </div>
+
+      <!-- 元件四：大引言 -->
+      <div class="big-quote">
+        這裡放一句有份量的引言或金句
+        <cite>— 出處或作者</cite>
+      </div>
+
+      <p>文章結尾段落，可以做收尾、引入下一章，或提出一個讓讀者帶走的問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章（範例：red 卡片）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 章節標籤</div>
+      <h2 class="card-title">第二篇文章標題</h2>
+      <p class="card-hook">副標語</p>
+    </div>
+    <div class="card-body">
+      <p>內容放這裡……</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章（範例：deep 深綠卡片）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 章節標籤</div>
+      <h2 class="card-title">第三篇文章標題</h2>
+    </div>
+    <div class="card-body">
+      <p>內容放這裡……</p>
+
+      <!-- 元件七：同心圓列表 -->
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 第一層標籤</span>
+          第一層說明文字
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❤️ 第二層標籤</span>
+          第二層說明文字
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🌏 第三層標籤</span>
+          第三層說明文字
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章（範例：blue 藍色卡片）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 章節標籤</div>
+      <h2 class="card-title">第四篇文章標題</h2>
+    </div>
+    <div class="card-body">
+      <p>內容放這裡……</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章（範例：purple 紫色卡片）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 章節標籤</div>
+      <h2 class="card-title">第五篇文章標題</h2>
+    </div>
+    <div class="card-body">
+      <p>內容放這裡……</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章（final 深色卡片，建議用於收尾）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 終章</div>
+      <h2 class="card-title">終章標題</h2>
+      <p class="card-hook">終章副標語</p>
+    </div>
+    <div class="card-body">
+      <p>終章內容……</p>
+
+      <div class="highlight">
+        <strong>收尾重點</strong>
+        總結性的內容放這裡。
+      </div>
+
+      <div class="big-quote">
+        終章金句
+        <cite>— 出處</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- ══════════════════════════════════
+     FOOTER — 修改文字即可
+══════════════════════════════════ -->
+<footer class="site-footer">
+  系列名稱 · Series Title
+</footer>
+
+</body>
+</html>
