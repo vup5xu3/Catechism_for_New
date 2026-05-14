@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>你的善惡禍福，神早就定了標準 — Threads 神學系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .concentric-ring      { color: rgba(247,240,227,0.9); }
+.card.final .concentric-ring .ring-label { color: var(--gold-light); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  position: relative;
+  margin: 24px 0;
+  padding: 20px 24px;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+
+.scripture-text {
+  font-size: 16px !important;
+  font-style: italic;
+  line-height: 1.8 !important;
+  color: #1A1208 !important;
+  margin-bottom: 8px !important;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-align: right;
+}
+
+.analogy {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(201,168,76,0.06);
+  border-radius: 4px;
+  padding: 16px 18px;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #2A2010;
+}
+.analogy-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.big-quote {
+  font-size: clamp(17px, 3vw, 21px);
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: center;
+  padding: 24px 16px;
+  position: relative;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 10px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 0;
+  margin: 20px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(26,18,8,0.1);
+}
+.term-original {
+  background: var(--ink);
+  color: var(--gold);
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-style: italic;
+}
+.term-original small {
+  font-size: 10px;
+  color: rgba(201,168,76,0.5);
+  letter-spacing: 2px;
+  font-style: normal;
+  font-family: 'Cinzel', serif;
+  margin-top: 4px;
+}
+.term-desc {
+  background: var(--parchment-dark);
+  padding: 14px 18px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #2A2010;
+  flex: 1;
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">神學深度系列 · Theological Series</div>
+  <h1>你的禍福，從來不是<span>運氣</span></h1>
+  <p class="subtitle">神造人的目的 × 善惡的真正定義 × 生命主權的歸回</p>
+</header>
+
+
+<!-- ══════════════════ 第一章：分享 ══════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我曾以為，善惡是我自己決定的</h2>
+      <p class="card-hook">直到我發現，我連「善」的定義都搞錯了。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一段時間，我很認真地問自己一個問題：為什麼我努力做「對」的事，生命卻沒有變得更好？</p>
+
+      <p>我沒有做壞事。我善待身邊的人，我努力工作，我試著誠實。但生命裡仍然有說不清的疲乏、說不出的空洞，以及一種彷彿「在錯誤的地方使力」的感覺。</p>
+
+      <p>後來我才發現，問題的根源不在於我做了什麼，而在於我根本不知道「善」是什麼。</p>
+
+      <div class="highlight">
+        <strong>分享的起點</strong>
+        我們對「善惡」的理解，幾乎都是從文化、家庭、或自己的感覺出發。但聖經告訴我們，善惡有一個更底層、更古老的定義——而那個定義，跟我們想的完全不一樣。
+      </div>
+
+      <p>這個系列，我想和你一起重新思考六個問題：什麼是真正的善？禍福從哪裡來？神為什麼要造人？罪的本質是什麼？主權標準是什麼？以及——如果一切都搞錯了，還有沒有回頭的路？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我今日呼天喚地向你作見證；我將生死禍福陳明在你面前，所以你要揀選生命，使你和你的後裔都得存活。」</p>
+        <p class="scripture-ref">申命記 30:19</p>
+      </div>
+
+      <p>申命記說，「生死禍福」是可以被「選擇」的。這代表它不是隨機的命運，也不是老天爺的心情。它是一套有邏輯的系統，而我們可以理解它。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📱</span>
+        想像你買了一支手機，但從來不看說明書，靠感覺亂用。用久了，電池壞掉、系統當機——你說這是手機的問題，但其實是操作方式的問題。生命也是如此：當我們不按照「設計者的說明書」運作，消耗和損壞是必然的。
+      </div>
+
+      <p>接下來六篇，我們要一起打開那本說明書。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════ 第二章：引導 ══════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「善」不是道德問題，是功能問題</h2>
+      <p class="card-hook">當你讀懂這個，你對「惡」的恐懼會變成對「目的」的渴望。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們通常把「善」當成一個道德詞彙：守規矩、不傷人、心地好。但希伯來聖經的原文，給了我們一個完全不同的視角。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">טוֹב<br><small>Tob · 善</small></div>
+        <div class="term-desc">在希伯來文中，「善」（Tob）的核心意涵是「功能完備的」（Functional）——某事物正處於它被設計的軌道上，能夠完美地履行其受造目的。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">רַע<br><small>Ra · 惡</small></div>
+        <div class="term-desc">「惡」（Ra）對應的意涵是「功能障礙的」（Dysfunctional）——偏離了設計目標，對原有秩序造成破壞或阻礙。惡不是一個獨立的實體，而是對功能性的否定。</div>
+      </div>
+
+      <p>當神在創世記看著受造之物說「好啊」，那個「好」說的是：這個東西，正在做它被設計來做的事。光在照亮，水在滋養，植物在生長——功能對了，就是善。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 換句話說</span>
+
+      <p>善不是一種資格，而是一種狀態。它問的不是「你夠不夠好？」而是「你有沒有在你應該在的位置上，做你被造來做的事？」</p>
+
+      <div class="highlight">
+        <strong>關鍵轉換</strong>
+        這意味著，人類最初的「罪」不是做了壞事，而是奪取了一個他們沒有資格擁有的權力——自行定義什麼是「善」、什麼是「惡」。亞當與夏娃吃了果子，不是因為他們想做壞人，而是因為他們想自己決定什麼叫做「有益」。
+      </div>
+
+      <p>當我們把善惡從「道德考試」重新理解為「功能對齊」，生命的很多困境就有了新的解釋框架。不是你不夠努力，而是你用錯了方向。</p>
+
+      <div class="big-quote">
+        善不是「成為好人」，而是「成為你被造來成為的那個人」。
+        <cite>— 功能性神學的核心命題</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════ 第三章：破題 ══════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">你不是偶然存在的——你是帶著職份來的</h2>
+      <p class="card-hook">神造人，有非常具體的目的。而那個目的，解釋了你所有的禍與福。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果善是「功能對齊」，那我們首先需要知道：人類被設計來做什麼？</p>
+
+      <p>聖經用了一個震撼性的詞彙來描述人類的身份：</p>
+
+      <div class="term-box">
+        <div class="term-original">צֶלֶם<br><small>Tselem · 形像</small></div>
+        <div class="term-desc">在古代近東，君王會在領土邊緣豎立自己的雕像（Tselem），宣告主權的臨在。神說「按我們的形像造人」，意思是：人類就是神在物質世界的代表雕像，受託管理、治理、並反映神的榮耀。</div>
+      </div>
+
+      <p>你不只是被造來「活著」的。你是被造來「代表神」的。這個身份具有四個層次：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🧠 本質層：你有神聖的本質</span>
+          理性、良知、道德感——這些不是偶然演化的產物，而是神將自身本性部分注入你的結果。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🌍 職責層：你有治理的使命</span>
+          管理受造界，引導地球走向豐盛與多產。這是一份代理神主權的工作，不是剝削，而是照管。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">❤️ 關係層：你被造來連結</span>
+          與神、與人、與萬物保持和諧關係。這種關係不是裝飾品，而是你身份的核心運作機制。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌟 終向層：你被造來成長</span>
+          不斷趨近神的完美——這是內建於你DNA裡的動能，生命的方向感就在這裡。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「神就照著自己的形像造人，乃是照著祂的形像造男造女。神賜福給他們，又對他們說：要生養眾多，遍滿地面，治理這地。」</p>
+        <p class="scripture-ref">創世記 1:27-28</p>
+      </div>
+
+      <p>「祝福」在這段話裡緊跟著「使命」出現——這不是巧合。你被祝福，是為了能夠完成你被造的職份。禍福與目的，從一開始就是綁在一起的。</p>
+
+      <div class="highlight">
+        <strong>破題關鍵</strong>
+        人類的禍，根本原因不是做錯了事，而是失去了對「我是誰、我為何存在」的正確認識。當你忘記自己是「神形像的代理人」，你就會在錯誤的地方尋找身份，在錯誤的事物上建立安全感——而那，就是一切功能障礙的起點。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════ 第四章：研究 ══════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">罪的真相：不是你變壞了，是你偏航了</h2>
+      <p class="card-hook">希臘原文告訴我們，罪是一個箭術術語——而這改變了一切。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果人類是帶著職份被造的，那麼「罪」的本質就是——偏離那個職份。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">ἁμαρτία<br><small>Hamartia · 罪</small></div>
+        <div class="term-desc">新約希臘文中的「罪」，原意是「射箭不中紅心」（Missing the mark）。這是一個精準度的術語，不是一個道德譴責詞。罪說的是：你的生命有一個目標，而你偏離了它。</div>
+      </div>
+
+      <p>這個比喻有幾個重要的含義，我們需要認真看：</p>
+
+      <div class="highlight">
+        <strong>第一層理解</strong>
+        「偏航」和「墮落」是不同的。偏航說的是方向問題，不是品格問題。一個好人也可以方向錯了。一個努力的人也可能一直在射偏箭。這解釋了為什麼我們有時候覺得「我明明沒做錯，怎麼生命還是一團糟？」
+      </div>
+
+      <div class="highlight">
+        <strong>第二層理解</strong>
+        罪是一種「狀態」，不只是一個「行為」。保羅在羅馬書第七章說得最誠實：「我所願意的善，我反不做；我所不願意的惡，我倒去做。」這不是意志力的問題，而是內在軌道被扭曲了——箭本身就是彎的。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「世人都犯了罪，虧缺了神的榮耀。」</p>
+        <p class="scripture-ref">羅馬書 3:23</p>
+      </div>
+
+      <p>注意這裡用的詞：「虧缺了神的榮耀」。不是「違反了神的規則」，而是「沒有達到神為你設定的那個高度」。罪，是一種落差。是生命本應抵達的高度，與實際所在位置之間的距離。</p>
+
+      <span class="depth-label plain-tag">💡 實際影響</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        當你的手機 GPS 壞掉，你不一定會往懸崖走，你只是會一直走偏，走到你以為對的地方，卻始終到不了真正的目的地。罪對生命的影響，就是這樣——它不是讓你變成怪物，而是讓你的人生導航持續失準。
+      </div>
+
+      <p>但這裡有一個關鍵的好消息：如果罪是「偏航」，那表示正確的航道是存在的。紅心是真實的。目標沒有消失。問題只是——有沒有辦法讓箭重新對準？</p>
+
+      <div class="big-quote">
+        神從來不是要你「成為一個好人」，而是要你「回到你本來應在的軌道」。
+        <cite>— 救贖神學的起點</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════ 第五章：深論 ══════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">禍福的真實機制：祝福是謙卑，咒詛是保護撤離</h2>
+      <p class="card-hook">這不是「老天爺賞罰」，而是一套你可以理解、可以選擇的盟約系統。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>現在我們有了足夠的基礎，可以面對最核心的問題了：禍和福，究竟是怎麼運作的？</p>
+
+      <p>聖經神學提供的答案，比「做好事有好報」深刻得多。它說的是一套「立約關係下的能量系統」。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">בָּרַךְ<br><small>Barak · 祝福</small></div>
+        <div class="term-desc">「祝福」的希伯來根字，原始動作與「下跪」直接相關。祝福不是單向的禮物，而是在謙卑與敬畏的關係中進行的能量傳遞。它具有生成性的力量——誘發多產、平安與豐盛。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">קְלָלָה<br><small>Qelalah · 咒詛</small></div>
+        <div class="term-desc">「咒詛」的核心含義是「輕視」、「貶抑」、「使之顯得微不足道」。它不是神主動施加的惡毒，而是「神聖保護覆蓋的撤離」——當受造物拒絕與神對齊，生命力的供應就自然中斷。</div>
+      </div>
+
+      <p>這兩個概念放在一起，給了我們一個重要的神學洞見：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✨ 祝福的邏輯</span>
+          謙卑對齊 → 神聖覆蓋持續 → 生命力供應充足 → 多產、平安、身份確立
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚠️ 咒詛的邏輯</span>
+          驕傲自立 → 神聖覆蓋撤離 → 生命力供應中斷 → 勞苦、荒涼、身份喪失
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔑 關鍵洞見</span>
+          神不需要主動「懲罰」你。當你切斷生命的供應源，枯竭就是自然的結果——就像植物拒絕吸水。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我今日所吩咐你的，並不是你難行的事，也不是離你遠的……這道離你甚近，就在你口中，在你心裡，使你可以遵行。」</p>
+        <p class="scripture-ref">申命記 30:11, 14</p>
+      </div>
+
+      <p>申命記三十章的「生死二選一」，不是在威脅人，而是在說：這個系統是透明的、可理解的，而且你此刻就有能力選擇。</p>
+
+      <div class="highlight">
+        <strong>深論核心</strong>
+        真正的「福」，不是事情順利、萬事如意。它是生命處於神聖覆蓋之下、功能完備地運作的那種整全感（Shalom）。真正的「禍」，也不只是倒楣遭難，而是靈魂層面的枯竭——與生命之源斷開後的空洞與勞苦。當我們用這個視角看自己的人生，很多問題的答案就清晰了。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        一棵樹的禍，不是被閃電擊中，而是根系離開了水源。看起來還是一棵樹，但內部已在枯萎。很多人的生命正是如此——外表完整，內在乾涸。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════ 第六章：結論與溫馨 ══════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">還有回頭的路——而且那條路，比你想的近</h2>
+      <p class="card-hook">這整個系列，不是為了讓你知道自己多麼偏差。而是為了讓你看見，回家的門從來沒有關上。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們走過了六個問題：善是功能對齊，惡是功能障礙；人是帶著神聖職份被造的；罪是偏航而非墮落成怪物；禍是保護撤離，福是謙卑對齊後的生命力供應。</p>
+
+      <p>這所有的神學邏輯，都指向同一個結論——而那個結論出乎意料地溫柔。</p>
+
+      <div class="highlight">
+        <strong>核心結論</strong>
+        神從來不是在等你「夠好」才來幫你。祂設計了一個修復系統，而那個系統的名字叫做：基督。耶穌的工作不只是赦免你的罪，更是把你帶回那條你本來應走的直線——然後給你繼續走下去的力量。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們立定心意，要歸向耶和華，他就必歸向你們。」</p>
+        <p class="scripture-ref">歷代志下 30:6</p>
+      </div>
+
+      <p>神學家曾用一個美麗的比喻描述這個過程：人類墮落，是從一條筆直向上的線掉入深淵。基督來，不只是把人從深淵底部撈起來，而是把人重新放回那條線上——並且注入力量，讓人可以繼續走。</p>
+
+      <p>這就是救贖。不是「你現在還不夠好，先去補救」，而是「你本來的設計藍圖還在，而且現在可以重啟」。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌅 原初狀態</span>
+          功能完備（Tob）——人與神對齊，行使神聖治理權
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💔 墮落狀態</span>
+          功能障礙（Ra）——箭矢偏離，掉入失能的深淵
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✝️ 救贖階段</span>
+          恢復對齊——基督將人帶回起點，稱義（Justification）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌿 成聖階段</span>
+          持續成長——透過聖靈趨向完全，成聖（Sanctification）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🌟 終極榮耀</span>
+          完美形像恢復——進入永恆和諧，得榮（Glorification）
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「所以，無論何人在基督裡，他就是新造的人，舊事已過，都變成新的了。」</p>
+        <p class="scripture-ref">哥林多後書 5:17</p>
+      </div>
+
+      <p>最後，我想說一件可能顛覆你認知的事：</p>
+
+      <p>你這一生對「善」的追求，對「福」的渴望，對「意義」的探索——那本身，就是神的形像在你裡面未曾完全熄滅的證據。你不會渴望你從未擁有過的東西。</p>
+
+      <div class="big-quote">
+        順服神，不是放棄自由——<br>而是回到讓你最自由的那條路上。
+        <cite>— 申命記 30:19 的終極邀請</cite>
+      </div>
+
+      <p>所以，無論你今天在哪裡，無論你的箭射偏多遠——紅心還在那裡。神還在那裡。而回頭的距離，往往只有一個決定那麼遠。</p>
+
+      <p style="color: rgba(247,240,227,0.5); font-size: 13px; text-align: center; margin-top: 28px; letter-spacing: 1px;">願這個系列，成為你重新對齊的開始。🙏</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  神造人的目的與神的主權標準 · Theological Series · 六章連貫
+</footer>
+
+</body>
+</html>
