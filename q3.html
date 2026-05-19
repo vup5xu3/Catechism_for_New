@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神的形像——亞當夏娃受造神學 Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .concentric-ring      { color: rgba(247,240,227,0.9); }
+.card.final .concentric-ring .ring-label { color: #fff; }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="eyebrow">創世記神學系列 · Imago Dei Series</div>
+  <h1>我們是<span>神的形像</span></h1>
+  <p class="subtitle">亞當與夏娃受造神學：從伊甸的榮光到終末的復歸</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">你知道嗎？你不是意外誕生的</h2>
+      <p class="card-hook">在所有關於「我從哪裡來、為何而活」的大哉問中，沒有一個答案比聖經的更令人震撼——也更令人安慰。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有時候，我們翻開創世記，讀到神說「我們要照著我們的形像、按著我們的樣式造人」，可能只是輕輕一掃而過，心想：「這句話我聽過了。」</p>
+
+      <p>但你有沒有停下來，認真想過這句話有多麼顛覆、多麼不可思議？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神就照著自己的形像造人，乃照著祂的形像造男造女。」</p>
+        <p class="scripture-ref">創世記 一章 27節</p>
+      </div>
+
+      <p>這短短一句，不是詩意的修辭，也不是原始神話的隱喻。它是一個本體論的宣告——一個關於你究竟是誰、從何而來的宇宙級聲明。</p>
+
+      <div class="highlight">
+        <strong>本系列的起點</strong>
+        這六篇文章，將帶你從最熟悉的創世記出發，一層層挖進原文字義、古代文化、奧古斯丁神學，直到變像山上那道耀眼的光，看見人類最初的榮耀與最終的復歸。
+      </div>
+
+      <p>我們不是廉價的勞工，不是宇宙偶然的產物，也不是漂流在時間河流中的孤魂。我們是神親手設立在這個世界中的皇家代言人。</p>
+
+      <p>而明白這件事，將徹底改變你看待自己、看待他人、看待生命的方式。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👑</span>
+        想像一位君王離開京城，在邊疆立起自己的雕像，宣告：「這片土地屬於我，我就在這裡。」古代近東的帝王就是這樣彰顯主權的。而聖經說——神把每一個人，都造成了那樣的「雕像」。
+      </div>
+
+      <p>帶著這個畫面，我們開始進入這趟旅程吧。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">如果我們是神的形像，為什麼活得如此狼狽？</h2>
+      <p class="card-hook">光榮的起點與破碎的現實之間，藏著一段改變一切的故事。</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果人類真的是按照神的形像被造，那我們為什麼這麼容易說謊？這麼容易自私？這麼難以真正愛人？</p>
+
+      <p>這個問題，幾乎每個認真思考信仰的人都問過。它不是對神學的挑戰，而恰恰是神學最核心的張力所在。</p>
+
+      <div class="highlight">
+        <strong>一個重要的區分</strong>
+        亞當夏娃受造時所擁有的「神的形像」，並非一個靜態的標籤，而是一種活生生的關係品質——它可以綻放，也可以被破壞。
+      </div>
+
+      <p>聖經對人類現狀的診斷非常直接：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為世人都犯了罪，虧缺了神的榮耀。」</p>
+        <p class="scripture-ref">羅馬書 三章 23節</p>
+      </div>
+
+      <p>注意這個動詞：「虧缺」。這不是說「神的形像」已經被完全抹去，而是說我們讓那個形像黯淡了、破碎了、失去了原本應有的完整榮光。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        一面裂碎的鏡子，仍然能反射光，卻無法完整地映出那道光。人類如今就是那面裂碎的鏡子——我們仍有神的形像，但已是支離的倒影，而非完整的榮光。
+      </div>
+
+      <p>這個裂縫從何而來？它如何發生？神學家用一個詞概括：「墮落」（the Fall）。而墮落的代價，遠比我們想像得深沉——它不只是「犯了一個錯」，而是整個人類意志與關係結構的根本崩裂。</p>
+
+      <p>但更重要的是：這個裂縫，有沒有辦法被補回來？帶著這個問題，我們進入下一章。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">「形像」與「樣式」：兩個字，一個宇宙的秘密</h2>
+      <p class="card-hook">創世記一章26節用了兩個希伯來字，古代近東的讀者一聽就懂那場顛覆——你也應該知道。</p>
+    </div>
+    <div class="card-body">
+
+      <p>創世記一章26節的希伯來原文，並排出現了兩個關鍵字彙：צֶלֶם（tselem，形像）與 דְּמוּת（demut，樣式）。這兩個字的組合，不是語言上的重複，而是一對互補的神學主張。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">צֶלֶם<br>Tselem</div>
+        <div class="term-desc">字根源自「雕刻」或「切下」，意指具體的代表物、塑像——神在地上設立的皇家代理人身份。在古代近東，君王以雕像（tselem）宣告在遠方領土的主權臨在。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">דְּמוּת<br>Demut</div>
+        <div class="term-desc">字根源自「相似」，指的是抽象的道德與關係相似性，強調：人與神相似，但絕非神本人。如同塞特「像」亞當，但塞特不是亞當。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>這個組合的神學爆炸點在於：在古代近東（ANE）的文化脈絡中，「神的形像」是專屬帝王的頭銜。埃及法老、巴比倫君王才是「神明在地上的代表」，一般人不過是神明的奴隸。</p>
+
+      <div class="big-quote">
+        聖經卻說：每一個人，無論男女、不分地位，都是神親手設立的皇家代表。
+        <cite>— 創世記 一章 27節的顛覆性宣言</cite>
+      </div>
+
+      <p>這不只是神學，這是一場針對古代階級制度的正面衝擊。它奠定了普世人權最深的神學根基：每一個人的生命，都具有不可踐踏的尊嚴，因為每一個人都是神在這個世界的代言人。</p>
+
+      <span class="depth-label plain-tag">💡 用白話說</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        如果今天有人破壞國家元首的雕像，會被視為對國家主權的公然冒犯。那麼，當任何一個人的尊嚴被踐踏——任何一個人——在宇宙法庭上，那就是在破壞神親自設立的代表。
+      </div>
+
+      <p>明白了 tselem 與 demut 的雙重意涵，我們就能更清楚地看見：亞當與夏娃受造時，究竟被賦予了什麼——以及後來失去了什麼。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">能不犯罪——那個失去的黃金狀態</h2>
+      <p class="card-hook">奧古斯丁把人類的道德歷史分成四個階段。你現在站在哪一個？而我們最初擁有的，比你想的還要美。</p>
+    </div>
+    <div class="card-body">
+
+      <p>奧古斯丁在分析人類意志的歷史時，提出了一個精密的四重框架，用拉丁文描述人類在不同歷史階段的道德能力：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 墮落前 · Posse Non Peccare</span>
+          「能不犯罪」——亞當夏娃的原始狀態。意志完全自由，具備不犯罪的能力，也保有選擇背叛的可能性。這是真實的道德自由。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❌ 墮落後 · Non Posse Non Peccare</span>
+          「不能不犯罪」——未得救的自然人。意志被罪性完全奴役，在屬靈的事上毫無能力尋求神。這是全然敗壞的狀態。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🌱 重生後 · Posse Peccare et Non Peccare</span>
+          「能犯罪，也能不犯罪」——地上信徒的恩典狀態。意志在聖靈中獲得部分醫治，展開成聖的掙扎與成長歷程。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✨ 榮耀後 · Non Posse Peccare</span>
+          「不能犯罪」——永恆天國的聖徒。意志與神的神聖性徹底聯合，犯罪的意願與可能性被徹底清除。這是真正、永恆的自由。
+        </div>
+      </div>
+
+      <p>亞當與夏娃起初的狀態——「能不犯罪」——是美麗且真實的。他們的意志未受污染，能夠輕盈地選擇與神同行，享有真正的道德自由。</p>
+
+      <div class="highlight">
+        <strong>一個關鍵的誤解</strong>
+        很多人以為，「完全無罪」就代表「不可能犯罪」。但奧古斯丁指出，若沒有犯罪的可能，順服就不是出於愛的自由選擇，而是機械式的程序——那樣的「完美」其實並不完美。
+      </div>
+
+      <p>神在伊甸園中立下禁令，並非為了限制自由，而是給予人類一個「主動選擇愛」的空間。那棵「不可吃」的樹，是整個伊甸園中唯一能讓順服變得有意義的地方。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「並且穿上新人；這新人是照著神的形像造的，有真理的仁義和聖潔。」</p>
+        <p class="scripture-ref">以弗所書 四章 24節</p>
+      </div>
+
+      <p>以弗所書這裡的「新人」（kainos），正是指向那個在基督裡恢復中的人類——從「不能不犯罪」的綑綁中被釋放，重新踏上通往「不能犯罪」榮耀的旅程。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">光之衣袍的剝落，與那件獸皮的神學重量</h2>
+      <p class="card-hook">「赤身露體，並不覺得羞恥」——這句話裡，藏著人類失去的榮光與神最早的救贖動作。</p>
+    </div>
+    <div class="card-body">
+
+      <p>創世記二章25節記載，亞當與夏娃「夫妻二人赤身露體，並不覺得羞恥」。在早期教父與拉比的詮釋傳統中，這絕不只是字面上的身體狀態描述。</p>
+
+      <span class="depth-label deep-tag">📖 教父傳統解讀</span>
+
+      <p>教父們認為，人類受造之初並非處於貧乏或暴露的狀態，而是被神的榮光（shekinah）所環繞——身著一件由聖潔之光凝聚而成的「光之衣袍」。在這種實存狀態中，他們內心沒有罪咎，眼目沒有私慾，因此在神與彼此面前完全敞開，毫無恐懼與羞恥。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">☀️</span>
+        就像光線充足的房間，角落裡的灰塵也無所遁形卻不令人焦慮；但當光源一熄滅，即便是最微小的影子都會令人不安。榮光離去的那一刻，羞恥就誕生了。
+      </div>
+
+      <p>當罪惡瓦解了這種靈性秩序，那層「光之衣袍」驟然消失。亞當與夏娃「才知道自己是赤身露體的」——這個「才知道」，是一種本體論的驚恐，不只是發現身體，而是發現自己失去了與神同在的榮耀庇蔭。</p>
+
+      <div class="highlight">
+        <strong>無花果葉的神學隱喻</strong>
+        他們用無花果葉編裙遮蔽自己——這是人類歷史上第一次「用行為遮蓋罪咎」的嘗試。葉子會枯萎，正如一切自我努力終究無法真正消解罪帶來的羞恥。
+      </div>
+
+      <p>然後，神做了一件驚天動地的小事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「耶和華神為亞當和他妻子用皮子做衣服，給他們穿。」</p>
+        <p class="scripture-ref">創世記 三章 21節</p>
+      </div>
+
+      <p>皮子的製作，不可避免地意味著祭牲的死亡與流血。在歷史的黎明時刻，神已悄悄地在人類救贖的故事中埋下了那個原型：罪所帶來的羞恥與赤裸，無法靠受造物自身的行為遮蓋。唯有透過無辜生命的代替性犧牲，才能得到真正的遮蓋。</p>
+
+      <div class="big-quote">
+        那件獸皮衣服，是宇宙歷史中第一件救贖的預言——它預告了在各各他，一件用寶血編織的義袍。
+        <cite>— 創世記 三章 21節的救贖神學前瞻</cite>
+      </div>
+
+      <p>從伊甸的光衣，到各各他的義袍——神從未停止為祂破碎的形像提供真實的遮蓋。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">變像山上的劇透：你將來的樣子，比你想的還要美</h2>
+      <p class="card-hook">馬太福音十七章那道耀眼的光，不只是關於耶穌的神性——它是給全人類的一張「未來預告片」。</p>
+    </div>
+    <div class="card-body">
+
+      <p>過了六天，耶穌帶著三個門徒悄悄上了高山。然後——祂變了。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「就在他們面前變了形像，臉面明亮如太陽，衣裳潔白如光。」</p>
+        <p class="scripture-ref">馬太福音 十七章 2節</p>
+      </div>
+
+      <p>那道從耶穌內部向外湧出的光，不是舞台燈光，不是光源照射，而是那「非受造之光」——神性本質從人性肉身中的透顯。神學家稱之為 metamorphosis（變化），不是外在裝扮的改變，而是本質的顯現。</p>
+
+      <div class="highlight">
+        <strong>終末神學的視角</strong>
+        這一刻，基督所展現的，正是亞當在伊甸失去的，也是所有信靠祂的人在復活時將要得著的——以光為衣，以榮耀為質，身體徹底被神的生命所充滿。
+      </div>
+
+      <p>在那座山上，摩西（律法的代表）與以利亞（先知的代表）同時出現，與耶穌並立說話。父神的聲音從雲中宣告：「這是我的愛子，我所喜悅的。你們要聽祂！」——基督超越了舊約的一切中保，是所有救贖應許的最終指向。</p>
+
+      <p>那道光，是整個人類故事的縮影：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 起點：伊甸的光衣</span>
+          亞當夏娃被光的榮耀環繞，「能不犯罪」，與神坦然相交。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💔 破裂：光袍的剝落</span>
+          罪使榮光消散，羞恥與恐懼進入，人類陷入「不能不犯罪」的深淵。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🌿 恢復：義袍的遮蓋</span>
+          神以皮子衣服預示基督的代贖，信徒在成聖中逐漸更新，「能不犯罪」的自由漸漸恢復。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✨ 終點：榮光的歸還</span>
+          在復活與天國中，我們將「不能犯罪」，以光為衣，徹底回歸神的形像——甚至超越起初。
+        </div>
+      </div>
+
+      <p>變像山是神給整個人類的一張未來預告片。耶穌在那裡所顯現的樣子，就是你在復活之日將會擁有的樣子。</p>
+
+      <div class="big-quote">
+        你不是從榮耀走向滅亡。<br>你是從破碎走向比起初更輝煌的復歸。
+        <cite>— 終末救贖歷史的應許</cite>
+      </div>
+
+      <p>所以，當你下一次覺得自己微不足道、覺得罪咎太重、覺得生命毫無意義——請記得：</p>
+
+      <div class="highlight">
+        <strong>帶走這句話</strong>
+        你是神親手在這個世界設立的皇家代言人。你身上破碎的形像，正在被那位末後的亞當一點一點地修復。而有一天，當榮光完全歸還，連天使都會屏息仰望那個披戴神形像、以光為衣的你。
+      </div>
+
+      <p>這不是勵志口號，這是宇宙的起點與終點，由同一位神親口應許的故事——而你，就是這個故事的主角之一。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  Imago Dei 系列 · 亞當夏娃受造神學 · 從伊甸到終末的榮耀復歸
+</footer>
+
+</body>
+</html>
