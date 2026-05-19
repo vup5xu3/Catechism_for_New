@@ -149,19 +149,37 @@
         .section-intro p { color: var(--smoke); margin-top: 6px; font-size: 14px; }
 
         .post-card {
-            background: white;
-            margin-bottom: 10px;
-            padding: 18px 22px;
-            border-left: 5px solid var(--gold);
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            text-decoration: none;
-            color: var(--ink);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: 0.2s;
-        }
-        .post-card:hover { transform: translateX(4px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+			background: white;
+			margin-bottom: 10px;
+			padding: 18px 22px;
+			border-left: 5px solid var(--gold);
+			display: flex;
+			align-items: flex-start;
+			gap: 16px;
+			color: var(--ink);
+			box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+			transition: 0.2s;
+			cursor: default; /* 讓卡片預設為一般游標，方便選取文字 */
+			user-select: text; /* 強制啟動文字可選取功能 */
+			-webkit-user-select: text;
+		}
+		.post-card:hover { transform: translateX(4px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+		.post-more {
+			display: inline-block;
+			margin-top: 8px;
+			font-size: 11px;
+			border: 1px solid var(--gold);
+			color: var(--gold);
+			padding: 3px 10px;
+			padding: 3px 10px;
+			letter-spacing: 1px;
+			cursor: pointer; 
+			text-decoration: none;
+		}
+		.post-more:hover {
+			background: var(--gold);
+			color: white;
+		}
         .post-num {
             font-family: 'Cinzel', serif;
             font-weight: 700;
@@ -1743,16 +1761,16 @@
         if (!posts[key] || posts[key].length === 0) {
             list.innerHTML = '<p style="color:var(--smoke); padding:20px 0;">（此主題內容尚未建立）</p>';
         } else {
-            list.innerHTML = posts[key].map(p => `
-                <a href="${p.href}" class="post-card">
-                    <span class="post-num">${p.num}</span>
-                    <div class="post-body">
-                        <div class="post-title">${p.title}</div>
-                        ${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
-                        <span class="post-more">閱讀全文 →</span>
-                    </div>
-                </a>
-            `).join('');
+			list.innerHTML = posts[key].map(p => `
+				<div class="post-card">
+					<span class="post-num">${p.num}</span>
+					<div class="post-body">
+						<div class="post-title">${p.title}</div>
+						${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
+						<a href="${p.href}" class="post-more">閱讀全文 →</a>
+					</div>
+				</div>
+			`).join('');
         }
         document.getElementById('content-area').scrollTop = 0;
     }
