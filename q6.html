@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亞當的影子——墮落如何刻印在每個人身上</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">神學人類學系列 · Theological Anthropology</div>
+  <h1>亞當的<span>影子</span></h1>
+  <p class="subtitle">墮落如何刻印在每個人身上——從語源、歷史到宗派教義的完整追索</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">你有沒有想過，為什麼好人也會做壞事？</h2>
+      <p class="card-hook">不是因為你不夠努力——而是有什麼東西，早在你誕生之前就已經壞掉了</p>
+    </div>
+    <div class="card-body">
+      <p>我們都有過這樣的時刻：明明知道什麼是對的，卻還是做了錯的選擇。我們責怪自己意志力不夠強、環境太複雜、人太軟弱……但有沒有一種可能，這個問題比我們以為的更古老、更深層？</p>
+
+      <p>基督教神學給了一個令人震驚的答案：你我身上攜帶著一個比任何人的記憶都更久遠的「遺產」——那是一場發生在人類歷史最初的叛亂，而它的後果，至今仍寫在每一個人的生命結構裡。</p>
+
+      <div class="highlight">
+        <strong>這個系列要談的</strong>
+        不是要定罪任何人，也不是要讓你感到絕望。這是一趟追溯之旅——從一個古老花園裡的抉擇，一路走到羅馬書、走到奧古斯丁、走到不同宗派對「人究竟壞到什麼程度」的激烈爭論，最後回到一個問題：既然墮落如此深重，救贖又意味著什麼？
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「這就如罪是從一人入了世界，死又是從罪來的，於是死就臨到眾人，因為眾人都犯了罪。」</p>
+        <p class="scripture-ref">羅馬書 五章12節</p>
+      </div>
+
+      <p>短短一節經文，藏著將近兩千年的神學爭議。「因為眾人都犯了罪」——這句話是什麼意思？我們是「在亞當裡」一起犯了罪？還是因為繼承了他的破壞，才各自犯罪？這個翻譯問題，至今仍讓東方教會與西方教會站在對立的兩端。</p>
+
+      <p>讓我們從頭說起。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">泥土、土地與一個雙關語：創世記的隱藏密碼</h2>
+      <p class="card-hook">希伯來文作者在「亞當」這個名字裡，已經寫好了他的命運</p>
+    </div>
+    <div class="card-body">
+      <p>要理解墮落，必須先理解創世記原文的文學語言。這部古代文獻的作者，用了一套精心設計的文字遊戲，把人類的本質與命運全都藏在名字裡。</p>
+
+      <span class="depth-label deep-tag">📖 語源學層次</span>
+
+      <div class="term-box">
+        <div class="term-original">'Adam<br>אָדָם</div>
+        <div class="term-desc">原文並非個人名字，而是帶定冠詞的「那人類」（ha-'adam）。它與「土地、塵土」（'adamah，阿達瑪）構成精妙的雙關——人類是「泥土做的受造物」，與土地命運相連。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">'Adamah<br>אֲדָמָה</div>
+        <div class="term-desc">土地、大地。墮落後，上帝的咒詛落在「阿達瑪」身上——「地必因你的緣故受咒詛」。人類的罪，直接污染了他所立足的物理宇宙。</div>
+      </div>
+
+      <p>就像英語中「人類」（human）和「土壤」（humus）同源一樣，「亞當」與「阿達瑪」的呼應，奠定了人與受造界的本體論連結：人類的狀態，牽動整個自然的狀態。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        想像你是一棵樹，而土地是你的根系。樹病了，土地也病了；土地毒了，樹也毒了。創世記用「亞當」與「阿達瑪」的雙關，告訴我們：人類的墮落，不是一個孤立的道德事件，而是整個受造秩序的生態災難。
+      </div>
+
+      <p>上帝最初給人類的呼召是「耕作」（'avad）與「看守」（shamar）這個花園。值得注意的是，'avad 在希伯來文裡不只是「勞動」，它同時也是「服侍」與「敬拜」的意思。人類最初的工作，本身就是一種敬拜。</p>
+
+      <p>而當亞當失職的那一刻，整個系統都改變了。土地從此長出荊棘，勞動從喜樂變成了汗流滿面的掙扎，人最終歸回他所自出的塵土。這種「生存環境的異化」，成了後世所有人在焦慮、匱乏與死亡陰影下持續犯罪的宏觀背景。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「地必因你的緣故受咒詛；你必終身勞苦，才能從地裡得吃的。」</p>
+        <p class="scripture-ref">創世記 三章17節</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">罪，不只是「做錯事」——聖經原文給你的七個維度</h2>
+      <p class="card-hook">希伯來文與希臘文的作者，用截然不同的詞彙，描繪了一個比我們想像更複雜的墮落圖景</p>
+    </div>
+    <div class="card-body">
+      <p>當我們說「犯罪」，我們腦海中浮現的是什麼？違法行為？道德過失？但聖經原文對「罪」的描述，遠比這豐富得多。古代作者用一整套字彙群，從不同角度刻畫了墮落對人類的全面破壞。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🎯 Ḥaṭṭā'āh（חָטָא）— 偏離靶心</span>
+          字面意義是「射手未能擊中目標」。人因墮落而失去了「反照神聖榮耀」的受造目的——這正是羅馬書三章23節「虧缺了神的榮耀」的原文意象。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🌀 'Āvôn（עָוֹן）— 內在的彎曲</span>
+          扭曲、偏邪。墮落對人類良知進行了「彎曲性重塑」，使人的本能不再自然傾向善，而是傾向惡——這不是行為問題，而是本性結構問題。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚔️ Pesha'（פֶּשַׁע）— 主動的叛亂</span>
+          背叛、毀約。墮落不僅是道德失誤，更是對神聖主權的主動抵抗——人拒絕了自己「受造物」的身份，想要「如神一樣」自己定義善惡。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">⚖️ Hamartia（ἁμαρτία）— 宇宙性的力量</span>
+          新約保羅筆下，Hamartia（罪）以單數人格化出現，是一個「在世上作王、奴役人類、以死亡為武器」的宇宙性暴政。罪不只是行為，而是一種權勢。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">👂 Parakoē（παρακοή）— 聽而不聞</span>
+          不注意、疏忽。羅馬書五章19節用這個字描述人的墮落根源：不是主動的惡意，而是「不留心傾聽神的聲音」，進而演變為公開的悖逆。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>關鍵洞見</strong>
+        這些字彙揭示了一件重要的事：亞當犯罪傳遞給後代的，不只是「一個壞榜樣」，而是一種帶有實質污染能力的「罪之本性與權勢」（Hamartia）。在這個狀態下誕生的每個人，道德感官從一開始就處於本質性的扭曲中（'Āvôn），因此不可避免地犯下屬於自己的實際罪愆。
+      </div>
+
+      <div class="big-quote">
+        墮落不是讓人「容易犯罪」——它讓人「無法不犯罪」
+        <cite>— 改革宗神學的核心命題</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">四個希臘字，兩千年的爭議：羅馬書五章12節的翻譯戰爭</h2>
+      <p class="card-hook">「eph' hō pantes hēmarton」——這短短四個字，讓東西方教會分道揚鑣</p>
+    </div>
+    <div class="card-body">
+      <p>羅馬書五章12節的最後幾個希臘字，是整個原罪神學最關鍵、也最有爭議的語言戰場。那四個字是：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「ἐφ' ᾧ πάντες ἥμαρτον」<br>eph' hō pantes hēmarton</p>
+        <p class="scripture-ref">羅馬書 五章12節 · 希臘原文</p>
+      </div>
+
+      <p>這句話怎麼翻？翻譯的選擇，徹底決定了你對「原罪」的神學立場。</p>
+
+      <span class="depth-label deep-tag">📖 東西方的翻譯分歧</span>
+
+      <div class="term-box">
+        <div class="term-original">西方<br>武加大</div>
+        <div class="term-desc">哲羅姆將希臘文 eph' hō 翻成拉丁文「in quo」——「在其中」，先行詞指向「亞當」。奧古斯丁讀這個版本，得出結論：全人類「在亞當裡面」共同犯了罪，因此繼承了他的罪疚與定罪。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">東方<br>希臘教父</div>
+        <div class="term-desc">eph' hō 在希臘文中是標準的因果連接詞，等同於「因為」（dioti）。正確翻譯應為：「死就臨到眾人，因為眾人都犯了罪」——每個人為自己的罪負責，繼承的是死亡，不是罪疚。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>第三種可能</strong>
+        部分學者（如菲茨邁爾）指出，eph' hō 的先行詞或許應指向前文的「死亡」（thanatos），而非亞當。意思變成：「死傳給了眾人，因著這[死亡的統治]，眾人都犯了罪」——人是在死亡的奴役與生存焦慮下，不斷犯罪的。
+      </div>
+
+      <span class="depth-label plain-tag">💡 這個翻譯差異為什麼重要？</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        如果是「在亞當裡犯了罪」：你一出生就已經「被定罪」了，帶著法律罪疚，好像繼承了一筆債。這是西方教會、奧古斯丁、改革宗的立場。<br><br>
+        如果是「因為眾人都犯了罪」：你繼承的是一種脆弱與損壞的本性，在那個環境下，你自然會犯罪——但你只為自己的罪負責。這是東方正教會的立場。
+      </div>
+
+      <p>一個翻譯選擇，導出了截然不同的神學世界：一個強調法庭定罪，另一個強調存在治療。兩者都在聖經文本裡找到支撐，也都面對各自難以解決的困境。</p>
+
+      <div class="big-quote">
+        神學的爭議，往往藏在最小的語法細節裡
+        <cite>— 歷史釋經學的提醒</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">四個宗派，四種人類觀：你到底「壞」到什麼程度？</h2>
+      <p class="card-hook">東正教說你生病了；天主教說你失去了聖潔；改革宗說你死了；阿米念說有恩典先來解鎖你</p>
+    </div>
+    <div class="card-body">
+      <p>基督教的不同宗派，對墮落的「嚴重程度」有非常不同的估計。這不只是學術辯論——它直接決定了你如何理解救恩、自由意志、以及神人關係的本質。</p>
+
+      <span class="depth-label deep-tag">📖 四大宗派的墮落觀</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r3">
+          <span class="ring-label">☦️ 東方正統教會 — 祖先之罪（Ancestral Sin）</span>
+          你繼承的是死亡、腐壞與存在焦慮，不是亞當的個人罪疚。上帝形象受損但未被摧毀，仍保有行善能力。救贖目標是「神化」（theosis）——與神性生命聯合，克服死亡。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✝️ 羅馬天主教 — 本性削弱（Natura Vulnerata）</span>
+          失去原始聖潔與公義，但本性未被「徹底敗壞」。洗禮除去罪疚，但「私慾偏向」（concupiscence）作為道德磨練殘留。人仍可與恩典合作。
+        </div>
+        <div class="concentric-ring r1">
+          <span class="ring-label">⛪ 改革宗（威斯敏斯特信條）— 完全敗壞（Total Depravity）</span>
+          靈魂與身體的所有功能均被徹底污染，處於「屬靈死亡」狀態。意志在屬靈事上「完全不願意、無能力、且反對一切善」。唯有主權重生才能改變。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🕊️ 衛斯理－阿米念派 — 先前恩典（Prevenient Grace）</span>
+          同意完全敗壞，但聖靈藉著「先前恩典」普遍介入，中和原罪的絕對遮蔽，賦予意志「超自然開啟的能力」去回應或拒絕福音。恩典可被抗拒。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 兩種代表權模型</span>
+
+      <p>除了宗派之爭，神學家還面臨另一個形上學問題：上帝憑什麼讓「一個人的罪」牽連所有人？這催生了兩種人類學理論：</p>
+
+      <div class="highlight">
+        <strong>聯邦首領制（Federal Headship）</strong>
+        亞當是上帝主權「指定」的全人類代表——就像民主選出的領袖，其決定的後果由全體承擔。靈魂是上帝直接創造的，但在法律層面被歸入亞當的罪疚賬上。優點：解釋了基督作為「第二亞當」的完美對稱性。
+      </div>
+
+      <div class="highlight">
+        <strong>寫實首領制（Realistic Headship）</strong>
+        全人類的靈魂在亞當之內「實質臨在」——因為我們從他而來，我們真實地「在他裡面」共同犯了那樁罪。靈魂透過父母傳遞（靈魂傳殖論）。優點：解釋了「在基督裡」的深度屬靈聯合。難題：如何解釋無罪的耶穌？
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧬</span>
+        這場爭論的背後，是哲學史上「實在論」與「唯名論」的千年之戰。中世紀的實在論者相信「人類共同本性」是一個客觀真實的精神實體，因此寫實首領制很自然；而唯名論興起後，個體才是真實的，「全人類在亞當裡」就只能是法律約定，聯邦首領制於是誕生。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 終章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">陰影有多深，光就有多亮</h2>
+      <p class="card-hook">墮落的故事，從來不是為了讓你絕望——它是為了讓你明白，救恩有多大</p>
+    </div>
+    <div class="card-body">
+      <p>我們走過了很長的路：從伊甸園裡「亞當」與「阿達瑪」的雙關，到希伯來文的七個罪字彙，到希臘文四個字引發的千年爭議，再到東正教、天主教、改革宗與阿米念派各自不同的人類觀。</p>
+
+      <p>這麼多爭論，這麼多分歧。但有一件事，所有宗派都同意：</p>
+
+      <div class="highlight">
+        <strong>共同的結論</strong>
+        亞當的首次悖逆，徹底打破了完美的受造秩序，並在全人類的生命中植入了一種持續運行的「罪之權勢與疾病」。無論你稱它為遺傳罪疚、本性損傷或存在腐壞——它是真實的，它影響每一個人。「世人都犯了罪，虧缺了上帝的榮耀。」（羅三：23）
+      </div>
+
+      <p>但這不是故事的終點。保羅在羅馬書五章建立的，是一個精心設計的「對稱」結構——他把亞當與基督並排放在一起，不是為了讓你看到絕望，而是為了讓你看到：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「……但神的恩賜，不如過犯那樣；因一人的過犯，眾人都死了；何況神的恩典，並那因耶穌基督一人恩典中的賞賜，豈不更加倍地臨到眾人嗎？」</p>
+        <p class="scripture-ref">羅馬書 五章15節</p>
+      </div>
+
+      <p>注意那個「豈不更加倍」。保羅沒有說救恩與墮落「剛好持平」，他說救恩「更豐盛地溢出」。第二亞當所帶來的，超越了第一亞當所破壞的。</p>
+
+      <div class="big-quote">
+        墮落的嚴重程度，只有在十字架的光芒下，才能被清晰地辨認——也才能被真正地承受
+        <cite>— 本系列的核心命題</cite>
+      </div>
+
+      <p>所以，我們為什麼要花這麼多力氣理解原罪？不是為了讓人感到被定罪。而是因為：一個對自己處境沒有誠實認識的人，無法真正欣賞救恩的重量。</p>
+
+      <p>你不是偶爾失誤的好人。你是一個被更深的破壞所影響的受造物——而正是這樣的你，被一位決定「豈不更加倍」地愛你的上帝所尋找。</p>
+
+      <div class="highlight">
+        <strong>帶走一個問題</strong>
+        你對自己「壞」到什麼程度，有誠實的認識嗎？而這個認識，有沒有讓你更深地欣賞——你被愛的這件事？
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  亞當的影子 · 神學人類學系列 · 六章連貫
+</footer>
+
+</body>
+</html>
