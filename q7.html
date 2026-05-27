@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>靈魂的診斷書 — 聖經中「罪」的原文考據 Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">原文考據 · Biblical Word Studies</div>
+  <h1>靈魂的<span>診斷書</span></h1>
+  <p class="subtitle">聖經中「罪」的希伯來與希臘原文語意考據 · 六章連貫長文</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">當我第一次讀懂這個字，我哭了</h2>
+      <p class="card-hook">你以為自己懂「罪」——直到你看見原文裡那個破碎的靶心</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我想先說一件私事。</p>
+
+      <p>多年前，我是那種在教會裡認真做筆記的人。講道說「人人都有罪」，我點頭。讀羅馬書說「虧缺了神的榮耀」，我也點頭。但說實話，那個「罪」字對我而言，一直像是一張貼在人身上的標籤——冰冷的、法律的、讓人感到羞恥的。</p>
+
+      <p>直到有一天，一位老師帶著我看希臘文原文。他說：「你知道新約最常用的『罪』字，字面上是什麼意思嗎？」</p>
+
+      <div class="highlight">
+        <strong>那個字是</strong>
+        Hamartia（ἁμαρτία）——「射箭未能擊中靶心」。不是壞人、不是囚犯，而是一個射手，拉滿了弓，用盡全力，箭卻飛向了錯誤的方向。
+      </div>
+
+      <p>我愣了很久。因為那個畫面，說的就是我。我努力過日子，認真扮演好每個角色，卻隱隱有種感覺：生命在最重要的地方，好像一直沒射中什麼。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為世人都犯了罪，虧缺了神的榮耀。」</p>
+        <p class="scripture-ref">羅馬書 三章23節</p>
+      </div>
+
+      <p>「虧缺了神的榮耀」——原文正是 hamartia 的動詞形式。不是「被抓到做壞事」，而是「沒有抵達那個最美麗的目的地」。那個你本來應該成為的樣子，那個上帝設計你去成為的樣子，你射出的箭始終落在旁邊。</p>
+
+      <p>這篇系列文章，我想帶你走一趟我走過的那條路：從希伯來文到希臘文，從舊約到新約，從原文詞彙到今天的生命。不是學術報告，是一個人在語言的廢墟裡，看見一幅完整的人類靈魂地圖。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎯</span>
+        聖經談論「罪」，從來不是要讓你抬不起頭。它更像一份精準的醫療診斷——不是為了定罪，而是為了讓你終於知道哪裡病了，才能找對醫生。
+      </div>
+
+      <p>接下來的六章，我們會一起看見：罪，不只是一個字，而是三種方向的靈魂失落。而三種失落，都有一個對應的修復。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">你誤解「罪」多久了？</h2>
+      <p class="card-hook">我們都用了錯誤的鏡頭在看這個字——法庭的、羞恥的、宗教管理的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>在我們深入原文之前，需要先拆除一道牆。</p>
+
+      <p>這道牆叫做：「罪 = 做壞事 + 被神懲罰」。</p>
+
+      <p>這個理解不是完全錯，但它只截取了整幅畫的一個角落，然後把那個角落當成全部。結果造就了幾種常見的誤解——</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🤔 誤解一：「我沒犯大罪，所以罪不到我」</span>
+          把罪縮小成「刑事犯罪清單」，只要不在名單上就覺得無關。但聖經原文說的是：只要生命箭頭對準了錯的方向，就是脫靶。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">😔 誤解二：「認罪就是不斷地羞愧自己」</span>
+          把罪的對話變成自我懲罰的無限迴圈，以為愈羞愧神愈喜悅。但聖經從來沒有說「愧疚感本身能洗淨什麼」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🙄 誤解三：「罪只是宗教管理人的工具」</span>
+          認為「罪」這個概念是教會為了控制信徒而發明的恐嚇話術。這個誤解讓人乾脆拒絕整套討論。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌀 誤解四：「罪只要改掉壞習慣就好了」</span>
+          把屬靈的根本問題當成行為管理問題，以為憑意志力就能解決，結果永遠在表面打轉。
+        </div>
+      </div>
+
+      <p>這些誤解的共同點，是把「罪」完全拉入了一個世俗的道德框架——就像用刑法的眼鏡去看一份心臟病報告，每個字都認識，卻完全看不懂它在說什麼。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡不出於信心的都是罪。」</p>
+        <p class="scripture-ref">羅馬書 十四章23節</p>
+      </div>
+
+      <p>這節經文讓人頭痛。一個完全不去「犯壞事」的人，保羅卻說「不出於信心的都是罪」？這怎麼可能與常識對話？</p>
+
+      <p>只有當你開始從原文角度理解「罪」的多層定義，這節經文才會突然發出巨大的光——它說的不是行為清單，而是關係方向：你是否在每一個決定中，把目光轉向上帝、信任祂的帶領？</p>
+
+      <div class="highlight">
+        <strong>引導進入的關鍵問題</strong>
+        如果「罪」不只是「做壞事」，而是「靈魂的偏離方向」——那你現在的生命，是朝向什麼在射箭？
+      </div>
+
+      <p>帶著這個問題，我們進入原文的世界。先從古老的希伯來文開始，因為罪的故事，最早是在那裡被說出口的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Breaking Ground · 破題</div>
+      <h2 class="card-title">三個希伯來字，三種靈魂的失落方式</h2>
+      <p class="card-hook">舊約用不同的字說「罪」，因為它知道罪有不同的臉孔</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>希伯來文對於「罪」有極其精密的詞彙系統。古代以色列人不用一個字囊括一切，他們用至少三個核心詞彙，從三個不同的角度描述人類靈魂的狀態。</p>
+
+      <span class="depth-label deep-tag">📖 原文層次</span>
+
+      <div class="term-box">
+        <div class="term-original">חָטָא<br>Chata</div>
+        <div class="term-desc"><strong>射箭脫靶、走路偏向</strong>——在士師記二十章16節，這字被用來形容「毫髮不差的精準射手」，原文寫的是「不 Chata 的人」。因此「罪」就是：在人神關係中，未能命中上帝所設立的那個目標——愛與信任。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">עָוֹן<br>Avon</div>
+        <div class="term-desc"><strong>彎曲、扭曲、使之歪斜</strong>——字根形容原本筆直的物體被外力壓歪的狀態。在聖經中，它指的不是某一個具體的罪行（果），而是人內在那產生所有罪行的根性扭曲，靈魂的「脊椎側彎」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">פֶּשַׁע<br>Pesha</div>
+        <div class="term-desc"><strong>背叛、反叛、故意決裂</strong>——在古代近東外交語境中，這字用於臣屬國刻意背棄宗主盟約的政治背叛。移用至屬靈層面，它描述的是人明知上帝的主權，卻仍出於驕傲，刻意舉起反叛之拳。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 生活化解讀</span>
+
+      <p>用一個畫面感知這三個層次的差異：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎯</span>
+        <strong>Chata（脫靶）：</strong>一個射手，方向就是錯的。他可能不是故意的，他可能很努力，但生命的箭就是沒有飛向那個最重要的目標——愛神愛人。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🦴</span>
+        <strong>Avon（歪曲）：</strong>那個射手的脊椎天生側彎。不只這一次射偏，而是他的站姿、他的構造，讓他射出的每一支箭都自然地往錯的方向偏。這是人的罪性，不只是罪行。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✊</span>
+        <strong>Pesha（叛逆）：</strong>那個射手轉過身來，對著靶心做了一個蔑視的手勢，然後刻意把箭射向反方向。他不是不知道，他就是要反抗。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「哪知他為我們的過犯（Pesha）受害，為我們的罪孽（Avon）壓傷。」</p>
+        <p class="scripture-ref">以賽亞書 五十三章5節</p>
+      </div>
+
+      <p>注意這節預言性的詩歌：兩個不同的詞出現在同一節裡。彌賽亞的受苦，不只是為了一種罪，而是為了人類所有層次的罪性——包括你刻意的背叛（Pesha），也包括你靈魂深處那歪曲的根（Avon）。</p>
+
+      <p>舊約的語言如此精準，是因為它要我們看清楚：問題有多深，救贖就有多深。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">新約希臘文的罪：五把解剖刀</h2>
+      <p class="card-hook">從 Hamartia 到 Anomia——每個字都是一把手術刀，切向人類靈魂的不同層次</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>當聖經進入希臘文新約的世界，描述「罪」的詞彙反而更豐富了。這是因為新約站在更完整的神學視野上，需要更精準地診斷人類的問題，以彰顯基督救贖的立體廣度。</p>
+
+      <span class="depth-label deep-tag">📖 新約五個核心詞彙</span>
+
+      <div class="term-box">
+        <div class="term-original">ἁμαρτία<br>Hamartia</div>
+        <div class="term-desc">構詞：否定前綴「α-」＋「μέρος（份額、應得的基業）」。字面：射箭未中靶。神學：因偏離上帝設立的愛（Agape）這個目標，而失去了作為神形象承載者應得的生命豐盛與基業。這是新約中「罪」最常見的用字。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀνομία<br>Anomia</div>
+        <div class="term-desc">構詞：「α-（無）」＋「νόμος（律法、秩序）」。字面：無法無天。神學：不是偶然的犯錯，而是企圖推翻神聖秩序、自立為王的生命模式。約翰一書三章4節用此字：「違背律法就是罪」——說的是系統性的對抗，而非一時失足。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">παράβασις<br>Parabasis</div>
+        <div class="term-desc">構詞：「παρα-（越過）」＋「βαίνω（行走）」。字面：踩線、越界。神學：上帝已清楚劃定神聖界限，人卻明知故犯地踩線。這是空間與主權上的故意侵佔，強調人的知情罪責。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">παράπτωμα<br>Paraptōma</div>
+        <div class="term-desc">構詞：「παρα-（偏離）」＋「πίπτω（跌倒）」。字面：滑倒、失足。神學：因一時軟弱、不警醒或外界誘惑而偏離，與蓄意犯罪不同。加拉太書六章1節：「若有人偶然被過犯（Paraptōma）所勝……」——語氣溫柔，承認信徒仍可能失足。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀσέβεια<br>Asebeia</div>
+        <div class="term-desc">構詞：「α-（無）」＋「σέβομαι（敬虔、尊崇）」。字面：不虔敬。神學：剝奪創造主理應獲得的最高尊崇，在生命中完全排除上帝。羅馬書一章18節：「阻擋真理的不虔（Asebeia）不義」——這是一切罪的靈性根源。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 整合理解</span>
+
+      <p>把五個字放在一起，你會看到一幅完整的人類罪性地圖：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🎯 Hamartia — 方向性的失落</span>
+          生命射出的箭，偏離了愛與榮耀的靶心
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✊ Anomia — 系統性的對抗</span>
+          刻意活在無法無天的生命模式中，拒絕神聖秩序
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🚧 Parabasis — 知情的越界</span>
+          明知界限，仍然踩線，強調個人責任
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌀 Paraptōma — 軟弱的失足</span>
+          非故意的偶然跌倒，恩典覆蓋的空間在此
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🌑 Asebeia — 根源性的排除神</span>
+          在生命深處完全移除對創造主的敬畏，萬惡之根
+        </div>
+      </div>
+
+      <p>這五把解剖刀並非互相重複——它們各自切入罪性的不同面向。一個人可能沒有明顯的 Anomia（無法無天），卻深陷 Asebeia（生命中完全沒有上帝的位置）。一個真誠的基督徒可能偶爾有 Paraptōma（失足），但這和以 Anomia 為生活方式，是截然不同的靈性狀態。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們若說自己無罪，便是自欺，真理不在我們心裡了。」</p>
+        <p class="scripture-ref">約翰一書 一章8節</p>
+      </div>
+
+      <p>新約研究「罪」的目的，從來不是要把人踩在地上。它的目的是讓人看清楚，那個唯一配得上拯救全維度罪性的救贖，究竟有多深廣、多立體。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">原罪、本罪與成聖：一個神學方程式</h2>
+      <p class="card-hook">人不是因為「做了壞事」才成為罪人，而是因為「本質是罪人」才做出罪行——這個差異，改變一切</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走到這一章，我們需要面對一個神學核心的張力：如果人類的罪性是一種根本性的存在扭曲（Avon），那麼個人責任去哪了？難道可以說「我天生就歪，所以我做的一切都不算我的錯」？</p>
+
+      <span class="depth-label deep-tag">📖 雙重罪論的神學結構</span>
+
+      <div class="highlight">
+        <strong>核心框架</strong>
+        正統神學嚴格區分「原罪」（Original Sin）與「本罪」（Actual Sin）。兩者的關係可以用一個函數表達：<br><br>
+        本罪（具體罪行）= f（原罪（內在罪性）× 個人意志的抉擇）
+      </div>
+
+      <p><strong>原罪（以 Avon 為代表）：</strong>自亞當代表全人類在伊甸墮落起，罪便作為一種存在性的律進入了人類的歷史血脈（羅馬書五章12節）。這就是靈魂的「脊椎側彎」——人不是因為犯了罪才成為罪人，而是因為本質是罪人，才源源不斷地產生罪行。</p>
+
+      <p><strong>本罪（以 Parabasis 與 Pesha 為代表）：</strong>這是內在罪性在外在行為上的顯露，可分為「主動性的罪」（Sins of Commission，如故意踩越聖潔界限）與「消極性的罪」（Sins of Omission，如明知應行善卻因冷漠不行）。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「人若知道行善，卻不去行，這就是他的罪了。」</p>
+        <p class="scripture-ref">雅各書 四章17節</p>
+      </div>
+
+      <p>這節經文揭示了「消極性的罪」——不去做應做之善，本身就是罪。這徹底打破了「只要不做壞事就行了」的消極倫理學。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 約翰一書的成聖神學與文法釋經</span>
+
+      <p>使徒約翰在約翰一書三章4至10節提出了一個嚴峻的信仰測試，歷來引發神學爭議：「凡從神生的，就不犯罪……他也不能犯罪。」（約翰一書三章9節）——難道重生之人真的不再犯罪？</p>
+
+      <div class="highlight">
+        <strong>希臘文文法解謎</strong>
+        此處「犯罪」（hamartanōn）採用「現在時恆態分詞」（Present Participle）。在希臘文語法中，現在時態指的是「持續不斷、習慣性、作為固定生活模式」的行為——不是偶發事件，而是生活方式。約翰說的是：重生之人的生命方向，不可能是持續性地以犯罪為常態。
+      </div>
+
+      <p>這個文法洞見，讓我們在兩個極端之間找到聖經的平衡點：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        上帝的種子（Sperma）被植入重生信徒的靈魂，產生一種屬靈的排異反應：對罪的厭惡與抵擋。信徒仍可能因肉體軟弱「偶然失足（Paraptōma）」，但其靈魂絕不甘心與罪同流合污。每一次失足都引發悔改，而非無動於衷地繼續。
+      </div>
+
+      <p>這段神學的論戰對象，是當時教會中的早期諾斯底主義者——他們主張靈肉二元，宣稱即使肉身習慣性縱慾，靈魂仍可保持聖潔。約翰的回應是致命的一擊：生命模式說明了靈性狀態的真相。</p>
+
+      <div class="big-quote">
+        罪的中心，乃是心中的罪。
+        <cite>— 十七世紀清教徒神學家</cite>
+      </div>
+
+      <p>深論的終點，是一個讓人震撼的領悟：人類的問題不是行為矯正問題，而是存在重塑問題。這解釋了為什麼一切世俗的解決方案——法律、教育、心理輔導、生物進化——都只能在表面移動症狀，卻無法觸碰那個在靈魂最深處彎曲的 Avon。</p>
+
+      <p>唯有那個承諾「我要賜給你們新心，將新靈放在你們裡面」的神，才能真正解決靈魂的硬體問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Conclusion · 結論與溫馨</div>
+      <h2 class="card-title">彌賽亞的三個擁抱：每一種破碎都有名字</h2>
+      <p class="card-hook">祂不只是付了你的罰單——祂為你每一種層次的失落，都親自俯下了身</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走完這五章的原文考據，我們現在可以回到那節最熟悉、也最容易被讀得太快的預言：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「哪知他為我們的過犯（Pesha）受害，為我們的罪孽（Avon）壓傷。因他受的刑罰，我們得平安；因他受的鞭傷，我們得醫治。」</p>
+        <p class="scripture-ref">以賽亞書 五十三章5節</p>
+      </div>
+
+      <p>現在你看見了嗎？先知以賽亞在這短短一節裡，用了兩個不同的希伯來文字。這不是詩歌的重複，這是精準的神學陳述：彌賽亞的救贖，是立體的、多層次的、為每一種罪而設計的。</p>
+
+      <div class="highlight">
+        <strong>三層救贖的對應</strong>
+        彌賽亞為三個維度的罪性做了對應的承擔——每一個原文字背後的破碎，都有祂的傷痛去覆蓋。
+      </div>
+
+      <p><strong>為 Pesha（故意的反叛）：</strong>祂「為我們的過犯受害」。在那個最黑暗的時刻，當人類高舉反叛之拳，祂以極致的順服與沉默，默默承受了人神決裂的痛苦。罪的代價不是被抹去，而是被轉移——轉移到一個配得上承受它的人身上。</p>
+
+      <p><strong>為 Avon（存在性的歪曲）：</strong>祂「為我們的罪孽壓傷」。不只是法庭上的宣告無罪，而是靈魂結構的重造。祂在十字架上被完全壓碎，使信徒腐敗的舊生命與祂同釘死，再藉由復活注入嶄新的生命性質。</p>
+
+      <p><strong>為 Chata（關係性的脫靶）：</strong>受苦僕人「擔當了多人的罪（Chata'ah）」——原文動詞「擔當」（Nasa，נָשָׂא）的字面意思，是「親自俯身、將重擔扛在肩上、徹底挪移並運走」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏔️</span>
+        這不是法官在法庭上簽了一份無罪釋放的文件。這是一個人俯下身，把你那堆積如山的生命殘局——所有脫靶的年月、彎曲的性情、反叛的紀錄——全部扛在自己的肩膀上，然後走向十字架。
+      </div>
+
+      <div class="big-quote">
+        你不是一個案號。你是一個被祂認識名字的人，而祂為你每一種層次的破碎，都彎下了腰。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>走到最後，我想說一件很溫柔的事。</p>
+
+      <p>這六章的原文研究，不是為了讓你感到更沉重。恰恰相反——當你真正理解「罪」有多精確、多立體，你才能開始理解救贖有多精確、多立體。</p>
+
+      <p>你的脫靶（Hamartia），對應的是一位重新給你校準靶心的神。</p>
+
+      <p>你的靈魂歪曲（Avon），對應的是一位把新心放在你裡面的神。</p>
+
+      <p>你的反叛拳頭（Pesha），對應的是一位以沉默之愛把你拉回懷裡的神。</p>
+
+      <div class="highlight">
+        <strong>帶走這一句話</strong>
+        聖經中描述「罪」的每一個原文字，同時也是一扇門——走進去，你會發現那個字的背面，有一個對應形狀的恩典在等你。
+      </div>
+
+      <p>如果你今天帶著某種說不清楚的「生命方向感的缺失」讀完了這篇系列，我想邀請你做一件事：不是感到羞愧，而是帶著這份對自己更誠實的認識，回去和那位設計你的神說話。</p>
+
+      <p>祂早就知道你所有的名字。祂只是在等你也知道。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  靈魂的診斷書 · Biblical Word Studies on Sin · 六章完
+</footer>
+
+</body>
+</html>

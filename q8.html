@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最大的罪 — 罪、愛與救贖 Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">罪、愛與救贖 · Sin, Love & Redemption</div>
+  <h1>最大的<span>罪</span></h1>
+  <p class="subtitle">從脫靶到歸心——聖約與原文字詞的靈魂解剖</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我們都曾射偏過——一個關於靶心的故事</h2>
+      <p class="card-hook">在我們開口談「罪」之前，先說一個弓箭手的故事</p>
+    </div>
+    <div class="card-body">
+      <p>如果你聽到「罪」這個字，腦海中浮現的是什麼？是新聞頭條裡的刑事案件？是讓你自責多年的某個決定？還是某位道貌岸然的人對你說過的指責？</p>
+
+      <p>我第一次認真思考這個字的時候，也覺得它很重、很遠、很不好意思開口。但後來我在一個意外的地方找到了突破口——古希臘的軍事術語。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏹</span>
+        新約聖經中，「罪」的希臘文原文叫做 Hamartia。這個字最早出現在古希臘軍事記錄中，意思非常簡單：投擲長槍時「沒有打中靶心」。不是道德崩潰，不是萬劫不復——就只是，偏了。
+      </div>
+
+      <p>我覺得這個畫面很誠實。人生不就是這樣嗎？我們拿起弓，努力地瞄準，但不知道為什麼，箭就是飛歪了。有時候是一個傷害了朋友的決定，有時候是在最重要的關係裡缺席，有時候只是隱隱覺得，這一切努力好像少了什麼核心的東西。</p>
+
+      <div class="highlight">
+        <strong>本系列的起點</strong>
+        這六篇文章，不是要讓你更有罪惡感。而是想帶你看見，聖經對「罪」的理解，遠比我們習慣的版本更有深度、更有同理心——也因此，救贖更讓人心動。
+      </div>
+
+      <p>我想從語言開始說起，因為字詞是思想的地圖。當我們讀懂了那些希伯來文與希臘文字根的本來面目，一整幅關於人性、關係與盼望的壁畫，就會慢慢顯影。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你要盡心、盡性、盡意愛主——你的神。這是誡命中的第一，且是最大的。」</p>
+        <p class="scripture-ref">馬太福音 22:37-38</p>
+      </div>
+
+      <p>我們從最大的誡命開始——因為違背最大的誡命，就是最大的罪。而這條誡命究竟在說什麼，我們可能比自己以為的更陌生。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">你真的知道「罪」是什麼嗎？</h2>
+      <p class="card-hook">在進入答案之前，我們需要先解構三個你以為你懂、但其實不懂的字</p>
+    </div>
+    <div class="card-body">
+      <p>讓我問你三個問題，請誠實回答自己：</p>
+
+      <p>你有沒有在幫助別人的同時，心裡悄悄期待對方感謝你？你有沒有在虔誠敬拜時，其實更在乎自己的感受好不好？你有沒有在努力當個好人的過程中，發現那個「好人」形象對你來說比神本身更重要？</p>
+
+      <div class="highlight">
+        <strong>一個關鍵問題</strong>
+        如果答案有任何一個是「是」，那你就已經站在了聖經所描述的「最大的罪」的門檻上——而且不是少數人才這樣，是所有人。
+      </div>
+
+      <p>舊約聖經用三個不同的希伯來文字，精準地解剖了「罪」這件事的立體結構。它們不是同義詞，而是三個不同的病理層次：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">חָטָא Chata — 偏差（行為層）</span>
+          就像牧人走出了上帝劃定的界線路徑，侵入鄰舍的地界。人類在行動上偏離了神的榮耀標竿。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">פֶּשַׁע Pesha — 叛逆（意志層）</span>
+          源自古代盟約政治中藩屬國蓄意撕毀與宗主國的條約。這是明知故犯的主權叛亂，是對上帝舉起拳頭說「我不服」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">עָוֹן Avon — 畸形（本質層）</span>
+          意思是「彎曲的道路」或「扭曲的器皿」。這不只是做了壞事，而是人性內部結構本身已經彎曲，使人本能地喜愛不直的事。
+        </div>
+      </div>
+
+      <p>這三層架構告訴我們：罪不只是某個時刻的失誤（Chata），不只是某次的決定性背叛（Pesha），而是一種深入人性骨髓的結構性扭曲（Avon）。就像一棵從小就長歪的樹，你可以修剪枝葉，但根部的方向早已偏移。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「哪知他為我們的過犯受害，為我們的罪孽壓傷。因他受的刑罰，我們得平安；因他受的鞭傷，我們得醫治。」</p>
+        <p class="scripture-ref">以賽亞書 53:5</p>
+      </div>
+
+      <p>注意這節經文——先知以賽亞在這裡同時使用了 Pesha（過犯）和 Avon（罪孽）這兩個字。彌賽亞的救贖，必須同時處理人類罪性的多個維度。這不是廉價的寬免，而是針對三層病理的徹底根治。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">最大的罪，不是你想的那種</h2>
+      <p class="card-hook">當耶穌說「最大的誡命」，祂其實也同時定義了「最大的罪」</p>
+    </div>
+    <div class="card-body">
+      <p>有人問耶穌：「律法上的誡命，哪一條是最大的？」這個問題看起來像是宗教考試，但其實是個關於人性核心的宇宙級提問。</p>
+
+      <p>耶穌的回答，引用了猶太人每天早晚都要誦讀的禱告——「示瑪（Shema）」：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「以色列啊，你要聽！耶和華——我們神是獨一的主。你要盡心、盡性、盡力愛耶和華——你的神。」</p>
+        <p class="scripture-ref">申命記 6:4-5</p>
+      </div>
+
+      <p>最大的誡命是「愛神」。那麼，最大的罪，就是它的反面——不愛神，或者用錯誤的方式愛神。但這說的並不只是「不去教會」或「沒有讀聖經」，而是一種更根本的靈性錯位。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧲</span>
+        奧古斯丁提出了一個令人難忘的意象：健康的靈魂就像一根指向造物主的磁針，自然而然地向上、向外指向上帝，橫向指向鄰舍。但罪讓磁針的磁場扭轉——靈魂開始向內坍縮，折疊在「自我」這個點上，把自己當成整個宇宙的中心。這就是他所說的「向內彎曲的人」（Homo Incurvatus in Se）。
+      </div>
+
+      <p>這個洞見讓我看懂了很多事：為什麼一個宗教熱心的人可能同時非常驕傲？為什麼我們的善良有時候讓人窒息？因為當靈魂向內彎曲時，就連我們的敬虔、慷慨與助人，都可能只是讓自我顯得更高大的工具。</p>
+
+      <div class="highlight">
+        <strong>最大的罪的核心定義</strong>
+        最大的罪，不只是做了壞事，而是把「自我」放在原本屬於上帝的位置上。這種靈性中心的篡奪，是一切其他罪的根源。聖奧古斯丁稱之為：「自愛以至蔑視上帝」（Amor sui usque ad contemptum Dei）。
+      </div>
+
+      <p>如果「最大的誡命」是全人全力地愛神，那麼「最大的罪」就是全人全力地愛自己——而這件事，在我們每個人身上，以各種精巧的形式每天都在發生。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">示瑪的解剖學：盡心、盡性、盡力到底在說什麼？</h2>
+      <p class="card-hook">當我們讀懂這三個希伯來文字，才明白「愛神」的要求有多全面——也才明白「不愛神」的問題有多深</p>
+    </div>
+    <div class="card-body">
+      <span class="depth-label plain-tag">💡 生活化拆解</span>
+
+      <p>「盡心、盡性、盡力愛神」——這句話我們讀了很多次，但你有沒有想過，這三個字的原文究竟在指什麼？</p>
+
+      <div class="term-box">
+        <div class="term-original">לֵבָב<br>Lebab</div>
+        <div class="term-desc">「心」——但在希伯來思維中，「心」不只是情感，而是理性思考、意志決策與道德意圖的總樞紐。盡心愛神，意思是將整個人類的「理性認知、意志抉擇與道德情感」完全歸順於上帝。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">נֶפֶשׁ<br>Nephesh</div>
+        <div class="term-desc">「性/靈魂」——但原義其實是「喉嚨」或「呼吸之氣」，代表活生生的、有血有肉的生命個體本身。不是抽象的靈魂，而是包含氣息、生命力、生存渴望，是你此刻活著的整個存在。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">מְאֹד<br>Me'od</div>
+        <div class="term-desc">「力/財富」——字面意思是「極其、豐盛、極大值」。在古猶太律法背景中，這個字延伸指人類的「肉體力量」與「所有財富、產業與物質財產」。所以「盡力」愛神，包括你的皮夾和房產。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <p>耶穌在馬太福音 22:37 重述示瑪時，做了一個引人深思的調整——祂在希臘文版本中，將 Me'od（力/財富）替換為 Dianoia（διάνοια）：</p>
+
+      <div class="term-box">
+        <div class="term-original">διάνοια<br>Dianoia</div>
+        <div class="term-desc">由「穿透」（Dia）與「心智」（Nous）組成，在柏拉圖哲學中指進行邏輯、數學與技術推理的智性思維能力。耶穌在示瑪中引入此詞，明確要求信徒將理智與思辨能力完全投入對上帝的認識。</div>
+      </div>
+
+      <p>這個細節非常重要：愛上帝不能是盲目的情緒衝動，必須動用全部的智性能力去思考、追問、理解。這意味著，一個說「我信，所以不用懂」的人，其實正在違背示瑪的要求。</p>
+
+      <div class="highlight">
+        <strong>罪的鏡像診斷</strong>
+        「最大的罪」在示瑪這面鏡子裡，呈現出它精確的輪廓：用理性為自我服務而非歸順上帝（Lebab 的罪），用生命力追求自我保存而非獻給神（Nephesh 的罪），用財富鞏固自我版圖而非敞開（Me'od 的罪），用智識建構自我形象而非認識上帝（Dianoia 的罪）。
+      </div>
+
+      <p>當我們把示瑪拆開來看，才發現「愛神」的範疇涵蓋了一個人存在的全部維度——思想、生命、物質、智識。而「最大的罪」，就是在這每一個維度上，把自我塞進了本屬於上帝的位置。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">愛鄰舍：靈魂是否重新站直的唯一量尺</h2>
+      <p class="card-hook">耶穌把兩條誡命綁在一起，是因為它們本來就是同一件事的兩個面向</p>
+    </div>
+    <div class="card-body">
+      <p>耶穌在宣告最大誡命之後，緊接著說：「其次也相倣，就是要愛人如己。這兩條誡命是律法和先知一切道理的總綱。」（馬太福音 22:39-40）</p>
+
+      <p>為什麼「愛神」與「愛鄰舍」是綁在一起的？這不只是道德加分題，而是因為在靈性結構上，它們描述的是同一個現象的兩面。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「不可報仇，也不可向百姓懷怨，卻要愛人如己。我是耶和華。」</p>
+        <p class="scripture-ref">利未記 19:18</p>
+      </div>
+
+      <p>「鄰舍」的希伯來文原文是 רֵעַ（Rea），指在地理空間、生活經歷或盟約群體中彼此相近、有共享生命經驗的同伴。在猶太律法主義的歷史演變中，這個字被刻意收窄，只適用於同族同胞。</p>
+
+      <p>但耶穌在路加福音 10 章透過「好撒馬利亞人」的故事，把這道藩籬徹底炸開了。在那個故事裡，真正成為「鄰舍」的，不是同族的宗教人士，而是一個文化上被視為仇敵的撒馬利亞人。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📐</span>
+        奧古斯丁在《上帝之城》裡提出了一個對立：「地上之城」的建造原則是「自愛以至蔑視上帝」（Amor sui usque ad contemptum Dei）；「天上之城」的建造原則是「愛神以至蔑視自己」（Amor Dei usque ad contemptum sui）。愛鄰舍，就是「天上之城」原則在日常生活裡最具體的實踐形式。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>從神學結構上說：當一個人的靈魂仍然向內彎曲（Homo Incurvatus in Se），他所有的「愛鄰舍」行為都會不自覺地帶有附帶條件——我幫助你，是因為你讓我感覺良好；我對你慷慨，是因為我的形象需要這一筆投資。</p>
+
+      <div class="highlight">
+        <strong>靈魂直立的診斷儀</strong>
+        真正的愛鄰舍，只有在一個人的靈魂被重新拉直之後才有可能——不是透過更多的道德努力，而是透過真實的愛神關係，讓那顆向內折疊的心重新向外敞開。因此，一個人對鄰舍的態度，就是他靈魂是否重新站直的唯一量尺。
+      </div>
+
+      <p>這就是為什麼約翰一書 4:20 說得如此直接：「人若說我愛上帝，卻恨他的弟兄，就是說謊話的。」不是因為上帝偏心喜歡被奉承，而是因為對鄰舍的冷漠或輕蔑，本身就是靈魂仍在向內彎曲的最有力證據。</p>
+
+      <div class="big-quote">
+        你對身邊那個最難愛的人的態度，就是你與上帝關係最誠實的鏡子。
+        <cite>— 奧古斯丁神學的生活應用</cite>
+      </div>
+
+      <p>「最大的罪」至此完整地呈現：向內彎曲，不只讓我們偏離了上帝，也讓我們無法真實地愛身邊的人。這兩個失敗，從來都是同一個靈魂問題的兩個症狀。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">箭是可以被校正的</h2>
+      <p class="card-hook">認識最大的罪，不是為了讓你更有罪惡感——而是為了讓你看見救贖有多深</p>
+    </div>
+    <div class="card-body">
+      <p>我們走了一段很長的路。從射偏的弓箭，到三層罪性結構；從向內彎曲的靈魂，到示瑪的全人要求；從愛神到愛鄰舍，再到靈魂直立的診斷。</p>
+
+      <p>如果你讀到這裡感到沉重，我完全理解。認識人性的問題如此深層，確實不是輕鬆的事。但我想在這裡停下來，說一件很重要的事：這整個系列的終點，從來都不是定罪，而是驚嘆。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「哪知他為我們的過犯受害，為我們的罪孽壓傷。因他受的刑罰，我們得平安；因他受的鞭傷，我們得醫治。」</p>
+        <p class="scripture-ref">以賽亞書 53:5</p>
+      </div>
+
+      <p>以賽亞書 53 章的美麗，正在於它同時使用了我們討論過的所有字詞——Pesha（叛逆）、Avon（扭曲）、Chata（偏差）。彌賽亞的救贖，精準地對應了人類罪性的每一個層次。這不是神對犯規行為的懲罰轉移，而是神親身進入人類三層病理的結構之中，從內部進行根治。</p>
+
+      <div class="highlight">
+        <strong>救贖的縱深</strong>
+        你的靈魂向內彎曲多深，上帝的恩典就向你彎曲多深。祂來，不是等我們先站直了才接納我們，而是在我們仍然彎曲的時候，親自把那根鋼條拉直。這就是為什麼十字架不是一個道德故事，而是一個外科手術。
+      </div>
+
+      <p>我想用一個很小的問題來結束這個系列——不是要你回答我，而是帶走回去慢慢想：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        你生命中現在最難愛的那個人是誰？不是泛泛地說「我愛所有人」，而是那個具體的、讓你本能地想縮回去的人。你願不願意把那個人的臉帶到禱告裡，問上帝：「我的靈魂是不是在這裡還很彎？」
+      </div>
+
+      <p>認識最大的罪，讓我對自己的驕傲和冷漠多了一些誠實；認識最大的誡命，讓我對愛這件事多了一些敬畏。但最讓我心動的，是這位要求「盡心、盡性、盡意」的上帝，祂自己也「盡心、盡性、盡意」地愛了我們——一直到十字架。</p>
+
+      <div class="big-quote">
+        最大的罪是不愛神。而最大的奇蹟，是神仍然愛我們。
+        <cite>— 這個系列的核心</cite>
+      </div>
+
+      <p>願你帶走的不只是知識，而是一顆願意被拉直的心。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  最大的罪 · Sin, Love & Redemption · Threads 系列
+</footer>
+
+</body>
+</html>

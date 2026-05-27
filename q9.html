@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>罪的雙重結構 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .card-divider         { background: rgba(201,168,76,0.15); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); border: 1px solid var(--gold-dim); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">羅馬書一章 · Romans I · 神學深探</div>
+  <h1>罪的<span>雙重結構</span></h1>
+  <p class="subtitle">從不虔與不義的神學根源，到道德墮落的罪惡果實</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Sharing · 分享</div>
+      <h2 class="card-title">有一個問題，我問了自己很多年</h2>
+      <p class="card-hook">殺人犯與不信神的人，誰的罪更重？——這個問題的答案，顛覆了我整個道德世界觀。</p>
+    </div>
+
+    <div class="card-body">
+      <p>我第一次認真讀羅馬書的時候，大約二十歲出頭。我在一個基督徒家庭長大，從小被教導「要信神、要去教會」，但心裡其實一直有一個沒說出口的困惑：</p>
+
+      <p>我身邊有很多不信神的朋友——他們善良、誠實、孝順父母，從不欺負人。但我也認識一些基督徒，把「主啊主啊」掛在嘴上，私底下卻說謊、論斷人、在公司耍手段。如果上帝真的公義，祂難道不應該更喜歡前者嗎？</p>
+
+      <div class="highlight">
+        <strong>那個困惑的核心問題</strong>
+        難道「不信神」比殺人放火更嚴重？難道道德上的善良，在神眼中什麼都不算？這個問題後來帶著我，一頭鑽進了保羅在羅馬書第一章所留下的那一把精密鑰匙。
+      </div>
+
+      <p>這個系列，想把我走過的那段思路完整地分享給你。不是為了說服你「一定要信基督教」，而是想邀請你，帶著真誠的好奇，一起看看這位兩千年前的猶太學者，在那段密度極高的文字裡，究竟藏了什麼讓人屏息的宇宙邏輯。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「原來，神的忿怒從天上顯明在一切不虔不義的人身上，就是那些行不義阻擋真理的人。」</p>
+        <p class="scripture-ref">羅馬書 一：18（新譯本）</p>
+      </div>
+
+      <p>這節經文一直讓我不安。神的忿怒？顯明在所有人身上？這不是某種可以輕描淡寫的「你要乖乖信教」的警告——這是一份法庭判決書的開場白。而我越讀越發現，它的深處有一個讓人心跳加速的邏輯。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guiding · 引導</div>
+      <h2 class="card-title">在進入答案之前，先讓我帶你看見問題的框架</h2>
+      <p class="card-hook">大多數人思考「罪」的方式，就像只看到冰山水面上的部分。</p>
+    </div>
+
+    <div class="card-body">
+      <p>當我們說某個行為「很邪惡」，我們通常是在談它的嚴重程度：殺人比說謊嚴重，姦淫比偷竊嚴重，戰爭罪比交通違規嚴重。這是「果實」的邏輯——我們在評估枝頭上的果子。</p>
+
+      <p>但保羅在羅馬書第一章做的事，完全不是這個層次的討論。他不是在告訴你哪顆果子最爛，他是在問：這整棵樹，從根部開始，究竟哪裡出了問題？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌳</span>
+        想像一棵蘋果樹，枝頭掛滿了爛透的蘋果——有的發黑，有的長蟲，有的一碰就流出惡臭的汁液。你當然可以一顆一顆把它們剪掉，但如果樹的根已經從地底吸入了重金屬，剪再多次，新長出來的依然是爛蘋果。這不是果農的技術問題，這是土壤問題、根部問題。
+      </div>
+
+      <p>保羅的「罪論」正是這個結構：他要我們看見，道德行為上的敗壞（不義，adikia），不過是一個更深層靈性失根（不虔，asebeia）的外在症狀。</p>
+
+      <div class="highlight">
+        <strong>閱讀這個系列的心理準備</strong>
+        接下來的幾篇，我們會從經文出發，進入希臘原文的字義，再走進神學的深水區，最後回到一個非常具體的當代問題：在一個後現代的社會裡，這套古老的診斷，還有效嗎？
+      </div>
+
+      <p>我不會假裝這些問題很容易。它們讓我不安過，讓我想逃避過。但我最終發現，真正讓人自由的，往往不是那些讓你感覺良好的答案，而是那些讓你看見真相的問題。</p>
+
+      <p>準備好了嗎？我們從最核心的那個字開始。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Breaking Ground · 破題</div>
+      <h2 class="card-title">不虔與不義：兩個字，兩個維度，一個因果</h2>
+      <p class="card-hook">保羅在十八節塞進了整個人類罪的診斷書——你需要的，只是讀懂那兩個希臘字。</p>
+    </div>
+
+    <div class="card-body">
+      <p>羅馬書一章十八節，希臘原文把「不虔」與「不義」並排放在一起，但它們不是同義詞，也不是隨意的修辭堆疊。保羅在此精確區分了兩種不同維度的罪：</p>
+
+      <span class="depth-label deep-tag">📖 原文字義</span>
+
+      <div class="term-box">
+        <div class="term-original">ἀσέβεια<br>asebeia</div>
+        <div class="term-desc">由否定前綴「a-」加上「sebomai」（敬畏、崇拜）而來。字面意思是「沒有敬畏」，指人與上帝之間垂直關係的徹底斷裂——不只是「做了壞事」，而是「心裡根本沒有神的位置」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀδικία<br>adikia</div>
+        <div class="term-desc">由否定前綴「a-」加上「dikē」（公義、法律標準）而來。指具體行為上對公義的違背——欺騙、傷害、破壞關係。這是水平維度的罪，呈現在人與人之間。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>更關鍵的是十八節後半段出現的另一個動詞——</p>
+
+      <div class="term-box">
+        <div class="term-original">κατέχω<br>katechō</div>
+        <div class="term-desc">「壓制、強力扣留」。這個字告訴我們，人類不知道上帝的存在，並非因為證據不夠充分。上帝已經透過自然界、透過人的心靈放入了足夠清晰的啟示（第十九至二十節）。人類是主動地、刻意地將這個真理「壓下去」——這是一種意志的叛逆，不是無知的結果。</div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「神的事情，人所能知道的，原顯明在人心裡，因為神已經給他們顯明……使人無可推諉。」</p>
+        <p class="scripture-ref">羅馬書 一：19－20（新譯本）</p>
+      </div>
+
+      <p>「無可推諉」——這三個字令人窒息。保羅說的不是「你們這些壞蛋」，他說的是，面對這份從創世以來就清晰存在的自然啟示，每一個人都在自己內心的某個角落，做過一個選擇：承認，還是壓制。</p>
+
+      <div class="highlight">
+        <strong>破題核心</strong>
+        不虔（asebeia）是根部的問題：人主動切斷與造物主的垂直連結，拒絕承認主權、拒絕感恩。不義（adikia）是果實的問題：當垂直連結斷裂，水平的道德秩序必然跟著崩潰。這個因果，是羅馬書第一章整段論證的骨架。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">三次交換，三次任憑：保羅的精密文學結構</h2>
+      <p class="card-hook">這不只是一段道德訓誡，這是一份排列精確的因果方程式——三組平行，環環相扣。</p>
+    </div>
+
+    <div class="card-body">
+      <p>神學家道格拉斯·穆（Douglas Moo）與詹姆斯·鄧恩（James Dunn）都指出，羅馬書一章二十三至三十二節存在一個罕見的「三重平行結構」。保羅用同樣的句式，重複了三次「交換」與三次「任憑」，構成了一個令人毛骨悚然的因果螺旋。</p>
+
+      <span class="depth-label deep-tag">📖 結構分析</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🔄 第一輪：榮耀 → 偶像</span>
+          人將「不朽上帝的榮耀」交換成「必朽壞的偶像樣式」（1:23）→ 神任憑他們逞著心裡的情慾，玷辱自己的身體（1:24）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🔄 第二輪：真理 → 謊言</span>
+          人將「神的真理」交換成「虛謊」（1:25）→ 神任憑他們放縱可羞恥的情慾，走向逆性的行為（1:26-27）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔄 第三輪：認識 → 拒絕</span>
+          人故意拒絕保留對神的認識（1:28a）→ 神任憑他們存著敗壞的心，行各樣不體面的事（1:28b-31）
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>這個結構揭示了一個驚人的神學洞見：上帝的審判在當下歷史中，不是以閃電和天火的形式臨到，而是以一種更安靜、更可怕的方式進行——</p>
+
+      <span class="depth-label deep-tag">📖 核心動詞</span>
+
+      <div class="term-box">
+        <div class="term-original">παρέδωκεν<br>paredōken</div>
+        <div class="term-desc">「任憑、交出、放開手」。此字在本段出現三次（1:24, 1:26, 1:28），是全段最重要的神學動詞。上帝並非主動推人去犯罪，而是司法性地撤回約束罪惡的恩典護欄，任憑人去承受自身選擇的全部後果。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👨‍👧</span>
+        這像一位深愛孩子的父親——在孩子無數次叛逆、堅持離家出走之後，在流淚勸阻無效之後，父親最終鬆開了雙手。不是因為不愛，而是因為愛到了一個程度，必須讓人的選擇產生真實的後果。任憑，是心碎的愛，不是冷漠的放棄。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「他們雖然知道神公義的法令——行這些事的人是該死的，然而他們不僅自己去行，還同意行這些事的人。」</p>
+        <p class="scripture-ref">羅馬書 一：32（新譯本）</p>
+      </div>
+
+      <p>最後這一節是整段的高峰——問題不只在於「做了」，還在於「同意做的人」。道德敗壞走到最深處，是一個文化性的共識：人們開始集體稱惡為善，集體為罪惡鼓掌。保羅似乎在說：這，就是任憑到底的結局。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">原罪與本罪：奧古斯丁與阿奎那怎麼看這件事</h2>
+      <p class="card-hook">為什麼「不信神」比「殺人」在神學上更根本？這不是偏見，這是一個精密的病理學分析。</p>
+    </div>
+
+    <div class="card-body">
+      <p>現在我們可以正面回答那個讓許多人不安的問題了：「難道拜偶像、行邪術、殺人、放火，這些都不是最大的罪？為什麼不信神、不感恩才是罪的根源？」</p>
+
+      <p>奧古斯丁（Augustine）與湯瑪斯·阿奎那（Thomas Aquinas）在論罪的神學框架中，區分了兩個層次：</p>
+
+      <span class="depth-label deep-tag">📖 神學分層</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">原罪（Peccatum Originale）— 根部</span>
+          人類因始祖墮落而承受的有罪身分與全然敗壞的罪性。表現為「原始聖德的喪失」，在羅馬書第一章中對應於 asebeia（不虔）——人在意志深處拒絕承認造物主的主權。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">本罪（Peccatum Actuale）— 果實</span>
+          個人出於自由意志所犯的具體過犯。包括一切道德律法上的違背：偶像崇拜、淫亂、嫉妒、兇殺、說謊……這些無疑都是嚴重的罪，但它們是根部問題結出的果實。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>神學核心命題</strong>
+        殺人與姦淫在司法意義上是極嚴重的罪（「行這些事的人是該死的」，1:32），但在病理意義上，它們是症狀，不是病因。不虔（asebeia）才是那個讓整個人類道德系統走向失敗的根本故障——如同電腦的作業系統崩潰，後面跑的所有程式都必然出錯。
+      </div>
+
+      <p>這裡有一個關鍵的神學細節需要說清楚：不是說「壞事不嚴重」，而是說「只修壞事而不修根」是根本無效的治療。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 當代對照</span>
+
+      <p>神學家約翰·斯托特（John Stott）有一段讓我印象極深的話：「上帝對罪惡的冷漠，才是宇宙性的道德災難。」上帝的忿怒（orgē）不是暴君的任性，而是一位聖潔者面對真實邪惡時的必然反應——就像一位好法官，看到無辜者被傷害，若無動於衷，那才是真正可怕的事情。</p>
+
+      <div class="big-quote">
+        唯有當上帝對毀滅受造界的罪惡展現聖潔的憤慨，祂的良善才得以確立。忿怒，不是對愛的否定——而是愛在面對邪惡時的司法性彰顯。
+        <cite>— John Stott，《羅馬書》注釋</cite>
+      </div>
+
+      <p>這對我們的時代有非常直接的挑戰：一個社會可以在法律上規範殺人、規範欺詐，但若整個文化集體走向「不必對任何更高存在負責」的方向，那麼道德的根部正在安靜地腐爛——不是以戲劇性的方式，而是以「任憑」的方式，一點一點地。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Finale · 結論與溫馨</div>
+      <h2 class="card-title">有一個更深的「任憑」，發生在十字架上</h2>
+      <p class="card-hook">羅馬書第一章不是絕望的終點——它是一條精心鋪設的路，通往最令人屏息的反轉。</p>
+    </div>
+
+    <div class="card-body">
+      <p>如果羅馬書一章十八至三十二節是整個故事，那確實令人絕望：人類主動壓制真理，上帝三次任憑，道德退化螺旋式下墜，人在自身的罪惡中越陷越深。這是一幅沒有出路的圖景。</p>
+
+      <p>但保羅不是為了絕望而寫這段話。他是在進行一個精心設計的「神學前置診斷」——讓讀者先看清病的嚴重程度，然後才能真正理解那帖藥的分量。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神既不愛惜自己的兒子，為我們眾人捨了祂……」</p>
+        <p class="scripture-ref">羅馬書 八：32（新譯本）</p>
+      </div>
+
+      <p>注意這個動詞——「捨了」，希臘原文正是 <em>paredōken</em>，與第一章三次「任憑」完全相同的字。</p>
+
+      <div class="highlight">
+        <strong>救贖的宇宙性反轉</strong>
+        人類因悖逆而理應被上帝「交出」給私慾和永死。但上帝卻反其道而行：祂將自己無罪的兒子「交出」到十字架上，讓基督代替人類承受了那份最徹底的司法性遺棄——「我的神，我的神，為什麼離棄我？」——以便將原本被交給死地的罪人，重新買贖回來。
+      </div>
+
+      <p>這個反轉不是廉價的宗教安慰，它建立在極其沉重的代價之上：有人真實地、在歷史時空中，承受了「被神任憑」的全部重量，這樣其他人才不必永遠活在那個任憑之中。</p>
+
+      <div class="card-divider"></div>
+
+      <p>最後，我想把這整個系列濃縮成一個非常簡單、非常溫柔的問題，留給你帶走：</p>
+
+      <div class="big-quote">
+        你有沒有一個地方，是你一直用各種忙碌、各種合理化，悄悄地「壓制著」的——那個深夜裡，讓你感覺自己很渺小、世界很大、某種你說不清楚的東西在召喚你的那個地方？
+        <cite>— 那個地方，也許就是保羅說的「無可推諉」的起點</cite>
+      </div>
+
+      <p>不虔的反面，不是「信仰正確」，而是一顆願意說「我願意承認，我不是宇宙的中心」的心。而那個承認，往往是最深的自由的入口。</p>
+
+      <p>這個系列就到這裡。感謝你願意走這趟不輕鬆的思想旅程。如果有任何問題或想一起討論，留言區見。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  罪的雙重結構 · 羅馬書一章神學深探 · Romans I Series
+</footer>
+
+</body>
+</html>
