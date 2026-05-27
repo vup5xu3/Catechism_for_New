@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人類自救無能性與神聖主權救贖 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救贖論系列 · Soteriology Series</div>
+  <h1>你救不了<span>自己</span></h1>
+  <p class="subtitle">人類自救無能性與神聖主權救贖的六章深思</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">我曾經以為，努力夠了就能改變自己</h2>
+      <p class="card-hook">每一個「我要改」的誓言背後，藏著一個你從未正視過的真相</p>
+    </div>
+    <div class="card-body">
+      <p>你有沒有試過在某個夜深人靜的時刻，對自己許下一個承諾？「我要改掉這個壞習慣。」「我要成為一個更好的人。」「這是最後一次了。」</p>
+
+      <p>我也是。而且不只一次。我曾無數次站在自己的「道德法庭」前，讀出那份罪狀，然後鄭重宣誓改過——帶著真誠的決心，帶著真實的眼淚。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        但最後我發現：這就像一個人掉進了流沙，卻試圖抓住自己的頭髮，把自己從泥潭裡拉出來。那個「想要改變的我」，和「需要被改變的我」，是同一個人。一個壞掉的自我，無法修復另一個壞掉的自我。
+      </div>
+
+      <p>這不是在否定努力，也不是鼓勵躺平。這是在面對一個更根本、更深層的問題：如果人類靠自己真的有辦法把自己「拉出來」，為什麼幾千年的文明史，道德教育、哲學修煉、宗教儀式……沒有一個方法，真正、徹底地解決了人心的問題？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「古實人豈能改變皮膚呢？豹豈能改變斑點呢？若能，你們這習慣行惡的便能行善了。」</p>
+        <p class="scripture-ref">耶利米書 13:23</p>
+      </div>
+
+      <p>先知耶利米在將近三千年前說出了這句話。那時的他，面對的是一群不斷在偶像和上帝之間搖擺的百姓——嘴裡說要悔改，心裡從未真的離開那些吸引他們的黑暗。耶利米的感嘆，是上帝藉著人心說出的第一個問題：你，真的有辦法改變自己嗎？</p>
+
+      <div class="highlight">
+        <strong>這個系列想陪你思考的，就是這個問題</strong>
+        不是要讓你絕望，而是要帶你走到一個地方——那個唯一真正的出口所在之處。六章下來，我們會一起看清人的困境，也一起看見那一道光。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">豹洗三天三夜，也洗不掉身上的斑點</h2>
+      <p class="card-hook">罪不是衣服上的泥巴，而是寫在細胞裡的基因——問題的層次，決定了解法的層次</p>
+    </div>
+    <div class="card-body">
+      <p>很多人對「罪」有一個誤解：以為罪是外在行為的問題，就像衣服沾了泥巴，只要多做好事、多捐款、多參加宗教儀式，或者靠意志力「努力修煉」，就能把自己洗乾淨。</p>
+
+      <p>但耶利米用了一個非常具體的圖像打破了這個幻覺。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐆</span>
+        如果把一隻豹關在浴室裡，給牠世界上最頂級的肥皂、最細緻的刷子，讓牠洗上三天三夜——那些斑點會消失嗎？絕對不會。因為那些斑點不是「外在沾染的髒污」，而是「寫在牠基因裡的存在」。
+      </div>
+
+      <p>聖經所揭示的人類問題，不是外表髒了，而是內在的屬靈本質已經壞死。這是一個存在性的問題，不是行為性的問題。我們需要的，不是「化妝」或「美白」，而是「重新創造」。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 原文洞察</span>
+
+      <p>耶利米書原文中有一個關鍵詞：</p>
+
+      <div class="term-box">
+        <div class="term-original">limmudê<br>לִמֻּדֵי</div>
+        <div class="term-desc">「習慣行惡的」——這個希伯來字源自「訓練、門徒化」的字根 lamad。罪惡不只是偶發事件，更是一種長期系統性的內化訓練。猶大百姓對惡的熟練，就像一名武術門徒對招式的熟練，已成為他們生命唯一能順暢運行的軌道。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">hă-yahăp̄ōḵ<br>הֲיַהֲפֹךְ</div>
+        <div class="term-desc">「改變、扭轉」——本義是徹底顛覆某物的存有狀態。這個字在此以反問句形式出現：「能扭轉嗎？」——答案是：不能。罪人若欲憑自身意志將「習慣行惡」扭轉為「本質行善」，在存有論上屬絕對的不可能。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>問題的層次決定解法的層次</strong>
+        如果問題只是行為，行為的改變就夠了。如果問題是習慣，習慣的訓練就夠了。但如果問題是本質——那就需要一場本質的重造。而本質的重造，不是人能為自己完成的事。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Thesis · 破題</div>
+      <h2 class="card-title">我們生來，就是定罪的對象</h2>
+      <p class="card-hook">保羅在以弗所書說出了一個讓人不舒服的真相——但不舒服的真相，才是真正的自由起點</p>
+    </div>
+    <div class="card-body">
+      <p>如果耶利米的圖像是診斷，使徒保羅的神學就是解剖報告。在以弗所書第二章，保羅把人類在基督以外的真實狀態，描述得毫不留情。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們從前也都和他們在一起，放縱肉體的私慾，隨著肉體和心意所喜好的去行；我們與別人一樣，生來都是可怒的兒女。」</p>
+        <p class="scripture-ref">以弗所書 2:3</p>
+      </div>
+
+      <p>「生來都是可怒的兒女」——這是一句讓人不舒服的話。但在理解它之前，我們先要理解它背後的三個關鍵詞。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">σάρξ · 肉體（Sarx）</span>
+          不只是物理肉身，更指因始祖墮落而與上帝敵對、被私慾支配的墮落人性。人的理性、情感、意志，皆被罪惡的「重力場」所牽引，無法自行擺脫。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">φύσει · 本性（Physei）</span>
+          「生來、天然、本源性的」——這說明罪人面臨審判，不只因犯下特定罪行，而是從出生那一刻，就繼承了亞當的墮落本質（原罪的地位與傾向）。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">τέκνα ὀργῆς · 可怒之子（Tekna orgēs）</span>
+          希伯來修辭法：「子」意指本質被其修飾語所定義。Orge 是上帝對罪惡持有的、聖潔而恆常的公義憤怒。未重生的世人，本相被上帝的公義審判所籠罩。
+        </div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        這不是說上帝在情緒上「看我們不順眼」。上帝的憤怒不是情緒性的暴怒，而是聖潔公義在面對罪惡時，必然的、本質性的反應——就像光進入黑暗的房間，黑暗必然消散，這是本質的不相容，不是情緒的選擇。
+      </div>
+
+      <p>破題在此：人類的問題不在於「做了幾件壞事」，而在於「生來就是定罪的對象」。這個診斷聽起來很殘酷，但它卻是所有真實希望的起點——因為當你承認問題的深度，你才真正開始尋找那個深度的解法。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">一粒沙，換不回一條永恆的命</h2>
+      <p class="card-hook">詩篇 49 的存有論宣告：人類所擁有的一切，在生命的終極法庭前，本質上不對等</p>
+    </div>
+    <div class="card-body">
+      <p>如果說耶利米書和以弗所書從「本質」切入，詩篇 49 則從「代價」的角度，給出了人類自救無能的最後一個證明。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「一個也無法贖自己的弟兄，也不能替他將贖價給神，叫他長遠活著，不見朽壞；因為贖他生命的價值極貴，只可永遠罷休。」</p>
+        <p class="scripture-ref">詩篇 49:7–9</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 原文考據</span>
+
+      <div class="term-box">
+        <div class="term-original">padah<br>פָּדָה</div>
+        <div class="term-desc">「贖回」——本指透過支付等價代價，將人從奴役或死亡中合法釋放。在古希伯來律法中，若有人的疏失導致他人死亡，可支付「遮蓋金」（kofer）來救贖肉身生命。詩篇作者把這個概念帶到神聖公義的終極法庭，得出一個驚人的結論：這裡，沒有任何人能付得起那筆帳。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ḥāḏal<br>חָדַל</div>
+        <div class="term-desc">「永遠罷休」——指動作完全止息，且明白繼續嘗試均屬徒勞。這是詩篇作者的終判：人類依靠自身資源（功德、修行、金錢）進行自我救贖的任何嘗試，都必須在上帝面前徹底宣告破產。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>這裡存在著一個存有論上的「代價不對等」：人類所擁有的一切——財富、功德、道德積分——都屬於受造界的有限資源，本質上是會腐朽的。而上帝所要求的生命的代價，是永恆且極貴重的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        這就像一個犯了無期徒刑的罪犯，在莊嚴法庭上，從口袋掏出一粒沙子遞給法官：「法官，這是我最珍貴的沙子，我想用它換取無罪釋放。」不只不是交易，反而是對法律最深的侮辱。在上帝公義的秤上，人類所有的道德積累，就是那一粒沙。
+      </div>
+
+      <div class="highlight">
+        <strong>範疇謬誤（Category Error）</strong>
+        企圖用有限換取永恆、用腐朽交換生命——這在哲學上叫做「範疇謬誤」。不是努力不夠，而是根本走錯了路。任何形式的「自我救贖」，在生命的終極法庭前，都只有一個結局：永遠罷休。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">救生圈，對一具屍體有什麼用？</h2>
+      <p class="card-hook">「溺水者」神學的致命缺陷，與神聖主權救援的真實圖像——兩種救恩觀，決定了你對自己是誰的根本理解</p>
+    </div>
+    <div class="card-body">
+      <p>在基督教世界裡，有一個非常流行的圖像：把未信的人比作「在海中掙扎的溺水者」，上帝的工作是拋出一個救生圈，而人得救與否，取決於溺水者自己有沒有力氣伸手抓住。</p>
+
+      <p>這個圖像聽起來很合理，也很溫暖。它保留了人的「尊嚴」和「自主性」。但這裡有一個致命的問題：聖經所描述的，根本不是一個「掙扎的溺水者」，而是一具「早已溺死、冰冷沉在深海底部的屍體」。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">【半伯拉糾主義 / 自由意志協同說】</span>
+          上帝拋出救生圈 → 掙扎的罪人發揮自由意志、伸手抓住 → 人神共同完成救贖。看似合理，卻將救恩部分歸功於人類的自救意志，違背了「恩典唯獨出於神」的聖經宣告。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">【正統改革宗 / 神聖主權單一說】</span>
+          上帝親自潛入深海 → 找到死在谷底的屍體（毫無回應能力）→ 吹入聖靈氣息，賜予新生命，使其從死裡復活。救恩完全是上帝單方面的主權恩典，免得有人自誇。
+        </div>
+      </div>
+
+      <p>這不是神學上的文字遊戲。這個區別，決定了你對「我憑什麼得救？」這個問題的根本回答。</p>
+
+      <div class="big-quote">
+        若非上帝主動潛入，人類只會繼續嘲笑那根被拋下的繩子——因為死人沒有伸手的能力
+        <cite>— 改革宗救恩論核心命題</cite>
+      </div>
+
+      <p>保羅在以弗所書 2:8–9 說：「你們得救是本乎恩，也因著信，這並不是出於自己，乃是上帝所賜的；也不是出於行為，免得有人自誇。」這裡的「信心」本身，也是上帝所賜的禮物，不是人靠自己「決定相信」的能力所產生。</p>
+
+      <div class="highlight">
+        <strong>神學意涵</strong>
+        若救恩有一絲一毫來自人的功勞，人就有誇口的本錢。但保羅斬釘截鐵地說：沒有。救恩是單向的、從上而下的主權恩賜。這不是剝奪人的尊嚴，而是讓人的尊嚴建立在最穩固的基礎上——不是自己的表現，而是上帝永恆的揀選與愛。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Conclusion · 結論與溫馨</div>
+      <h2 class="card-title">祂沒有站在岸上等你游過來</h2>
+      <p class="card-hook">當所有的自救之路徹底關閉，才發現唯一的門，一直從內側開著</p>
+    </div>
+    <div class="card-body">
+      <p>走過這六章，你或許有一種沉重的感覺。豹的斑點洗不掉。本性從出生就是定罪的。再多的財富與功德都付不起那筆生命的帳。甚至連「伸手抓住救生圈」的力氣，都不是自己有的。</p>
+
+      <p>這聽起來非常絕望。但請讓我在這裡說一件事：這種絕望，是最誠實的起點。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「只是上帝必救贖我的靈魂脫離陰間的權柄，因他必收納我。」</p>
+        <p class="scripture-ref">詩篇 49:15</p>
+      </div>
+
+      <p>就在詩篇 49 宣告人類「永遠罷休」的幾節之後，筆鋒一轉，出現了聖經裡最美麗的轉折之一。「只是上帝必救贖（padah）我的靈魂。」</p>
+
+      <p>人沒有辦法給上帝支付贖價——但上帝自己，親自為人類預備了那筆「極貴」的代價。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        耶穌基督潛入了深海。那個深海叫做罪、叫做死亡、叫做上帝公義的震怒。祂以無罪的生命，履行了律法所有的要求；祂在十字架上，以自己作為那無限的贖金，一次性地還清了那筆我們永遠還不起的生命巨債。然後，祂把祂自己的新生命，吹進了每一個在深海底部沉睡的靈魂。
+      </div>
+
+      <div class="highlight">
+        <strong>救恩的本質</strong>
+        救恩不是你靠自己「掙」來的，而是上帝白白「送」給你的。這份禮物的名字叫做恩典——不是因為你值得，而是因為祂選擇愛。這是基督教信仰最核心、最令人震撼的宣告：在你最破碎、最無能的地方，有人為你先到了那裡。
+      </div>
+
+      <p>所以，如果你今天感到疲倦——為自己的失敗疲倦，為那個不斷重複的循環疲倦，為那個說了無數次「我要改」卻一次也沒有真的改成的自己疲倦——請你記住這句話：</p>
+
+      <div class="big-quote">
+        你的無能，恰好是恩典的入口。當自救的門全部關閉，才看見那扇一直從內側開著的門。
+        <cite>— 本系列終章</cite>
+      </div>
+
+      <p>祂沒有要求你先把自己洗乾淨才能來。豹不需要先洗掉斑點，才能被重新創造。祂看見你本來的樣子，然後說：「就是你。我來，是為了你。」</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  人類自救無能性與神聖主權救贖 · Soteriology Series · 六章全
+</footer>
+
+</body>
+</html>

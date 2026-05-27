@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世人犯罪的後果 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">神學系列 · Theological Series</div>
+  <h1>我們都曾<span>走失</span>的那一刻</h1>
+  <p class="subtitle">世人犯罪之後果 · 從墮落到救贖的完整圖景</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Sharing · 分享</div>
+      <h2 class="card-title">那個讓一切改變的決定</h2>
+      <p class="card-hook">你有沒有過這樣的感覺——某件事情一旦發生，世界就再也回不去了？</p>
+    </div>
+    <div class="card-body">
+      <p>幾年前，一位朋友在諮商室裡對輔導員說了一句話，我後來一直沒有忘記：「我不知道從什麼時候開始，我對自己感到陌生。」</p>
+
+      <p>她說的不是記憶喪失，也不是身分認同的危機。她說的是一種更幽微的疏離感——明明是自己的生命，卻像是隔著一層玻璃在旁觀。她奮力工作、努力愛人、盡力做好每一件事，但那種「我應該在這裡」的踏實感，就是不在。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        試想一面鏡子。它本來的功能是如實映照出面前的人。但如果有人拿一塊石頭砸過它，就算玻璃沒有完全碎裂，那個映像也永遠是破碎的、扭曲的——看起來還是個鏡子，但功能已經不同了。
+      </div>
+
+      <p>聖經說，人類就是這樣一面被砸碎的鏡子。</p>
+
+      <p>我們本來被造是為了映照上帝的榮耀——祂的智慧、公義、愛與聖潔。但在那個決定性的時刻之後，一切都裂開了。這個系列，我想陪你一起慢慢看清那個裂縫的形狀，以及那個讓鏡子重新完整的故事。</p>
+
+      <div class="highlight">
+        <strong>這個系列的輪廓</strong>
+        我們將用六篇文章，一路從「發生了什麼」，走到「為什麼這對今天的我們仍然重要」，最後抵達那個讓人既震驚又感動的答案。
+      </div>
+
+      <p>不需要任何神學背景。只需要你願意帶著真誠的好奇心，一起往下走。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Invitation · 引導</div>
+      <h2 class="card-title">人類故事的第一個轉折點</h2>
+      <p class="card-hook">如果你想理解現在，你必須先去找那個最初的裂縫。</p>
+    </div>
+    <div class="card-body">
+      <p>聖經的故事並不是從一場混亂開始的。它從「極好」開始——那是上帝在完成創造後，對整個受造世界的評語（創世記一章31節）。</p>
+
+      <p>在那個起初，人是上帝按著自己的形像所造的（Imago Dei）。這不是一個隱喻，而是一個關於人類身份最深刻的宣告：人類被放置在受造世界裡，是作為上帝的代理，帶著祂的智慧、公義與愛，來治理、看守、並彰顯祂的榮耀。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神就照著自己的形像造人，乃是照著他的形像造男造女。」</p>
+        <p class="scripture-ref">創世記 1:27</p>
+      </div>
+
+      <p>然後，在創世記第三章，一條蛇來了。</p>
+
+      <p>那個對話非常短，短到讓人驚訝。蛇提出了一個問題，夏娃望著那棵果子，然後伸手摘了。亞當在旁邊，沒有說話，也吃了。</p>
+
+      <div class="highlight">
+        <strong>關鍵不在那顆果子</strong>
+        神學家奧古斯丁說得很準確：那一口咬下去，本質上是人類向上帝宣告「我不要你作我的主」。那不只是一個道德失誤，而是一場關係的決裂——是一個孩子對父親說「我不需要你」的瞬間。
+      </div>
+
+      <p>但問題是——那個決裂，後來怎麼了？它只是一個遙遠的歷史事件嗎？還是，它的後果還在你我的生命裡迴盪著？</p>
+
+      <p>接下來三篇，我們要仔細看那個決裂帶來了什麼。它不只是一個後果，而是五個——每一個，都精準地打在人類生命的核心。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Breaking Open · 破題</div>
+      <h2 class="card-title">五道裂縫：犯罪之後，世界發生了什麼</h2>
+      <p class="card-hook">這不是道德講座，而是一份診斷書——關於人類處境最誠實的描述。</p>
+    </div>
+    <div class="card-body">
+      <p>如果你問一個醫生：「這個人生了什麼病？」好的醫生不會只說「他很不舒服」。他會列出症狀，找出根源，然後告訴你每一個器官受到了什麼影響。</p>
+
+      <p>聖經對罪的後果，就是這樣一份嚴格、誠實、卻也充滿憐憫的診斷書。那個後果不是一條，而是五條裂縫，同時在人類的存在裡蔓延開來。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✦ 一、失去了神的榮耀</span>
+          人本來是為了彰顯上帝的榮耀而被造。墮落之後，那個使命扭曲了——我們仍然在反映什麼，但反映的不再是上帝，而是我們自己的欲望（羅馬書三章23節）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✦ 二、與神的交通斷絕</span>
+          上帝說「你必要死」。那一天，亞當和夏娃並沒有立刻心跳停止，但有什麼東西死了——他們藏起來了。原本讓人最喜悅的神人交通，變成了最令人恐懼的審判預期（創世記三章8節）。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✦ 三、生活在神的忿怒與咒詛之下</span>
+          這不是說上帝「生氣地怒視著我們」——那太情緒化了。聖經說的忿怒（orge）是一種穩定、公義、不可迴避的法理狀態：罪人站在公義法庭前，沒有辯護的空間（約翰福音三章36節）。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✦ 四、心性敗壞，為非作惡</span>
+          保羅說人的心智成了「adokimos」——冶金學術語，意思是「熔爐檢驗後不合格的廢料」。人不只是偶爾做壞事，而是在最深層的辨別機能上，判斷力本身已經失準（羅馬書一章28節）。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">✦ 五、受咒詛帶來死亡</span>
+          肉體的衰亡，是那個宣判的物理實現。但更沉重的是「第二次死亡」的陰影——在上帝面前的永恆法庭上，那是不可逆轉的最終判決（啟示錄二十章14節）。
+        </div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        想像一棟古老的建築。外觀上看起來還在，但地基已經裂了。牆面的裂縫，不是裝飾，而是診斷。人類歷史上所有的殘酷、所有的孤獨、所有的「我明明想做好卻做不到」，都是那個地基裂縫的地表呈現。
+      </div>
+
+      <p>這五條裂縫，每一條都足以讓人感到絕望。但先不要急著翻到結論——因為你必須先真正坐在這個診斷裡，才能理解那個救治方案的重量。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">原文說的，比翻譯更深</h2>
+      <p class="card-hook">讓我們帶著放大鏡，回到聖經最原始的語言，看見那些中文翻譯無法完全承載的重量。</p>
+    </div>
+    <div class="card-body">
+      <span class="depth-label deep-tag">📖 原文解析</span>
+
+      <p>語言是思想的容器。當我們說「虧缺了神的榮耀」，那個「虧缺」在希臘文原文裡，是一個令人不安的字。</p>
+
+      <div class="term-box">
+        <div class="term-original">ὑστερέω<br>hystereō</div>
+        <div class="term-desc">現在時態、中動態。不是「曾經失去過一次」，而是「持續不斷地處於虧缺的常態」。中動態更暗示：這種虧空，是從人類自身內部發生的——是一種主動的、自我招致的匱乏。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">מוֹת תָּמוּת<br>mot tamut</div>
+        <div class="term-desc">「你必要死」的希伯來文，用了雙重動詞疊加（同源絕對無限式）。這在舊約法典中，是用來強調「判決的絕對確定性與不可撤銷性」的句法。不是「你可能會死」，而是「死亡之事，你必死亡」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ὀργή<br>orgē</div>
+        <div class="term-desc">「神的忿怒」使用的是 orgē，而非 thumos（突發的怒氣）。Orgē 是一種長久、穩定、基於公義本性的司法性憤慨——不是情緒爆發，而是一個公正法官對邪惡所持有的必然立場。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀδόκιμος<br>adokimos</div>
+        <div class="term-desc">保羅形容墮落人類的「心智」用了這個冶金術語：熔爐檢驗後，因雜質過多被判定為「不合格廢料」的礦石。這不是說人「稍微差了一點」，而是在上帝公義的標準下，人類最核心的道德辨識機能已被判定失效。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 白話說明</span>
+
+      <p>簡單說：這些字告訴我們，罪的後果不是偶發性的，不是表面性的，也不是可以靠自我努力修補的。它是系統性的、持續性的、深入人類存在骨髓的。</p>
+
+      <div class="highlight">
+        <strong>一個讓人謙卑的發現</strong>
+        《羅馬書》一章28至32節列出了墮落後的惡行清單，最令人驚心的不是那些「大罪」，而是最後一句：人「不但自己去行，還讚同別人去行這些事」。罪，最終會把人扭曲到一個地步：連道德羅盤本身都壞掉了——不只做錯事，還為錯事喝采。
+      </div>
+
+      <p>如果這個診斷是正確的，那麼解決方案必須是同等深度的。一個「努力做個好人」的建議，無法回應一個「心智本身已不合格」的診斷。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為世人都犯了罪，虧缺了神的榮耀。」</p>
+        <p class="scripture-ref">羅馬書 3:23</p>
+      </div>
+
+      <p>這句話裡沒有例外——也沒有任何人是站在這句話之外的旁觀者。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">「全然敗壞」不是「壞透了」</h2>
+      <p class="card-hook">這是神學上最常被誤解的教義——也是理解人類處境最關鍵的一把鑰匙。</p>
+    </div>
+    <div class="card-body">
+      <p>很多人聽到「全然敗壞」（Total Depravity）這個詞，第一個反應是：「這是在說人類是惡魔嗎？」不是的。這個教義說的不是人有多「壞」，而是罪滲透的範圍有多「廣」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧂</span>
+        一杯被鹽污染的水，和一杯乾淨的水，外表可能看起來一樣清澈。但嘗一口，你就知道差別了。全然敗壞說的不是「水是黑的」，而是「鹽已經滲透了每一個水分子」——理性、情感、意志、良知，沒有一個角落是未被影響的。
+      </div>
+
+      <p>改革宗神學特別區分兩個層次的「神的形像」（Imago Dei）：廣義形像（結構性）——人仍然是人，有理性、有語言、有道德感知；而狹義形像（道德與關係性）——原始的公義、對上帝的聖潔認識——這部分在墮落中已徹底喪失。</p>
+
+      <div class="highlight">
+        <strong>這解釋了我們生活中一個很真實的張力</strong>
+        為什麼一個不信上帝的人，可以是個溫柔的父親、正直的法官、傑出的藝術家？因為廣義形像仍然殘存。但為什麼同樣的人，在自救、在道德上觸及上帝榮耀的終極標準時，卻無能為力？因為狹義形像已失落，人在屬靈層面的意志是被捆綁的。
+      </div>
+
+      <p>這就解釋了保羅在羅馬書七章的那個痛苦呼喊：「我所願意的善，我反不去做；我所不願意的惡，我倒去做。」這不是一個品格軟弱的人說的話——這是一個在罪的法律面前誠實面對自己真實處境的人。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我真是苦啊！誰能救我脫離這取死的身體呢？」</p>
+        <p class="scripture-ref">羅馬書 7:24</p>
+      </div>
+
+      <p>請注意：這個呼喊不是絕望的終點，而是轉折點的開始。</p>
+
+      <p>你只有在對這個「苦啊」有真實感受的時候，才能真正理解下一章的意義。這就是為什麼我們要在這裡停留一下——在那個黑暗裡，讓眼睛適應，然後等待光。</p>
+
+      <div class="big-quote">
+        罪最深的謊言，不是「做壞事是對的」，而是「你有能力靠自己修好自己」。
+        <cite>— 根據路德宗與改革宗神學的整合性觀察</cite>
+      </div>
+
+      <p>帶著這個認識，我們終於可以往下走，看那個光是從哪裡來的。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Conclusion · 結論與溫馨</div>
+      <h2 class="card-title">五道裂縫，五個答案</h2>
+      <p class="card-hook">上帝沒有放棄那面破碎的鏡子——祂親自走進碎片裡，把它重新造好。</p>
+    </div>
+    <div class="card-body">
+      <p>如果你跟著走到這裡，你已經知道那五道裂縫的樣子了。現在我想告訴你，那個救贖方案，是精準地、一一對應地，回答了每一道裂縫。</p>
+
+      <p>這不是偶然。這是上帝在創世以前就籌劃好的一個故事——一個比任何人類能想像出來的故事都更細密、更有深度的劇本。</p>
+
+      <div class="highlight">
+        <strong>五道裂縫 × 五個答案</strong>
+        失去榮耀 → 稱義與成聖（基督的義歸入我們）<br>
+        交通斷絕 → 和好與交通（隔絕的牆被拆毀）<br>
+        活在震怒下 → 代贖與挽回（基督代我們承受了那份憤怒）<br>
+        心性敗壞 → 重生與心意更新（聖靈給的是一顆肉心）<br>
+        死亡的咒詛 → 復活與得榮（死亡的刺已被拔去）
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「基督既為我們受了咒詛，就贖出我們脫離律法的咒詛。」</p>
+        <p class="scripture-ref">加拉太書 3:13</p>
+      </div>
+
+      <p>那個在園子裡被宣判的咒詛，在各各他的十字架上被轉移了方向——不是被忽略，不是被取消，而是被承擔了。那不是一個廉價的解決方案，而是上帝付出了最高代價的回應。</p>
+
+      <p>我很喜歡神學家巴文克說過的一段話的意涵：救贖不只是讓人「回到」墮落前的狀態——因為那個狀態本來就是可以再犯罪的。救贖帶人去到的，是一個更深、更穩固、更榮耀的位置：在基督裡，被接納進入上帝的家，成為祂永恆的兒女。</p>
+
+      <div class="big-quote">
+        你不只是被「修好了」——你在基督裡成了一個新的人。那個破鏡，不是修補，而是重造。
+        <cite>— 以弗所書 2:10 的神學意涵</cite>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們原是他的工作，在基督耶穌裡造成的，為要叫我們行善，就是神所預備叫我們行的。」</p>
+        <p class="scripture-ref">以弗所書 2:10</p>
+      </div>
+
+      <p>這個系列，是從一位朋友說的「我對自己感到陌生」開始的。我想在結尾說：如果你也有過那種感覺，聖經給你的回答不是「加油，你可以的」，而是「你失落的那個身份，已經在基督裡被找回來了」。</p>
+
+      <p>那個使命——成為映照上帝榮耀的人——還沒有結束。它只是換了一個新的開始。</p>
+
+      <div class="highlight">
+        <strong>帶走這個問題</strong>
+        你今天能帶走一個問題嗎？不是「我夠好嗎？」——而是「我在基督裡是誰？」這個問題，值得你用一生去活出它的答案。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  世人犯罪的後果 · 從墮落到救贖 · Theological Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公義的神與罪惡的追討 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">神學系列 · Theological Series</div>
+  <h1>公義的神與<span>罪惡的追討</span></h1>
+  <p class="subtitle">從聖經原文解析上帝的忍耐、寬容與終極審判 · 六章連貫深論</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個讓人說不出口的問題</h2>
+      <p class="card-hook">如果上帝是公義的，壞人為什麼還活得好好的？</p>
+    </div>
+    <div class="card-body">
+      <p>你有沒有在新聞底下滑過留言，看到一句刺耳卻讓人啞口無言的話：「如果真有公義的上帝，這種事怎麼可能發生？」</p>
+
+      <p>這個問題，不只住在新聞留言區。它住在很多信徒心裡，也住在許多剛剛遭遇不公的人那裡。職場上長期欺壓下屬的主管、笑著離開法庭的加害者、用謊言換來利益的人——他們看起來從來沒有「被報應過」。</p>
+
+      <div class="highlight">
+        <strong>這個問題是誠實的</strong>
+        聖經從來不迴避這樣的張力。從詩篇的哀歌、到約伯的控訴、再到先知書的呼喊，「公義的神，你在哪裡？」是聖經裡不斷迴響的真實疑問。
+      </div>
+
+      <p>這個系列，就是要正面回應這個問題。不用宗教語言打太極，不用「天機不可洩漏」敷衍，而是從聖經原文出發，把上帝如何對待罪惡這件事，一層一層、說清楚講明白。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「按著定命，人人都有一死，死後且有審判。」</p>
+        <p class="scripture-ref">希伯來書 9:27</p>
+      </div>
+
+      <p>這句話，是整個系列的出發點。死亡與審判，不是意外，不是演化的偶然，而是上帝主權下早已蓋印的「宇宙法定約會」。壞人沒被報應，不代表帳已勾銷——只是時候未到。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⏳</span>
+        想像一張已經建檔、蓋上鋼印的法院傳票，只是送達日期還沒到。它真實存在，沒人能銷毀它，沒人能假裝沒這回事。
+      </div>
+
+      <p>接下來的六章，我們要一起走進聖經原文的深處，拆解那些被翻譯抹平的細節，找到一個讓人既敬畏又安慰的答案。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">宇宙法庭開庭了，只是你還沒收到通知</h2>
+      <p class="card-hook">「定命」這兩個字，在原文裡藏著一份無法取消的法定傳票</p>
+    </div>
+    <div class="card-body">
+      <p>讓我們從《希伯來書》九章27節的原文說起。中文「定命」所對應的希臘文，是一個非常法律性的詞彙——</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">ἀπόκειται<br>apokeitai</div>
+        <div class="term-desc">字面意思是「妥善存放、保留以待特定時刻付諸實施」。在古希臘法律中，這個詞用來指為某人預留的法定份額——法庭已建檔、已蓋印、無法撤銷。</div>
+      </div>
+
+      <p>這不是一個「大概會發生」的模糊預測，而是一份「早已存在宇宙檔案庫中」的確定命令。死亡（apothnesko）與審判（krisis）是上帝主權下設定、任何人無法逃脫的「法定約會」。</p>
+
+      <div class="highlight">
+        <strong>「審判」不等於「定罪」</strong>
+        希臘文 krisis 的字根是「分開、裁決」，指的是一場事實調查、證據收集與公義判定的完整程序——更像是法庭審理過程，而非單純的懲罰宣告。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「他必照各人的行為報應各人。」</p>
+        <p class="scripture-ref">羅馬書 2:6</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">ἀποδώσει<br>apodosei</div>
+        <div class="term-desc">由「歸還」與「給予」組成，是商業用語中的「付清債務、結清工資」。這不是武斷的懲罰，而是極其客觀的「帳目清算」——每一筆道德債務，必將被精確結算。</div>
+      </div>
+
+      <p>人世間的法律有漏洞，有錢能請好律師，有勢能拖延訴訟。但宇宙法庭的法官，沒有任何資訊的盲點，也不接受任何賄賂。那份賬，從來沒有被銷毀，只是一直在安靜地等待清算的那一天。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        三十五年前的一樁謀殺案，兇手以為完美犯罪。直到受害者骷髏頭骨中發現的一根鐵釘，成了無聲的鐵證。人間的遮掩，終將在時間中破產；何況是面對無所不知的宇宙法官。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">上帝為什麼還沒出手？——神聖停戰協議的秘密</h2>
+      <p class="card-hook">「按兵不動」不是無能，而是一份單方面簽署、有期限的停戰文件</p>
+    </div>
+    <div class="card-body">
+      <p>既然審判必然到來，為什麼上帝看起來還在「等待」？為什麼惡人今天還活著、甚至活得滋潤？</p>
+
+      <p>保羅在《羅馬書》二章4節給出了一個讓人意外的答案：你藐視的，其實是上帝「豐富的恩慈、寬容、忍耐」。原文在這裡用了兩個截然不同、卻常被混淆的字詞。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">makrothumia · 拉長脾氣</span>
+          由「漫長」與「怒氣」組成——字面意思是「延遲怒氣的發作」。面對冒犯，明明有報復能力，卻選擇主動克制。這是積極的大能自我約束，不是被動的無能為力。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">anoche · 神聖停戰協議</span>
+          古希臘軍事術語，指兩軍交戰時，強大的一方主動宣布「暫時停戰」，給予對方放下武器、投降的機會。這是法理層面的「暫緩公訴」，是恩典大門關閉前的休戰期。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「主所應許的尚未成就……乃是寬容你們，不願有一人沉淪，乃願人人都悔改。」</p>
+        <p class="scripture-ref">彼得後書 3:9</p>
+      </div>
+
+      <p>這兩個字的區別至關重要：makrothumia 是上帝的性情——祂選擇用大能克制自己的忿怒；anoche 是上帝的行動——祂在歷史的某個時間點，單方面簽署了一份停戰協議，給世人一扇悔改的窗口。</p>
+
+      <div class="highlight">
+        <strong>停戰期的嚴肅警告</strong>
+        《羅馬書》二章5節說：若有人藐視這段停戰期，以剛硬不悔改的心回應，就是「為自己積蓄忿怒」——累積的公義債務，在停戰期結束時，將以無可抗拒的力量一次清算。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「如今卻吩咐各處的人都要悔改。」</p>
+        <p class="scripture-ref">使徒行傳 17:30</p>
+      </div>
+
+      <p>「如今」——這個詞語宣告：停戰期已經開始，悔改的門已打開。但門，不會永遠開著。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">真正的悔改：不是哭泣，是大腦重新開機</h2>
+      <p class="card-hook">歷史翻譯的巨大誤會——metanoia 說的，根本不是皮肉之痛</p>
+    </div>
+    <div class="card-body">
+      <p>上帝敞開停戰期，等待人「悔改」。但「悔改」到底是什麼？這裡藏著一個影響了幾百年的翻譯大誤解。</p>
+
+      <p>拉丁文聖經把希臘文 metanoia 翻譯為 paenitentia——補贖、懲罰、苦行。這個翻譯，讓「悔改」在歷史中被理解為「一系列外在宗教行為的修補」：認罪告解、做補贖、流眼淚……</p>
+
+      <div class="highlight">
+        <strong>然而原文說的完全不同</strong>
+        metanoia = meta（超越、改變）+ nous（心思、認知、理解力）。字面意思：去超越你現有的心智模式，讓你的思維方式發生根本性的轉變。這是一場大腦重新開機，不是皮肉受苦。
+      </div>
+
+      <span class="depth-label deep-tag">📖 雙語深探：兩個字，一個真相</span>
+
+      <div class="term-box">
+        <div class="term-original">metanoia<br>希臘文</div>
+        <div class="term-desc">認知維度——心思意念、價值系統、對上帝主權的認識，發生根本性重組。不再用自我中心的濾鏡看世界，開始用上帝聖潔的眼光評估一切。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">שׁוּב (shuv)<br>希伯來文</div>
+        <div class="term-desc">行動維度——字面意思「調頭、轉向、回歸」。舊約先知書呼籲以色列「轉回」歸向耶和華的核心動詞。強調意志上的實質行動，不只是內心感受的變化。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 白話說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔄</span>
+        真悔改，是一個人的 GPS 徹底更新地圖——不只改變下一個路口的決定，而是整個導航系統的核心座標從「以自我為中心」切換為「以基督為主」。這種轉換，必然會在日常行為中顯現出來。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「依著神的意思憂愁，就生出沒有後悔的懊悔來，以致得救。」</p>
+        <p class="scripture-ref">哥林多後書 7:10</p>
+      </div>
+
+      <p>保羅在這裡區分了兩種憂愁：「世俗的憂愁」是因怕被懲罰、怕丟臉而難過，只會帶來死亡；「依著上帝意思的憂愁」是真正看見了罪的本質，因而對自己過去所愛的罪產生神聖的厭惡，這才是真正的轉化起點。</p>
+
+      <div class="highlight">
+        <strong>試金石：果子</strong>
+        《使徒行傳》二十六章20節要求「行事與悔改的心相稱」——真悔改不只是內心感受，必定在生命的方向與選擇上結出可見的果子，這是區分真信心與假宣告的客觀標準。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">十字架：公義與慈愛最深的擁抱</h2>
+      <p class="card-hook">如果上帝是公義的法官，祂怎麼能同時又是赦免罪人的慈父？</p>
+    </div>
+    <div class="card-body">
+      <p>到了這裡，一個系統性的神學難題必須被正面回應：如果上帝是百分之百公義的法官，而每個人都欠著道德債務——那麼當祂執行公義時，豈不是每個人都逃不過定罪的命運？</p>
+
+      <p>而如果祂出於慈愛免除罪債，祂不就成了一個枉法的不義法官，宣告「這次算了」？這不是慈愛，這是宇宙道德秩序的崩潰。</p>
+
+      <div class="big-quote">
+        正義要求賬須清償；當賬已經清償之後，正義又求已償的賬不得再償。
+        <cite>— 歷史神學名言</cite>
+      </div>
+
+      <p>十字架的事件，正是上帝對這個法理張力給出的終極、完美解答。</p>
+
+      <span class="depth-label deep-tag">📖 核心教義：刑罰代償</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 代償的設立</span>
+          上帝沒有降低律法的懲罰要求。祂將罪的全部後果完整保留，但差遣祂的無罪獨生子，站在罪人的法律地位上，承受了神聖律法下應得的一切刑罰與忿怒。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🔥 hilasterion · 法理滿足</span>
+          《羅馬書》三章25節稱耶穌為「挽回祭」（hilasterion）——施恩座、蔽罪蓋。上帝公義的忿怒，在基督的代死中獲得了完全的法理滿足與平息。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">📜 塗抹的債單</span>
+          《歌羅西書》二章14節：基督藉著死，將那「律法上寫著攻擊我們的債單」完全塗抹，釘在十字架上宣告結案——不是豁免，而是「債務已被完全清償」的法定結案。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🏛️ 稱義的宣告</span>
+          對於信靠基督的人，宇宙最高法庭宣告無罪開釋（Justification）——不是因為他們沒有罪，而是因為罪債已在十字架上由他人完全代償。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「聽我話、又信差我來者的，有永生，不至於定罪，是已經出死入生了。」</p>
+        <p class="scripture-ref">約翰福音 5:24</p>
+      </div>
+
+      <p>「不至於受審」——原文用的正是 krisis，那個宇宙末世大審判。信靠基督的人，在「關乎靈魂永恆定罪」的訴訟中，已在十字架上獲得了完全的無罪開釋。</p>
+
+      <div class="highlight">
+        <strong>公義與慈愛的終極交匯</strong>
+        上帝在十字架上，對罪惡執行了最嚴厲的審判——在耶穌身上；同時，祂也向所有願意信靠基督的人，敞開了完全合法、公公義義的赦免通道。這不是對法律的妥協，而是在最完美的公義之內所完成的最深沉的愛。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你不需要帶著恐懼度日了</h2>
+      <p class="card-hook">停戰期還沒結束，門還開著——這是宇宙中最溫柔也最緊迫的邀請</p>
+    </div>
+    <div class="card-body">
+      <p>我們走過了六章。讓我用最簡單的話，把這一切說一遍：</p>
+
+      <div class="highlight">
+        <strong>六章的核心</strong>
+        上帝是真實的公義者，每一筆道德帳，祂都記得清清楚楚（第一、二章）。祂現在沒有立刻清算，是因為祂主動宣布了一段停戰期，等候人回頭（第三章）。悔改不是哭泣或苦行，是讓整個生命的方向調轉（第四章）。十字架是公義與慈愛最完美的解答，罪債已被付清（第五章）。
+      </div>
+
+      <p>所以，現在來到第六章的問題，不是神學問題，而是你個人的問題：</p>
+
+      <div class="big-quote">
+        停戰協議還有效。你，打算怎麼回應？
+      </div>
+
+      <p>如果你是一個早已信靠基督的人，這個系列帶給你的應該是一種深刻的安慰——你的罪債，已經在十字架上以最合法、最公義的方式被全數清償。你來到上帝面前，不需要再顫抖，因為那份「宇宙法定傳票」上面，已經蓋上了「案件終結」的印章。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「現在，那些在基督耶穌裡的就不定罪了。」</p>
+        <p class="scripture-ref">羅馬書 8:1</p>
+      </div>
+
+      <p>如果你是一個還在停戰期邊緣觀望的人——這個系列最後想對你說的，不是恐嚇，而是一份真實的溫柔：</p>
+
+      <p>上帝並不是因為懶惰或無力才沒有立刻清算這個世界。祂是在等你。祂「不願有一人沉淪」，祂把自己的怒氣拉得很長、很長，為的就是讓你有機會在停戰期結束之前，走過那扇還開著的門。</p>
+
+      <div class="highlight">
+        <strong>這是給你的最後邀請</strong>
+        悔改不是讓你覺得自己夠好才能來。它的意思是：帶著你所有的罪、你所有的失敗、你所有「沒有資格」的感覺，轉過身來，對那個已經為你付清所有賬單的基督說：「我回來了。」
+      </div>
+
+      <p>這個世界上有很多事情我們控制不了，罪惡什麼時候被清算，我們不知道。但有一件事是確定的：宇宙法庭的審判之前，十字架的大門是開的。</p>
+
+      <div class="big-quote">
+        公義的最後一句話，不是定罪。<br>而是：「你的債，我替你付了。」
+        <cite>— 十字架的宣告</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  公義的神與罪惡的追討 · Threads 神學系列 · 六章連貫
+</footer>
+
+</body>
+</html>
