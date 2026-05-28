@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>虧欠人的，應當賠償嗎？— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">盟約倫理 · Covenant Ethics</div>
+  <h1>虧欠人的，<span>應當賠償嗎？</span></h1>
+  <p class="subtitle">從聖經原文與盟約倫理看公義與恩典的交會 · 六章連貫系列</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那筆帳，你心裡清楚</h2>
+      <p class="card-hook">有些債，不在帳本上，卻重壓在良心深處——你是否也有那麼一筆，久久未曾了結？</p>
+    </div>
+    <div class="card-body">
+      <p>生命裡，我們都曾欠過人什麼。也許是一筆未還的借款，也許是一句謊言造成的損失，也許是職場上一個不誠信的決定，讓某人靜靜地承受了代價。</p>
+      <p>時間過去了，對方也許已經不再追究，甚至從未開口。但你知道。那份知道，有時在深夜悄悄浮現，有時在聚會唱詩的當下突然刺痛——「我已經信主了，這些算不算已經過去了？」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        想像你打破了鄰居的玻璃窗。你誠心道歉，鄰居也寬容地說：「沒關係，我原諒你了。」——但窗還是破的。原諒與修復，是兩件各自完整、又彼此相連的事。
+      </div>
+
+      <p>聖經對這個問題的回答，既不迴避、也不苛刻。它給了我們一個清晰的指引，同時也容納了人性的軟弱與恩典的空間。這個系列，我們就要一起把這件事好好想清楚。</p>
+
+      <div class="highlight">
+        <strong>本系列核心立場</strong>
+        虧欠人的，應當如數賠償，應當盡力趁早。如無力量，當求主憐憫，並向當事人說明理由。賠償是生命改變的表徵，不是換取救恩的代價。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">撒該為什麼要賠四倍？</h2>
+      <p class="card-hook">他不是在買救恩——他是在宣告，自己是一個不同的人了</p>
+    </div>
+    <div class="card-body">
+      <p>路加福音 19 章，記載了一個讓人難以忘懷的場景。撒該，耶利哥城的稅吏長，爬上桑樹只為了看見耶穌。他是個有錢人，也是個被整座城厭棄的人。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「撒該站著對主說：『主啊，我把所有的一半給窮人；我若訛詐了誰，就還他四倍。』耶穌說：『今天救恩到了這家……』」</p>
+        <p class="scripture-ref">路加福音 19:8-9 · 和合本</p>
+      </div>
+
+      <p>注意這個順序：救恩是在撒該宣告賠償之後才降臨的嗎？不。耶穌說「今天我必住在你家裡」在先——救恩是主動進入的，不是被撒該的賠償「購買」來的。</p>
+      <p>但撒該一旦接觸了那份愛，他的生命立刻產生了重組。他宣告的不是「我會慢慢考慮」，而是現在式——「我要……我若……就還」。這是一種立即的、不可逆的生命方向轉變。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        真實的悔改，就像種子落入土裡——它必然會長出果子。不是因為要靠果子證明自己，而是因為那顆種子本來就充滿生命。賠償，是悔改這顆種子結出的那枚果實。
+      </div>
+
+      <p>撒該的賠償標準甚至超越了律法的最低要求。利未記要求良心發現者歸還本物再加兩成；但撒該宣告的是四倍——這是出埃及記對盜賊的懲罰標準。他不是在精算最少要賠多少，而是在傾盡所有地宣告：「那個靠榨取活著的我，死了。」</p>
+
+      <div class="highlight">
+        <strong>引導問題</strong>
+        你生命中，有沒有一個「撒該時刻」——當愛真正觸碰你的那一刻，你最自然的反應是什麼？是計算代價，還是想要「還清」？
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">賠償不是補贖，是修復</h2>
+      <p class="card-hook">弄清楚「為什麼要賠」，才不會把賠償變成另一種自我折磨或宗教表演</p>
+    </div>
+    <div class="card-body">
+      <p>在進入聖經的具體教導之前，我們必須先破除一個危險的誤解：「賠償是為了讓神消氣」或「賠償是讓自己心安的代價」。這兩種觀念，本質上都是把賠償當成一種「補贖」（quid pro quo）——用行為換取赦免。</p>
+      <p>這與聖經的救恩論是根本矛盾的。希伯來書告訴我們，唯有基督作為完美的「贖愆祭」，一次永遠地清償了人在神面前那筆絕對還不起的靈性債務。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🕊️ 垂直關係（人與神）</span>
+          已由基督十字架完全清償。這筆帳，你不需要、也不可能再去還。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🤝 水平關係（人與人）</span>
+          對鄰舍造成的實質損害，需要實質的修復與賠償。這是另一個維度的問題。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚖️ 兩者的關係</span>
+          利未記明示：欺騙鄰舍，本質上是「對耶和華行事不忠實」——水平傷害同時也是垂直背叛。因此修復水平關係，是回應垂直赦免的誠信表現。
+        </div>
+      </div>
+
+      <p>賠償的目的，不是安撫神，也不是換取心理平靜，而是讓被破壞的關係、被損害的尊嚴，在可能的範圍內得到修復。這是一種成聖的功課，是悔改之後生命重塑的必然方向。</p>
+
+      <div class="highlight">
+        <strong>核心區分</strong>
+        「赦免」解決的是罪的刑罰問題；「賠償」處理的是罪的後果問題。兩者都不可缺，但不可混淆。一個向神真誠悔改的人，面對鄰舍的損失，不會說「我已經得赦免了，所以不需要管了」——那是在把恩典當作逃避責任的擋箭牌。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">律法怎麼說：賠償的聖經地圖</h2>
+      <p class="card-hook">從出埃及記到羅馬書，聖經給出了比我們想像更細緻、更有溫度的賠償藍圖</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label plain-tag">💡 先從字根說起</span>
+      <p>希伯來文裡，「賠償」（shalam，H7999）和「平安」（shalom）是同一個字根。這個字本義是「使完全」、「使恢復平衡」。換言之，賠償不是冷冰冰的財務交易，而是讓一段因過犯而失去平衡的關係重新走向完整。</p>
+
+      <div class="term-box">
+        <div class="term-original">שָׁלַם<br>shalam</div>
+        <div class="term-desc">動詞，意為「補償、使安全、使完全、建立和平」。與名詞 shalom（平安、完整）同源。賠償的目的，是讓被破壞的關係重回完整與和諧的狀態。</div>
+      </div>
+
+      <div class="card-divider"></div>
+      <span class="depth-label deep-tag">📖 摩西律法的四種情境</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 疏忽造成的損失（出 21:33-34）</span>
+          挖坑未蓋，鄰舍牲畜跌死——按市價如數賠償。強調疏忽也有責任，但標準是「如數」，不是懲罰性倍數。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 惡意偷竊且已處置財物（出 22:1）</span>
+          偷牛宰殺或出售——賠五倍；偷羊——賠四倍。懲罰性倍數，針對的是惡意剝奪鄰舍生計的行為。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 主動認罪的欺詐（利 6:1-5）</span>
+          說謊欺騙後良心發現、主動認罪——歸還全部原物，再加五分之一（120%），同日獻贖愆祭。處罰較輕，旨在鼓勵主動悔改。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 受害者已逝無繼承人（民 5:8）</span>
+          賠償金不可私吞，必須歸給耶和華（由祭司承受）。確保不義之財絕不留在罪犯手中，神是一切孤立無援者的最終救贖者。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡事都不可虧欠人，唯有彼此相愛，要常以為虧欠；因為愛人的，就完全了律法。」</p>
+        <p class="scripture-ref">羅馬書 13:8 · 和合本</p>
+      </div>
+
+      <p>保羅在羅馬書的總結，呼應了整個律法的精神：在財務上不欠人、按時償還是最基本的誠信要求；但在愛上，要「常以為虧欠」——愛是那唯一一種越償還、越豐盛的債。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">當真的還不起：恩典的邊界</h2>
+      <p class="card-hook">聖經既嚴肅地要求賠償，也溫柔地為力不能及的人留下了出口</p>
+    </div>
+    <div class="card-body">
+      <p>聖經對賠償的要求是認真的——但它不是冷酷的法庭，只算帳不看人。在墮落的世界裡，有太多人是因為貧窮、意外、疾病，或結構性的壓迫，而陷入「想還卻還不起」的處境。</p>
+      <p>對此，神的律法引入了一個極具智慧的恩典邊界：安息年與禧年機制。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「每逢七年的末了，你要施行豁免……你手所借給他的，都要豁免了，不可向你的弟兄和窮乏人追討。」</p>
+        <p class="scripture-ref">申命記 15:1-2 · 和合本</p>
+      </div>
+
+      <p>安息年的設立，是神主動介入、打破債務枷鎖的盟約宣告。祂不容許短暫的財務困境演變為世代奴役，不容許一個人因為還不起而永遠失去尊嚴與未來。</p>
+
+      <div class="highlight">
+        <strong>力不能及時的兩步回應</strong>
+        第一步，向神尋求憐憫：將重擔誠實地帶到神面前，承認自己的限制，信靠那應許供應的主。第二步，向當事人坦誠說明：不逃避、不失聯、不找藉口推諉——誠懇地解釋真實處境，這是尊重對方尊嚴的誠信表現，也是保護自身見證的必要行動。
+      </div>
+
+      <p>同時，被虧欠的一方，也在此刻面臨一個屬靈的試驗：對方若確實無力償還，你是否願意效法神的禧年精神，給予延期、減免，甚至在必要時豁免？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        主耶穌在「惡僕逼債」的比喻中，將這件事說得再清楚不過：那個剛被主人免了巨債、轉身卻掐住無力還債之同伴的僕人，被主人稱為惡的——因為他用自己的手堵住了那條恩典之流，讓它只流入、不流出。
+      </div>
+
+      <p>賠償的議題，最終指向一個更深的神學核心：我們都是被神免了無法估算之巨債的人。這個認知，既讓我們有動力去償還對鄰舍的虧欠，也讓我們在面對無力償還者時，能帶著憐憫而非冷漠。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">唯一還不完的債：愛</h2>
+      <p class="card-hook">物質的帳，要盡力還清；愛的帳，是一輩子甘心欠著的</p>
+    </div>
+    <div class="card-body">
+      <p>走過六章，讓我們把這整條線索收攏起來。</p>
+      <p>虧欠人的，要還——不是因為恐懼，不是為了換取赦免，而是因為我們已經被愛融化，生命開始對公義有了渴望，對鄰舍的尊嚴有了在乎。</p>
+      <p>真正的悔改，是生命重新定向。而重新定向的生命，會自然地轉向那些曾被它傷害的人，帶著補償的心意，踏出修復的步伐。這是shalam——讓破裂的地方重新趨向完整，讓失去平衡的關係重新走向shalom。</p>
+
+      <div class="highlight">
+        <strong>給自己的三個問題</strong>
+        你是否有一筆還未了結的虧欠，需要在近期採取行動？你是否正在用「已經得赦免了」的神學語言，迴避一個需要面對的關係修復？你是否曾被欠過、也願意在適當的時候效法神的禧年精神，給對方一條出路？
+      </div>
+
+      <div class="big-quote">
+        物質的債務有還清的一天，但基督徒對鄰舍付出愛與關懷的債，是一輩子也還不完的——而且，這筆愛越是去償還，內心的愛反而越豐盛、越喜樂。
+        <cite>— 羅馬書 13:8 的神學意涵</cite>
+      </div>
+
+      <p>最後，願這句話成為你帶走的錨點：在財務與誠信上，作一個守信負責的人，盡力清償一切虧欠；在愛與關懷上，讓自己永遠處於「甘心欠著」的那種豐盛狀態——因為愛，是唯一越給越多的債。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡事都不可虧欠人，唯有彼此相愛，要常以為虧欠。」</p>
+        <p class="scripture-ref">羅馬書 13:8 · 和合本</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  虧欠與賠償的神學軌跡 · 盟約倫理系列 · 六章完
+</footer>
+
+</body>
+</html>

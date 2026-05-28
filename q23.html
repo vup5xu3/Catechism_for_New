@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恩典、信心與行為 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩神學 · Soteriology Series</div>
+  <h1>恩典、信心<span>與行為</span></h1>
+  <p class="subtitle">從文本文法、歷史教義到系統神學的整合研究 · 六章連貫長文</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">一個讓人一生追問的問題</h2>
+      <p class="card-hook">你有沒有想過，神為什麼偏偏選擇「信心」，而不是「努力」，作為得救的鑰匙？</p>
+    </div>
+    <div class="card-body">
+      <p>有一個問題，幾乎每個認真思考信仰的人，遲早都會碰到：為什麼神要透過「信心」來救人，而不是「行為」？</p>
+      <p>這不是一個容易隨口回答的問題。它牽涉到最深層的神學辯證，也觸碰到我們對公平、公義與神聖本質的直覺。努力的人理應獲得回報，難道不是嗎？道德高尚的人應該比罪人更靠近神，不是嗎？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        想像一個貧窮的孩子，站在一家華美的餐廳門口。他沒有錢，也沒有華服，甚至渾身泥濘。但餐廳老闆走出來說：「你只要相信我願意讓你進來，門就為你開。」——這個場景，某種意義上，就是救恩的圖像。
+      </div>
+
+      <p>但更深的問題才剛開始浮現：這樣做公平嗎？信心本身算不算一種「行為」？如果信心是神賜的，那人的自由意志在哪裡？如果信心不夠，難道只能一直懷疑自己到底得救了沒？</p>
+
+      <div class="highlight">
+        <strong>這個系列的核心問題</strong>
+        本系列將帶你走一趟完整的旅程——從聖經文法的微觀細節，到兩千年教會歷史的宏觀衝突，最終回到你我最真實的生命處境：信心、行為，與這一切背後那位愛我們的神。
+      </div>
+
+      <p>無論你是正在尋找信仰的探索者、還是已信多年卻仍有疑惑的基督徒，甚至是對這個問題抱持懷疑的讀者，這個系列都是為你而寫的。讓我們一起來看。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Orientation · 引導</div>
+      <h2 class="card-title">信心為何是「最簡單也最奇妙」的媒介？</h2>
+      <p class="card-hook">神選擇信心，不是隨機的——這個選擇本身就藏著驚人的智慧與慈愛</p>
+    </div>
+    <div class="card-body">
+      <p>讓我們先從一個最直觀的切入點開始：如果神要拯救所有人，祂會選擇什麼樣的條件？</p>
+      <p>若是智識，文盲就被排除了。若是道德，墮落的人就沒有希望。若是宗教禮儀，貧苦的人可能根本沒有機會參與。若是種族或出身，神就成了偏袒的神。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。」</p>
+        <p class="scripture-ref">以弗所書 2:8–9</p>
+      </div>
+
+      <p>信心，是人類唯一能夠完全平等擁有的屬靈動作。一個臨終的囚犯，可以在最後一刻信；一個剛懂事的孩童，可以用最純樸的心信；一個飽學的神學家，最終也必須卸下一切學識的自誇來信。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 最簡單</span>
+          不需學歷、年齡、財富或宗教身份。只需要一顆願意投靠的心。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❤️ 最普通</span>
+          無論是猶太人還是外邦人、貴族還是奴隸，人人皆能信，門檻為零。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✨ 最奇妙</span>
+          信心不依賴眼見的現實，卻能在瞬間使一個靈性死亡的人得著新生命。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">⚡ 最有力量</span>
+          真正的信心不是被動的，它是能改變生命、驅動行動的強大內在力量。
+        </div>
+      </div>
+
+      <p>在福音書裡，有一個患了十二年血漏的婦人。她耗盡所有財產看醫生，卻每況愈下。當她在人群中艱難地向前擠，只為摸一下耶穌衣袍的繸子——就在那一刻，耶穌說：「你的信心救了你。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧵</span>
+        信心就像這根繸子——它本身並不是救恩的力量，它只是那雙顫抖卻伸出去的手。真正的力量在於另一端的那位。
+      </div>
+
+      <p>這就是為什麼信心是最奇妙的媒介：它把一切的榮耀歸給神，同時又完全尊重人的尊嚴——每一個人，都可以選擇伸出那隻手。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Exegesis · 破題</div>
+      <h2 class="card-title">希臘文裡的千年爭辯：「這」到底指什麼？</h2>
+      <p class="card-hook">一個中性代名詞，引爆了兩千年的神學戰場</p>
+    </div>
+    <div class="card-body">
+      <p>以弗所書二章八節是整個救恩論最核心的文本之一。然而，這節經文的原文中藏著一個文法謎題，讓神學家們爭論了幾個世紀。</p>
+
+      <span class="depth-label deep-tag">📖 文法深度層次</span>
+      <p>在希臘原文中，「恩典」（charis）與「信心」（pistis）都是陰性名詞。但保羅用來指代它們的那個「這」（touto），卻是中性單數。性別不符——這不是筆誤，而是一個精心的神學決定。</p>
+
+      <div class="term-box">
+        <div class="term-original">τοῦτο<br>touto</div>
+        <div class="term-desc">希臘文「這」，中性單數指示代名詞。當它指向前面出現過的陰性名詞時，性別不符的現象在新約中通常意味著：它指的不是某個單一名詞，而是整個前置概念或事件。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>這四條詮釋路徑，可以用一個問題來理解：「神所賜的禮物，到底是什麼？」</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">路徑一：「信心」本身是神賜的</span>
+          改革宗神學的立場——連信的能力都是神強行注入的。文法難度高，但神學邏輯強烈指向神的主權。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">路徑二：「恩典」是神賜的禮物</span>
+          但這會造成語意重疊——恩典本身就是白白的禮物，再說恩典是「禮物」等於說了廢話。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">路徑三：「整個救恩事件」是禮物</span>
+          最符合希臘文語法——中性代名詞指向前置的整個概念，即「本乎恩、藉著信得救」這整件事是神的禮物。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">路徑四：副詞性強調用法</span>
+          「這，尤其是，絕不出於你們自己……」——文法合理，直接突顯神恩典的絕對主動性。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>神學共識</strong>
+        無論哪條文法路徑，終極的神學指向是一致的：救恩的源頭是神，人沒有任何自誇的空間。爭論的是細節，不是核心。信心是領受禮物的手，不是換取禮物的籌碼。
+      </div>
+
+      <p>這個文法謎題之所以重要，不只是學術上的，它直接決定了我們怎麼理解「我的信心夠不夠」這個問題。如果信心本身是禮物，那問題就不再是「我怎樣努力才能信得夠多」，而是「我願不願意張開手接受這份禮物」。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Historical · 研究</div>
+      <h2 class="card-title">兩千年的爭戰：從奧古斯丁到宗教改革</h2>
+      <p class="card-hook">歷史神學不只是學術——那些教義衝突，其實都是真實的靈魂危機</p>
+    </div>
+    <div class="card-body">
+      <p>如果你以為「信心 vs. 行為」的辯論是現代人才有的困惑，你需要認識一位五世紀的修士——伯拉糾（Pelagius）。</p>
+      <p>伯拉糾是個認真的人。他看到羅馬城的基督徒道德墮落，心裡充滿憤慨。他提出了一個看似合理的主張：人本來就有能力不犯罪，只要你夠努力，只要你效法基督的榜樣，你就能獲得得救的資格。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        伯拉糾的想法聽起來很公平，很有道德感。但它的底層邏輯是：神是一個計分板，你只要分數夠高就能過關。這背後的神，更像是一個嚴格的老師，而不是一個愛子的父親。
+      </div>
+
+      <p>奧古斯丁（Augustine）的反駁，徹底改變了西方神學的走向。他說：墮落後的人類靈性已然死亡，就像一個溺水者，你不能叫他自己游上岸，因為他根本無法動彈。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「那時，你們死在過犯罪惡之中，他叫你們活過來。」</p>
+        <p class="scripture-ref">以弗所書 2:1</p>
+      </div>
+
+      <p>奧古斯丁提出「在先恩典」（Prevenient Grace）的概念：在人能夠信之前，神早已悄悄動工，醫治那顆被罪奴役的心，讓它重新有能力回應神的呼召。</p>
+
+      <div class="card-divider"></div>
+
+      <p>到了十六世紀，路德的宗教改革，再次把這場戰火點燃。天主教說：信心是起點，但你還需要透過善行、聖禮與恩典的合作，才能最終完成得救的過程。路德說：不，稱義在那一刻就已完全發生了，基督的義完全「歸算」給了你——不是因為你夠努力，而是因為你信了那位為你成全一切的那一位。</p>
+
+      <div class="highlight">
+        <strong>歷史的弔詭</strong>
+        1999年，天主教與路德宗終於共同簽署了《關於稱義教義的聯合聲明》，承認雙方的核心共識：救恩唯獨出於神的恩典，藉著信心白白賜予。兩千年的爭戰，原來爭的，有很多是同一件事的不同面向。
+      </div>
+
+      <p>歷史告訴我們：這些教義爭論，從來不只是紙上的辯論，背後每一個都是真實的靈魂在問：「我的努力夠嗎？我站在神面前夠格嗎？」而福音的回答，一直都是：不是夠不夠格，而是你願不願意領受那份禮物。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">保羅、雅各、約翰：三個聲音，一個真理</h2>
+      <p class="card-hook">聖經裡最著名的「矛盾」，其實是三位使徒從不同角度照亮同一個實體</p>
+    </div>
+    <div class="card-body">
+      <p>這是許多人讀新約時最困惑的地方——保羅說「因信稱義，不在乎行律法」，雅各卻說「人稱義是因著行為，不是單因著信」。這不是矛盾嗎？</p>
+      <p>不。理解這個問題的鑰匙，是看清楚他們在對抗的是完全不同的敵人。</p>
+
+      <span class="depth-label deep-tag">📖 文本語境分析</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✍️ 保羅在對抗律法主義</span>
+          他的讀者是被猶太律法主義裹挾的外邦信徒，以為要靠割禮、飲食規條才能真正得救。保羅的回答：不，稱義完全在於信，與行為無涉。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✍️ 雅各在對抗信仰怠惰</span>
+          他的讀者口稱信主，卻對赤身露體的弟兄視而不見，信仰只剩觀念沒有行動。雅各的回答：沒有行為的信心是死的信心，根本不算信心。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✍️ 約翰在對抗靈知主義</span>
+          他的讀者以屬靈知識自誇，卻在生活中缺乏愛心實踐。約翰的回答：不愛弟兄的人，根本還活在黑暗裡。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 關鍵比較：兩個亞伯拉罕</span>
+      <p>最精彩的是，保羅和雅各都引用了同一個人——亞伯拉罕——來支持各自的論點，但側重的是他生命中不同的時間點。</p>
+
+      <div class="highlight">
+        <strong>保羅的亞伯拉罕（創世記 15:6）</strong>
+        那是亞伯拉罕尚未受割禮、尚未有兒子的時候，他只是相信神的應許，神就「算為他的義」。結論：稱義不靠行為，只靠信心。
+      </div>
+
+      <div class="highlight">
+        <strong>雅各的亞伯拉罕（創世記 22）</strong>
+        那是亞伯拉罕被稱義多年之後，他奉命將獨生子以撒獻在祭壇上。結論：他真實的信心，透過這個具體行動得以「成全」並顯明。
+      </div>
+
+      <p>這兩個亞伯拉罕，根本不矛盾。他們說的是同一個人在生命不同階段的故事。信心在先，行為在後；行為不是賺取稱義的方式，而是已得稱義之人，信心自然結出的果子。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「小子們哪，我們相愛，不要只在言語和舌頭上，總要在行為和誠實上。」</p>
+        <p class="scripture-ref">約翰一書 3:18</p>
+      </div>
+
+      <div class="big-quote">
+        保羅反對的是「虛假行為的信仰」，雅各與約翰反對的是「虛假信心的行為」——兩者在深層邏輯上完全一致。
+        <cite>— 新約神學的有機和諧</cite>
+      </div>
+
+      <p>活的信心，必然包含順服的行動。死的信心，只是對神學命題的智識同意。魔鬼也相信神的存在，但牠從不投靠。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Epilogue · 結論與溫馨</div>
+      <h2 class="card-title">信心是根，行為是花——這兩件事，從來不是敵人</h2>
+      <p class="card-hook">在所有的神學爭論塵埃落定之後，有一份寧靜的確據，等著每一個願意伸手的人</p>
+    </div>
+    <div class="card-body">
+      <p>走完這段旅程，讓我們停下來，輕輕地問一個最私人的問題：在你的生命裡，信心與行為之間，是什麼樣的關係？</p>
+      <p>也許你曾經拼命用行為來確認自己得救了——禱告夠多、讀經夠勤、服事夠積極，心裡還是有一個聲音在問：「這樣夠了嗎？」也許你早就知道救恩是白白的恩典，卻在日常生活中，依然活得像一個試圖達標的人。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神愛世人，甚至將祂的獨生子賜給他們，叫一切信他的，不至滅亡，反得永生。」</p>
+        <p class="scripture-ref">約翰福音 3:16</p>
+      </div>
+
+      <p>東方正教會有一個美麗的概念叫做「神化」（Theosis）——救恩不只是一紙法律宣告，而是一個你越來越像基督的生命旅程。亞他那修說：「神成為人，為要叫人成為神。」不是說人變成神，而是說，人在與神的相交中，越來越充滿神的生命、神的愛、神的光。</p>
+
+      <div class="highlight">
+        <strong>東西方教義的美麗交匯</strong>
+        西方說：你在神面前被宣告為義，這是完全的、即時的，基督的義歸算給你。東方說：救恩是一生的神化旅程，信徒在聖靈中漸進轉化。這兩者，其實都在說同一個真理的不同面向——你既已被接納，也正在被更新。
+      </div>
+
+      <p>信心是根。行為是花。根不需要努力「長出」花——花是根健康之後自然湧現的生命力。你不需要靠行為來確認自己得救，但一個真的得了新生命的人，生命自然會不一樣。就像那個在西門家中流淚的女人，她不是用眼淚和香膏來賺取赦免；她的愛，是因為她已知道自己被赦免、被愛了。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌸</span>
+        一棵被澆灌、被光照的樹，不是命令自己「快長出花來」——它只是活著，然後花就來了。信心的生命也是這樣：當你真的相信自己被愛、被接納，好行為不再是義務，而是喜樂。
+      </div>
+
+      <div class="big-quote">
+        救恩的源頭是神，信心是那雙伸出去的手，而行為，是被握住之後，生命從內而外的綻放。
+        <cite>— 恩典、信心與行為的終極整合</cite>
+      </div>
+
+      <p>最後，無論你現在在哪個位置——剛開始思考、半信半疑、或者已信多年卻仍在摸索——這份邀請始終開著：不是「你夠好了就來」，而是「就這樣來」。</p>
+
+      <p>帶著你所有的疑惑、你的不完美、你的掙扎——就這樣來。信心從來不要求完美，它只要求真實。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  恩典、信心與行為 · Soteriology Threads Series
+</footer>
+
+</body>
+</html>

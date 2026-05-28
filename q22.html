@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>求告主名，就可得救了嗎？— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩論深度系列 · Soteriology Series</div>
+  <h1>求告主名，<span>就可得救了嗎？</span></h1>
+  <p class="subtitle">神學原文考據、救恩多維範式與生命得勝路徑之深度辨析</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">一句話，兩千年的重量</h2>
+      <p class="card-hook">你可能念過它上千次，但它的份量，你真的感受到了嗎？</p>
+    </div>
+    <div class="card-body">
+
+      <p>「凡求告主名的，就必得救。」</p>
+
+      <p>這句話，許多人從小就會背。它貼在教會走廊的壁報板上，印在佈道單的封底，也是無數人在人生最低谷時，唯一能抓住的那根稻草。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡求告主名的，就必得救。」</p>
+        <p class="scripture-ref">羅馬書 10:13 · Romans 10:13</p>
+      </div>
+
+      <p>但我想問你一個問題——一個也許從來沒有人問過你的問題：</p>
+
+      <div class="big-quote">
+        你知道這句話在原文裡，其實是一個法庭術語嗎？
+      </div>
+
+      <p>兩千年前，當保羅用希臘文寫下這句話時，他選用的「求告」一詞——Epikaleomai——在當時的羅馬帝國，是一個每個公民都聽得懂的司法詞彙。它的意思，不是「隨口喊一喊」，也不是「心裡默默希望一下」。</p>
+
+      <p>它的意思是：一個面臨死刑判決、走投無路的人，在法庭上大聲宣告——「我放棄所有自我辯護，我將我的案件完全移交給最高裁判官，求他親自接管。」</p>
+
+      <div class="highlight">
+        <strong>本系列的邀請</strong>
+        接下來的六篇文章，我們要一起回到這句古老應許的最深處。不是為了讓信仰變得更複雜，而是為了讓它變得更真實、更有力量——讓你在下一次求告主名時，真正知道你在做什麼。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">這句話從哪裡來？追溯一個應許的旅程</h2>
+      <p class="card-hook">從火山爆發前的先知預言，到羅馬帝國的地下教會——這句話走過了一段驚人的旅程。</p>
+    </div>
+    <div class="card-body">
+
+      <p>要理解羅馬書十章十三節，你必須先認識它的源頭。保羅並不是在發明新教義——他是在引用一段寫於八百年前的古老預言。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「那時，凡求告耶和華名的就必得救；因為照耶和華所說的，在錫安山，在耶路撒冷將有逃脫的人。凡耶和華所召的，都在餘民之列。」</p>
+        <p class="scripture-ref">約珥書 2:32 · Joel 2:32</p>
+      </div>
+
+      <p>先知約珥說這話時，以色列正面臨一場毀滅性的蝗災。那是一幅末日般的景象：遮天蔽日的蟲雲，燒毀莊稼的烈火，哀嚎的百姓。在這片廢墟中，神說出了這句話。</p>
+
+      <div class="highlight">
+        <strong>舊約的應許</strong>
+        約珥書中的「耶和華」，在希伯來文中是神的聖名「YHWH」——那位與以色列立約的獨一真神。「求告這個名字」，代表的是進入一段盟約關係，呼求那位有能力拯救、並承諾要拯救的神。
+      </div>
+
+      <p>八百年後，保羅在羅馬書中做了一件在當時極具震撼性的事：他把這句「求告耶和華（YHWH）名的就必得救」，直接套用在了耶穌基督身上。</p>
+
+      <p>在嚴格的猶太一神教語境中，這是一個極其大膽的宣告——它的意思只有一個：耶穌，就是那位耶和華本人。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔗</span>
+        想像你正在讀一份古老的皇室契約，上面寫著「凡向皇帝本人求告的就必得保護」。一位使者突然用同樣的文字，宣告效忠於另一位君王——這不只是比喻，這是一個政治宣言：這位新君王，擁有與皇帝同等的主權。保羅對耶穌的宣告，力量正在於此。
+      </div>
+
+      <p>這句話從約珥書到羅馬書的旅程，是整部救贖歷史的縮影：神的應許從不過時，只會在基督裡得到更完全的成就。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Thesis · 破題</div>
+      <h2 class="card-title">「求告」不是喊一喊——它是法庭上的降服宣告</h2>
+      <p class="card-hook">當你真正理解這個詞的份量，你對信仰的理解將永遠改變。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label plain-tag">💡 白話說明</span>
+      <p>讓我們先用一個現代場景來感受：想像你被冤枉，面臨一場你必輸的官司。你的律師告訴你，唯一的出路是「上訴」——將案件移交給最高法院的首席大法官，放棄所有自我辯護，完全信賴他的裁決。</p>
+
+      <p>這個「上訴」的動作，在希臘原文中，就是 Epikaleomai。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 原文深度</span>
+
+      <div class="term-box">
+        <div class="term-original">קָרָא<br>Qara</div>
+        <div class="term-desc">希伯來文，意指在盟約關係中，向立約的主人發出具法律效力的救援申訴。亞伯拉罕「築壇呼求耶和華的名」，使用的就是這個詞——這是一種公開的、群體性的信仰告白。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἐπικαλέομαι<br>Epikaleomai</div>
+        <div class="term-desc">希臘文，法庭術語。新約中使徒保羅在面臨死刑時，對羅馬巡撫宣告「我上訴於凱撒！」用的就是這個詞的同一字根。這是一個面臨極度危機的羅馬公民，向帝國最高司法主權發出的人身保護申請。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>神學核心</strong>
+        「求告主名」不是一句魔法咒語，不是口頭公式，更不是緊急情況下才想到的備用選項。它是一個罪人承認自己在宇宙法庭上毫無辯護能力，主動放棄自我掌控，將整個生命案件移交給主耶穌這位中保的「降服宣告」。這種降服，才是真信心的外貌。
+      </div>
+
+      <p>因此，當保羅說「凡求告主名的就必得救」，他說的「凡」字是絕對的——但這個「求告」本身，已經預設了一顆被聖靈甦醒、真正認識自己靈性破產的心。沒有這樣的心，嘴裡喊出的不過是聲音，不是求告。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">「得救」是一個大禮包——Sozo 的多維救恩</h2>
+      <p class="card-hook">你以為「得救」只是領了一張天堂門票？聖經說的，遠比這更慷慨。</p>
+    </div>
+    <div class="card-body">
+
+      <p>許多人對「得救」的理解，其實非常狹窄：死後靈魂能上天堂，免於下地獄，就這樣。這個理解沒有錯，但它只說出了救恩的三分之一。</p>
+
+      <span class="depth-label deep-tag">📖 原文考據</span>
+
+      <div class="term-box">
+        <div class="term-original">σῴζω<br>Sozo</div>
+        <div class="term-desc">希臘文「拯救」。在新約中，這個字同時用於靈魂的赦免、身體的醫治與精神的釋放。耶穌對患血漏的婦人、對瞎眼的乞丐巴底買說的「你的信救了你」，用的全是這個字。</div>
+      </div>
+
+      <p>這意味著，當神應許「求告主名就必得 Sozo」，祂所說的救恩涵蓋了三個維度：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 靈魂的稱義</span>
+          在屬靈法庭上，基督的義歸算給信徒，罪債被一次永遠清償。這是即時的、完全的、永不失落的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💛 心靈的醫治</span>
+          聖靈進入人的心思、情感與意志，修復來自過去傷害、自卑與罪疚感的捆綁，賜下超自然的平安與更新。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✨ 身體的復興</span>
+          從今世的神蹟醫治，到末日肉身的復活與榮耀改變——神的救恩目標是使整個人，靈、魂、體，完全得贖。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>值得注意的是，在當代某些「內在醫治事工」中，Sozo 的多維概念被發展成一套需要特定技術程序的釋放系統。正統神學在此提醒：基督在十字架上一次成就的救贖是完全的。</p>
+
+      <div class="highlight">
+        <strong>重要平衡</strong>
+        日常心靈的平安與成長，應當立足於對基督既成勝利的安息，以及對神話語的順服——而非對特定技術或體驗的倚賴。救恩的豐富，是在基督裡不斷支取的，而非在程序中解鎖的。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">得救 vs. 得勝——門票與獎盃，你分清楚了嗎？</h2>
+      <p class="card-hook">這是聖經裡最被誤解的張力之一，搞懂它，你的信仰將煥然一新。</p>
+    </div>
+    <div class="card-body">
+
+      <p>求告主名帶來救恩——這是確定的。但聖經在救恩這個議題上，呈現了一個讓許多人困惑的「雙重結構」：有些經文說救恩是白白的恩賜，有些卻要求信徒「恐懼戰兢，做成你們的得救」。這矛盾嗎？</p>
+
+      <p>不矛盾。這是兩件根本不同的事。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏅</span>
+        用一場世界馬拉松大賽來比喻：得救，是主耶穌用生命全額買單、白白送給你的免費參賽門票——你的名字因此永遠登記在冊，參賽資格永不取消。得勝，則是你在賽道上竭力奔跑、越過終點線後，由主親手頒發的榮耀獎盃。沒有人會在拿到免費門票後，就直接躺在起跑線上等領獎。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 神學深度</span>
+
+      <p>在弟兄會與聚會所的神學傳承中，這個區分被系統性地闡述為「恩賜與賞賜」的不同：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🎁 恩賜：永生（得救）</span>
+          完全無條件，單憑信心求告主名即得。法理上的稱義是即時的、完全的，且永不失落。這是基督白白的禮物。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🏆 賞賜：冠冕與寶座（得勝）</span>
+          信徒在得救後，順服聖靈、持守忠心的工作結果。在基督審判台前論功行賞。不忠心者雖仍得救，卻「像從火裡經過一樣」，失去冠冕與一同作王的榮耀。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>成聖的真義</strong>
+        腓立比書二章十二節「恐懼戰兢做成你們自己的得救」，不是在叫人擔心失去靈魂，而是在呼召得救者，將神已植入內心的新生命，在日常生活中活出來。這是生命的自然流露，不是律法的強迫服從——就像一隻被改變了基因的貓，自然而然會捕鼠，不是因為規定，而是因為本性。
+      </div>
+
+      <p>因此，「求告主名就必得救」是信仰的起點，不是終點。神的心意，是讓每一個求告祂名的人，不只是跨過得救的門檻，更能奔跑那一條通往生命得勝的榮耀賽道。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Finale · 結論與溫馨</div>
+      <h2 class="card-title">你的呼求，祂都聽見了</h2>
+      <p class="card-hook">在所有的神學考據之後，我們回到最初的那份溫柔。</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們走了一段很長的路：從法庭術語到原文字根，從救恩論的多維範式到得勝與賞賜的精細區分。也許你的腦袋有點滿，需要一點空間。</p>
+
+      <p>那麼，讓我們用最簡單的話，把這一切收攏起來。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「那時，凡求告耶和華名的就必得救……在劫後餘生的人中，必有耶和華所呼召的。」</p>
+        <p class="scripture-ref">約珥書 2:32 · Joel 2:32</p>
+      </div>
+
+      <p>注意這個美麗的對稱：你「呼求」神，而神早已「呼召」你。你以為是你先開口的，但回頭看，是祂先動了。你的那一聲求告，其實是對祂早已向你發出的呼召的回應。</p>
+
+      <div class="highlight">
+        <strong>給每一個曾經求告過的人</strong>
+        也許你在人生最破碎的時候，跌跌撞撞地喊出過那個名字。也許你的神學不完整，你的信心夾雜著恐懼和懷疑。沒有關係。那聲呼求，祂聽見了。那個降服，祂接受了。「凡」——這個字，包含了你。
+      </div>
+
+      <p>神學的深度，是為了讓我們更深地安息在恩典裡，而不是讓我們為救恩是否夠格而焦慮。當你明白「求告」的重量，你更能珍惜它；當你理解「得救」的豐富，你更渴望活出它；當你看清「得勝」的榮耀，你更願意為它奔跑。</p>
+
+      <div class="big-quote">
+        不要只是拿著門票站在起跑線旁邊觀望。你被邀請進入一場值得全力以赴的賽跑。
+      </div>
+
+      <p>這一系列的文字，希望不只是知識的傳遞，而是一個邀請——邀請你以更真實的信心、更深的認識，再一次求告那個名字，然後，起身奔跑。</p>
+
+      <div class="highlight">
+        <strong>系列總結</strong>
+        「求告主名」是一個法庭上的降服宣告 → 宣告進入的是一份涵蓋靈魂、心靈與身體的完全救恩 → 這救恩既是白白的恩賜，也是呼召我們走向得勝的起點 → 而在這一切的背後，是那位早已呼召了你的神，在等候你的回應。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  求告主名就必得救 · Romans 10:13 · 救恩論深度系列
+</footer>
+
+</body>
+</html>
