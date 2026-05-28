@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>現在信主，現在就得救 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩論系列 · Soteriology Series</div>
+  <h1>現在信主，<span>現在就得救</span></h1>
+  <p class="subtitle">即時救恩論與永恆安全保障 · 六章連貫深論</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">那一秒鐘，我的名字就被寫進了生命冊</h2>
+      <p class="card-hook">不是在臨死前的最後懺悔，也不是在天堂門口的最終審核——是在那個普通得不能再普通的午後，我低下頭說：「我相信。」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我認識一位姊妹，她信主多年，卻始終活在一種隱隱的不安之中。每次崇拜結束，她都會在心裡默默盤點：「這週我禱告了幾次？讀了幾章聖經？有沒有哪個罪還沒悔清楚？」她告訴我，她常常懷疑自己「算不算真的得救」。</p>
+
+      <p>她的掙扎，其實代表了許多基督徒心底最深的疑問：得救，到底是一個「瞬間完成的事實」，還是一段「需要不斷考核的過程」？如果是後者，那我們豈不是每天都活在天堂門口的試用期裡？</p>
+
+      <div class="highlight">
+        <strong>這個系列想分享的核心</strong>
+        聖經原文所宣告的救恩，時間差是「零秒」。從希臘文的文法結構，到系統神學的稱義論，我們要一層一層剝開這個驚人的真理——你信主的那一刻，不是交了入學申請，而是已經拿到了畢業證書。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我實實在在地告訴你們，那聽我話、又信差我來者的，就有永生；不至於定罪，是已經出死入生了。」</p>
+        <p class="scripture-ref">約翰福音 5:24</p>
+      </div>
+
+      <p>注意這句話的動詞：「就有永生」——是現在式，當下擁有。「已經出死入生了」——是完成式，已然完成。耶穌沒有說「將來會有」，也沒有說「表現夠好才算數」。祂說的是：「已經。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        想像你走進一個漆黑的房間，按下電燈開關的那一瞬間，電流通過，黑暗立刻被光芒驅散。你不會說：「這個燈泡必須先發光實習三天，才能算真正被點亮。」在屬靈的現實裡也是如此——開關按下的那一秒，就是全部。
+      </div>
+
+      <p>這個系列共有六章，從個人見證出發，走向原文考據，再深入系統神學的核心，最終回到你我每一天活生生的信仰現場。如果你也曾帶著那位姊妹的疑問，這六章是為你而寫的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">你以為的得救，可能是一場誤會</h2>
+      <p class="card-hook">在進入聖經原文之前，我們需要先誠實面對一個問題：我們對「得救」的想像，是從聖經來的，還是從文化與恐懼來的？</p>
+    </div>
+    <div class="card-body">
+
+      <p>許多人對「得救」的圖像，大概是這樣的：人生是一場漫長的考試，上帝坐在監考台後面，手裡拿著一本大帳本，記錄你每一次的善行與罪過。等你死了，祂翻開帳本，如果善多於惡，你就過關；如果惡多於善，你就——你懂的。</p>
+
+      <p>這個圖像，說白了，就是「功德累積制」。它幾乎存在於全世界所有的宗教系統裡，因為它符合人類的直覺：付出就有回報，犯錯就要補償。</p>
+
+      <div class="highlight">
+        <strong>問題的核心</strong>
+        但聖經所宣告的救恩，從根本上就是一個對「功德累積制」的徹底顛覆。這不是修補原有的宗教系統，而是一次完全不同的典範轉移。
+      </div>
+
+      <p>讓我們來看看聖經如何引導我們理解這個問題。哥林多後書六章二節說：「現在正是悅納的時候；現在正是拯救的日子。」注意，這裡的時間詞是「現在」（nyn），不是「等你準備好」，不是「等你夠聖潔」，更不是「等你死了之後」。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">❌ 常見誤解一：試用期理論</span>
+          「信主後要表現夠好，上帝才會確認你得救。」——這混淆了稱義（法庭地位）與成聖（生命過程）的神學順序。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❌ 常見誤解二：死後判定論</span>
+          「得不得救要等死後才知道。」——但約翰福音5:24明確說信者「已經」出死入生，時態是完成式，不是未來式。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">❌ 常見誤解三：行為維持論</span>
+          「犯了大罪就會失去救恩。」——這將救恩的基礎從基督的十字架轉移到信徒的表現，根本上顛覆了「因信稱義」的教義。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✅ 聖經的宣告</span>
+          「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的。」（以弗所書 2:8）——救恩是禮物，不是獎勵。
+        </div>
+      </div>
+
+      <p>在接下來的章節，我們要進入聖經的原文，讓希臘文的文法本身來說話。當語言學的嚴謹與神學的深度交會，你會看見一幅比你想像更加壯麗、也更加令人安心的救恩圖像。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Thesis · 破題</div>
+      <h2 class="card-title">瞬間與永恆的交會點：法庭宣告稱義的神學結構</h2>
+      <p class="card-hook">稱義不是一段旅程的終點，而是一段旅程的起點。而這個起點，發生在一個精確的瞬間。</p>
+    </div>
+    <div class="card-body">
+
+      <p>系統神學將救恩在時間維度上區分為三個階段：地位上的稱義（Justification）、過程中的成聖（Sanctification）、以及未來的得榮耀（Glorification）。這三者既有連貫性，又必須嚴格區分，否則整個救恩論就會陷入混亂。</p>
+
+      <span class="depth-label deep-tag">📖 核心神學概念</span>
+
+      <p>稱義（Justification）的本質是「法庭性」（forensic）的宣告。這個詞來自拉丁文 forum，意指古羅馬的公共廣場，也是法庭審判的場所。當保羅說「因信稱義」，他用的是法庭的語言：一位罪犯站在審判台前，法官宣告他「無罪」——這是一個法庭宣告，不是一個道德過程。</p>
+
+      <div class="highlight">
+        <strong>稱義的法庭性意義</strong>
+        在法庭稱義的機制中，不允許存在任何「過渡期」或「試用期」。法官要嘛宣告有罪，要嘛宣告無罪，沒有「暫定無罪、觀察三年」這種選項。當人在聖靈的感動下真誠悔罪，並相信基督的救贖，法庭稱義便在「瞬間」完成。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「如今，那些在基督耶穌裡的就不定罪了。」</p>
+        <p class="scripture-ref">羅馬書 8:1</p>
+      </div>
+
+      <p>這裡的「不定罪了」，希臘文是 katakrima，這是一個法庭術語，指伴隨定罪宣告而來的「刑罰執行」——亦即與神完全隔絕的終極懲罰。保羅宣告：凡在基督耶穌裡的人，這個終極刑罰已被完全解除。</p>
+
+      <span class="depth-label plain-tag">💡 比喻說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        想像有人欠了一筆永遠還不清的債，被法院判決終身監禁。有一天，一位富翁主動代他還清所有債務，法官當庭宣告：「此人無罪釋放，案件結案。」這個宣告的效力是立即的、全面的、不可撤銷的。基督在十字架上所做的，就是這樣的代償——信的那一刻，宣告生效。
+      </div>
+
+      <p>破題的核心就在這裡：稱義是一個「發生在瞬間」的法庭宣告，而成聖是一個「持續一生」的生命過程。兩者是先後關係，不是條件關係。你不需要先「成聖到一定程度」才能被稱義；你是因為被稱義，才開始走上成聖的路。</p>
+
+      <div class="big-quote">
+        稱義是神宣告信徒義了；成聖是神使信徒成為義人。前者是地位，後者是過程。混淆二者，是信仰焦慮的根源。
+        <cite>— 系統神學核心區分</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">希臘文原文的顯微鏡：逐字剖析約翰福音 5:24</h2>
+      <p class="card-hook">當我們拿起語言學的放大鏡，聖靈所默示的每一個字，都在精確地宣告同一件事——救恩在信的那一刻已然完成。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 希臘文原文考據</span>
+
+      <p>約翰福音五章二十四節是整個即時救恩論最關鍵的戰場。我們來逐字進行語法分析，讓原文本身開口說話。</p>
+
+      <div class="term-box">
+        <div class="term-original">ἀκούων<br>akouōn</div>
+        <div class="term-desc">現在式主動分詞，搭配定冠詞 ὁ 構成「實體分詞」，功能等同名詞。指「聽從者」的身分，而非強調不間斷的物理動作。在猶太傳統中，「聽」與「順服」密不可分，指對基督啟示的主動響應。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">πιστεύων<br>pisteuōn</div>
+        <div class="term-desc">現在式主動分詞，同樣帶定冠詞，指「信靠者」的身分標籤，而非要求信徒在時間軸上「永不停歇地持續相信」才能維持得救。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἔχει<br>echei</div>
+        <div class="term-desc">現在式主動直說語氣，「擁有、持有」。現在式直說語氣代表「當下實時」的持有——不是「將來會有」，是「現在就有」永生。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">μεταβέβηκεν<br>metabebēken</div>
+        <div class="term-desc">完成式主動直說語氣，「已經跨越、已經出死入生」。完成式強調過去已完成的決定性動作，其產生的狀態持續留存至當下，不容逆轉。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>關鍵語法爭議：實體分詞</strong>
+        部分神學陣營主張：「聽見」與「相信」的現在式分詞代表信徒必須「持續不斷維持相信」才能得救。然而，帶有定冠詞的分詞在希臘文語法中屬「實體分詞」，其功能是身分定義，不是動作的時間連續性描述。若硬性解讀為連續動作，則意味著信徒必須在物理上「不間斷地聽見神的話」才能保住救恩——這顯然違背語言學常理。
+      </div>
+
+      <p>更決定性的是兩個動詞的互動關係：ἔχει（現在式：當下擁有）與 μεταβέβηκεν（完成式：已然跨越）並列，構成一個在邏輯上無懈可擊的救恩宣告。完成式動詞在直說語氣中，描述的是客觀已完成的歷史事實。「出死入生」已經完成，其效果持續至今。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信……乃是神所賜的。」</p>
+        <p class="scripture-ref">以弗所書 2:8 — σεσῳσμένοι ἐστε（迂迴完成式）</p>
+      </div>
+
+      <p>以弗所書二章八節的「已經得救」在希臘文中使用了「迂迴完成式」（Periphrastic Perfect）：σεσῳσμένοι ἐστε，由完成式分詞加上現在式動詞組合而成，是希臘文中強調「已完成且狀態持續」最有力的語法形式。保羅選擇這個結構，絕非偶然。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Theology · 深論</div>
+      <h2 class="card-title">永恆安全、雅各書的張力、與聖靈的督責</h2>
+      <p class="card-hook">真正的神學深度，不在於迴避困難的經文，而在於讓所有經文在同一個架構下說話，彼此豐富而非彼此矛盾。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 永恆安全保障</span>
+
+      <p>「永恆安全」（Eternal Security）的教義主張：真正重生的信徒，其救恩不會因犯罪或信心軟弱而喪失。這個立場的語法基礎，我們已在上一章建立。但這裡必須處理三個神學上的張力。</p>
+
+      <div class="highlight">
+        <strong>張力一：羅馬書 8:1 的抄本差異</strong>
+        多數後期拜占庭抄本在「那些在基督耶穌裡的」之後，加上了「不隨從肉體、只隨從聖靈」的限定子句。然而，依據早期權威抄本（西乃抄本、梵蒂岡抄本），現代批判文本省略此子句，使宣告呈現為無條件的地位聲明。不論採取何種校勘立場，信徒在地位上完全免除神怒氣的終極懲罰，在神學上是毋庸置疑的。
+      </div>
+
+      <span class="depth-label deep-tag">📖 雅各書的挑戰</span>
+
+      <p>雅各書二章十四至二十六節宣稱「信心若沒有行為就是死的」，亞伯拉罕和喇合皆因行為稱義——這豈不是直接衝撞保羅的「因信稱義」？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">保羅的稱義：在神面前的法庭宣告</span>
+          關注的是救恩的「根源」——信徒如何在神面前被接納，答案：單單憑藉信心，與行為無涉。（羅馬書 3-4章）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">雅各的稱義：在人面前的生命驗證</span>
+          關注的是救恩的「果子」——如何在世人面前證明一個人的信心是真實有生命力的，答案：必然結出行為的果子。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">結論：同一個真理的兩個維度</span>
+          好行為是得救的「證據」，不是得救的「條件」。沒有行為果子的「信心」，雅各稱之為「死的信心」——那根本就不是真信心，而是理智認同。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 聖靈的督責與家庭管教</span>
+
+      <p>當信徒在得救後被罪所勝，聖靈帶來的是「督責與憂傷」（Conviction）。這必須與法庭定罪嚴格區分：這是慈愛天父將兒女引導回聖潔生活的家庭管教，不是審判官對罪犯施加的法庭定罪。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👨‍👧</span>
+        一個孩子考試考砸了，爸爸會難過，會管教，甚至會懲戒——但他絕不會去戶政事務所宣布「斷絕父子關係」，把孩子的戶籍從家裡除名。神對信徒的管教，是父親的愛，不是法官的判決。katakrima（終極定罪）與 kataginosko（行為責備）是截然不同的兩件事。
+      </div>
+
+      <div class="big-quote">
+        信徒在基督裡的安全感，並非奠基於人類脆弱的意志力，而是奠基於神藉著聖靈一次性保守聖徒的客觀成就。
+        <cite>— 永恆安全教義核心</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Epilogue · 結論與溫馨</div>
+      <h2 class="card-title">不要再帶著被開除的恐懼過日子了</h2>
+      <p class="card-hook">六章走到這裡，我們從個人見證、神學糾正、原文語法、系統神學、到深層辯論——最終要回到的，是一顆可以真正安息的心。</p>
+    </div>
+    <div class="card-body">
+
+      <p>回到那位姊妹。我把這些告訴她之後，她沉默了很久。然後她說：「所以……我一直以為的那個『試用期』，從來就不存在？」</p>
+
+      <p>是的。從來就不存在。</p>
+
+      <div class="highlight">
+        <strong>六章的核心總結</strong>
+        稱義是瞬間發生的法庭宣告（第三章）。希臘文完成式確立了救恩的不可撤銷性（第四章）。永恆安全不依賴人的表現，而依賴基督的成就（第五章）。好行為是救恩的果子，不是救恩的條件（第五章）。現在，就是拯救的日子（第二章）。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「信他的，不被定罪；不信的，罪已經定了。」</p>
+        <p class="scripture-ref">約翰福音 3:18</p>
+      </div>
+
+      <p>一個真正被耶穌無條件的愛所拯救、罪債被一次付清的人，心中必定會生出一種極大的感激。這種感激不是恐懼，不是討好，而是一種自由的、充滿愛的渴望——渴望認識這位如此愛我的神，渴望活出與這份愛相稱的生命。</p>
+
+      <p>這就是為什麼「因信稱義」不是縱容罪惡的藉口，而是聖潔生活最深層的動力。我不是因為怕被開除才努力做好孩子；我是因為知道自己永遠是父親的孩子，才有勇氣去努力成長。</p>
+
+      <div class="big-quote">
+        就在你真心相信、呼求祂名字的此時此刻，拯救就已經臨到了你。不是等一下，不是死後，是——現在。
+        <cite>— 哥林多後書 6:2</cite>
+      </div>
+
+      <p>如果你今天讀到這裡，心裡有一個微小的聲音在說：「也許我可以相信這個。」——那個聲音，可能就是聖靈在叩門。</p>
+
+      <p>你不需要先變得「夠好」。你不需要先「準備好」。開關就在你手裡。按下去的那一秒，光就來了。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  瞬間與永恆的救贖交會 · Soteriology Series · 即時救恩論與永恆安全保障
+</footer>
+
+</body>
+</html>

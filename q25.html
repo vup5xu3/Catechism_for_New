@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>得救、重生、稱義、成聖 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">系統神學 · Systematic Theology</div>
+  <h1>你真的「得救」了嗎？<span>四重轉變</span></h1>
+  <p class="subtitle">得救 · 重生 · 稱義 · 成聖的完整救恩圖像</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">有一次，我被問到一個讓我啞口無言的問題</h2>
+      <p class="card-hook">「你信主多少年了？你到底得到了什麼？」——這個問題比我以為的還要深。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有位年輕人在查經班問了一個問題，全場安靜了好幾秒：「我禱告信了耶穌，然後呢？我感覺自己沒什麼改變，這樣算『得救』嗎？」</p>
+
+      <p>這不是一個懶惰的問題，這是一個在信仰裡真誠掙扎的靈魂發出的呼喊。而令我驚訝的是，在場信了十幾年的信徒，包括我自己，當下也說不清楚一個讓人滿意的答案。</p>
+
+      <div class="highlight">
+        <strong>這個系列的起點</strong>
+        「得救」、「重生」、「稱義」、「成聖」——這四個詞我們每週在教會聽到，但你能清楚說出它們各自代表什麼「改變」嗎？它們一樣嗎？還是各自指向信仰的不同層面？
+      </div>
+
+      <p>我花了很長的時間在希臘文字典、保羅書信和歷史神學的爭辯裡翻找答案。這個系列想把我所整理的，用最清楚的方式說給你聽。</p>
+
+      <p>不是要你記憶神學術語，而是讓你在每次開口說「我得救了」的時候，心裡裝著一幅完整的圖，知道你究竟從什麼地方被釋放出來，又被帶往何處。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗺️</span>
+        想像你繼承了一棟房子。法律上，你是屋主了（稱義）；你拿到鑰匙，進去住（重生）；你從流浪的危險中被安置了（得救）；而整棟房子現在只屬於你的主人使用（成聖）。這四件事，在你簽下繼承書的那一刻，同時發生了。
+      </div>
+
+      <p>跟著我，一章一章地走完這趟旅程吧。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guidance · 引導</div>
+      <h2 class="card-title">在進入神學之前，我們先問：罪惡到底使我們失去了什麼？</h2>
+      <p class="card-hook">救恩是答案，但你要先看清楚那個「問題」有多深，才能體會答案有多好。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>很多人把「罪」理解為做了壞事，所以「得救」就是罪被赦免、不用下地獄。這沒有錯，但只說了四分之一的故事。</p>
+
+      <p>聖經對「墮落」的描述，其實揭示了四個層面的失喪：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚠️ 景況的失喪</span>
+          人落入罪惡的束縛、魔鬼的轄制與末日審判的威脅之下——整個存在的處境都是危險的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💔 性質的失喪</span>
+          人在靈裡死亡，失去了與神連結的生命源頭，成為「死在過犯罪惡中」的存在（弗二：1）。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚖️ 身分的失喪</span>
+          人在神公義的法庭上被定罪，背負著無法自行清償的罪債，站在律法的審判之下。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🔗 功用的失喪</span>
+          人被罪惡佔用，成了「不義的兵器」，原本應當被分別歸神使用的生命，落入了仇敵手中。
+        </div>
+      </div>
+
+      <p>看見這四層失喪了嗎？神的救恩，正是針對這四個失喪，一一予以對治與恢復。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「那時，你們死在過犯罪惡之中，他叫你們活過來。」</p>
+        <p class="scripture-ref">以弗所書 二：1</p>
+      </div>
+
+      <p>「死在過犯中」不只是法律上有罪，而是存在狀態上的死亡。神的救恩是從這個全面的死亡中，全面地把人帶出來。</p>
+
+      <div class="highlight">
+        <strong>引導框架</strong>
+        接下來的四章，我們分別解析「得救、重生、稱義、成聖」如何對應並解決這四層失喪。這不是四件不同的事，而是同一個救恩在四個維度上的完整顯現。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Unveiling · 破題</div>
+      <h2 class="card-title">得救＝景況改變，重生＝性質改變——它們是兩件事，又是同一件事</h2>
+      <p class="card-hook">同一個信心的瞬間，四種轉變同時臨到你。但說清楚「各自是什麼」，是一生受益的功課。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>讓我們先面對一個容易造成混亂的問題：「得救」、「重生」、「稱義」、「成聖」，到底是同一件事的不同說法，還是四件不同的事？</p>
+
+      <p>答案是：在時間上，它們是同時發生的；但在意義上，它們描述的是不同維度的轉變。就像一道光穿過稜鏡，折射出不同顏色——那依然是同一道光。</p>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">👶</span>
+        一個嬰兒出生的瞬間，同時發生了好幾件事：他有了生命（重生）、他成了這對父母法律意義上的孩子（稱義）、他從黑暗的子宮進入了光明的世界（得救）、他從此被這個家庭「佔用」與照顧（成聖）。你不會說哪一件比哪一件早一秒發生——它們都是「出生」這個事件的同時性結果。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <p>希臘文聖經為我們提供了精確的詞彙分野：</p>
+
+      <div class="term-box">
+        <div class="term-original">sōzō<br>σῴζω</div>
+        <div class="term-desc">「得救」的原文動詞，核心意義為「營救、釋放、保存」——強調從危險中被救出，景況被改變。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">gennaō<br>γεννάω</div>
+        <div class="term-desc">「重生」相關字根，意為「生育、產生」——強調一個全新生命的誕生，性質被改變。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">dikaioō<br>δικαιόω</div>
+        <div class="term-desc">「稱義」的原文動詞，在法庭語境中意為「宣告為義」——強調身分地位的法理宣告。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">hagiazō<br>ἁγιάζω</div>
+        <div class="term-desc">「成聖」的原文動詞，核心意義為「切斷、分離、奉獻」——強調從俗世中被切割歸神，功用被改變。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>核心破題</strong>
+        這四個詞的希臘文原義告訴我們：它們不是同義詞，而是從不同角度描述同一個「與基督聯合」的事件所帶來的完整轉變。缺少任何一個，救恩的圖像都不完整。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">稱義：不是「使人變好」，而是「宣告為義」——法庭上的無罪宣判</h2>
+      <p class="card-hook">中世紀神學誤解了這個詞長達千年。宗教改革者為它拼命，因為它關乎你究竟是「靠自己」還是「靠基督」站立。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>「稱義」（Justification）是宗教改革的核心議題，路德稱它為「教會站立或跌倒的條文」。為什麼這個字如此關鍵？因為它的含義被曲解了足足一千年。</p>
+
+      <span class="depth-label deep-tag">📖 語源關鍵</span>
+
+      <p>希臘文動詞 <em>dikaioō</em> 在第一世紀的法庭文獻中，意思非常清晰：「宣告某人為義」。這是一個外在的、公開的法律宣判，不是描述此人內在道德的改變。</p>
+
+      <p>但當這個字被翻譯成拉丁文 <em>justificare</em>（由「公義」與「使成為」組成），語義開始滑動。中世紀神學因此將稱義理解成「藉由注入恩典，使人逐漸在道德上變得公義」——也就是說，你的稱義取決於你實際的道德進步程度。</p>
+
+      <div class="highlight">
+        <strong>根本區別</strong>
+        天主教傳統：稱義是一個過程，神人合作，藉善行與聖事逐漸完成。
+        改革宗傳統：稱義是一次性的宣告，在信心的瞬間完成，基礎是基督之義的歸算。
+      </div>
+
+      <p>保羅在羅馬書的論述給了我們非常清晰的答案。他使用的正是法庭語言：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「如今，那些在基督耶穌裡的就不定罪了。」</p>
+        <p class="scripture-ref">羅馬書 八：1</p>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「誰能控告神所揀選的人呢？有神稱他們為義了，誰能定他們的罪呢？」</p>
+        <p class="scripture-ref">羅馬書 八：33～34</p>
+      </div>
+
+      <p>「不定罪」、「無人能控告」——這是法庭的語言，是司法宣判，不是道德描述。稱義所帶來的「身分改變」，建立在兩個法理動作之上：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚖️ 第一：罪債的撤銷（赦免）</span>
+          信徒所有的罪咎與刑罰，皆被轉移歸算到十字架上的基督身上，由祂代為承擔律法的咒詛。
+        </div>
+        <div class="concentric-ring r1">
+          <span class="ring-label">✨ 第二：義的歸算（稱義）</span>
+          基督一生完全順服律法所成就的「完全之義」，被上帝白白地計算在信徒的帳上——神看待我們，如同我們從未犯罪且完美遵行了律法。
+        </div>
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">📄</span>
+        你欠了一筆無力償還的債（罪）。有人不只替你還清了債（赦免），還把他名下龐大的資產全數轉到你的帳戶（義的歸算）。你現在不只是「零負債」，而是「富有」的。這就是稱義的雙重法理意義。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">重生先於信心，還是信心先於重生？——改革宗與衛斯理宗的千年辯論</h2>
+      <p class="card-hook">這不只是神學家的茶壺風暴，它直接影響你理解「是我決定信神」還是「神先改變了我才能信」。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>在救恩的「邏輯次序」上，基督教內部有一個延續數百年的爭論，核心問題是：</p>
+
+      <div class="big-quote">
+        是神先重生人，人才能信；<br>還是人先信，神才重生人？
+        <cite>— 改革宗 vs 衛斯理／阿米念宗之爭</cite>
+      </div>
+
+      <span class="depth-label deep-tag">📖 改革宗立場：重生邏輯上先於信心</span>
+
+      <p>改革宗神學的出發點是人的「完全墮落」：未重生的人在靈裡是全然死亡的，就如同肉體的死人無法自行起身——死人沒有能力相信。因此，上帝必須先藉聖靈的「有效恩召」，超自然地重生罪人，更換其心志，此後這人才會、也必然會生發出得救的信心。</p>
+
+      <div class="term-box">
+        <div class="term-original">約一書<br>五：1</div>
+        <div class="term-desc">改革宗引用此節：希臘文「凡信耶穌的，都是從神而生」，其中「已重生」（完成式）在語法上是「正在信」（現在式分詞）的邏輯前提，支持重生先行的論據。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 衛斯理／阿米念宗立場：信心邏輯上先於重生</span>
+
+      <p>衛斯理宗反駁：若重生在稱義之前，將產生神學難題——一個尚未被赦免（未稱義）的人，卻已擁有了神聖新生命（已重生），意味著神將生命賜給了仍處在祂震怒之下的人。這在邏輯上是矛盾的。</p>
+
+      <p>為了既承認人的墮落、又保留人的自由意志，衛斯理宗引入了「先備恩典」（Prevenient Grace）的概念：神向所有人普遍施予一種恩典，局部恢復人因墮落喪失的自由意志，使其在聖靈感動下有能力自由選擇接受福音。</p>
+
+      <div class="highlight">
+        <strong>兩宗共同的堅守</strong>
+        儘管有這個邏輯次序上的分歧，兩個傳統都堅持：救恩完全出於神的恩典，非人自救，且「得救、重生、稱義、成聖」在時間上是同一信心瞬間的完整賜予，並無時間上的先後差距。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        這個辯論的本質，是在「神的主權」與「人的責任」之間尋找神學的平衡點。改革宗偏重前者，衛斯理宗偏重後者，但兩者都拒絕走向極端——既不說「人可以自救」，也不說「人沒有任何道德責任」。它是一個信仰群體誠實面對「神使人得救，人也要回應」這個張力的見證。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Conclusion · 結論與溫馨</div>
+      <h2 class="card-title">你信主的那一刻，你同時得到了這一切</h2>
+      <p class="card-hook">不是分期付款，不是努力達標，而是在那個信心的瞬間，四種轉變完整地臨到了你。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走過語源學、法庭神學與宗派辯論，讓我們最後把所有的線，收回到最簡單、最溫暖的那個真實。</p>
+
+      <p>當你把信心放在基督身上的那一個瞬間，在那個無法被分割的時刻裡，上帝同時完成了四件事：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✅ 景況改變了（得救）</span>
+          你從罪惡的束縛、魔鬼的轄制與審判的威脅中被徹底釋放。你不再身處危險之地。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✅ 性質改變了（重生）</span>
+          你從靈裡的死亡中被帶入新生命。你不再是舊造的人，你是新造的人。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✅ 身分改變了（稱義）</span>
+          神作為最高審判官，在祂的法庭上宣告你無罪，並將基督的義歸算在你身上。沒有人能再定你的罪。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✅ 功用改變了（成聖）</span>
+          你被切割、分離，從此專屬於神，成為祂聖潔的器皿，不再為仇敵所用。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「那聽我話、又信差我來者的，就有永生，不至於定罪，乃是已經出死入生了。」</p>
+        <p class="scripture-ref">約翰福音 五：24</p>
+      </div>
+
+      <p>但救恩的故事不只是「那一刻」。成聖還有一條往前伸展的道路——初步成聖那一刻確立了你的「地位」，但你此後的整個人生，都是在「實際生活中」活出這個地位的旅程。</p>
+
+      <div class="highlight">
+        <strong>成聖的三個階段</strong>
+        初步成聖（信主之時，地位的轉變）→ 漸進成聖（一生靠聖靈的道德更新）→ 完成成聖（主再臨時，靈魂與身體的徹底榮化）。這是一張跨越今生與永恆的地圖。
+      </div>
+
+      <p>所以，回到那位查經班的年輕人的問題：「我沒有感覺到改變，這樣算得救嗎？」——得救的確實性，不建立在你的「感覺」上，而建立在神在法庭上已作成的「宣告」上。感覺會波動，但神的宣判不會撤回。</p>
+
+      <p>而漸進成聖的改變，有時像是清晨的光，不知不覺，卻真實到來。它需要你主動追求、靠聖靈配合，但它的動力，來自你已經「是」什麼，而非為了「成為」什麼。</p>
+
+      <div class="big-quote">
+        你不是在努力變成神的孩子。你已經是了，你正在學習活出你已經是的那個身分。
+        <cite>— 救恩神學的核心提醒</cite>
+      </div>
+
+      <p>願這四個詞從今天起，不再只是你背誦的神學術語，而成為你每天醒來、面對自己的軟弱與掙扎時，最深的安慰與最穩的立足之地。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  系統神學 · Soteriology Series · 得救 · 重生 · 稱義 · 成聖
+</footer>
+
+</body>
+</html>
