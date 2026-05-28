@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神聖意志與救贖之路 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">神學釋經系列 · Theological Series</div>
+  <h1>神不願一人<span>沉淪</span></h1>
+  <p class="subtitle">神聖意志、人類困境與那條又新又活的救贖之路</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">有一個問題，我一直放不下</h2>
+      <p class="card-hook">如果神是全能的，祂為什麼讓世界變成這樣？這個問題讓人一生都無法迴避。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>你是否曾在深夜躺在床上，望著天花板，心裡升起這樣一個問題：「如果神是好的，為什麼世界會有這麼多痛苦？」</p>
+
+      <p>不是哲學課的習題，而是你真實地看著身邊的人，看著新聞，看著自己的生命——然後問：這一切，是神的意思嗎？</p>
+
+      <div class="highlight">
+        <strong>這個系列想陪你一起走</strong>
+        我們不打算迴避這個問題，也不打算給你一個輕巧的答案。我們想帶你進入聖經、神學與歷史的深層，一起看看那些最誠實的人是怎麼回答它的。
+      </div>
+
+      <p>這不是一個理性辯論的問題，它是一個關乎你我每個人靈魂的問題。它問的是：神到底是誰？祂對你，究竟有沒有意願？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        想像你是一個父親，你為孩子佈置了一個安全、美好的家。但孩子長大後走出門，陷入了困境與危險。你的心是痛的，你想方設法地想把他找回來——這，更接近聖經描述的那位神。
+      </div>
+
+      <p>接下來的六篇文章，我們將一起走過舊約先知的呼喚、新約使徒的宣告、神學史上最大的爭論，以及一條被稱為「又新又活」的救贖道路。</p>
+
+      <p>無論你現在站在哪裡——懷疑、尋求、受傷，或者只是好奇——這條線索，是為你連起來的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">舊約裡那些呼喚：神的聲音從未停過</h2>
+      <p class="card-hook">早在新約之前，神就已經在廢墟中呼喚著流亡的人：「回來吧，我在等你。」</p>
+    </div>
+    <div class="card-body">
+
+      <p>許多人以為舊約的神是嚴厲、憤怒、充滿審判的，而新約的神才開始變得慈愛。這是一個需要被糾正的誤解。</p>
+
+      <p>打開先知書，你會一再看見同一個畫面：一個被百姓背棄的神，仍然轉身向他們伸出手，說——「趁還來得及，回來吧。」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「當趁耶和華可尋找的時候尋找祂，相近的時候求告祂。惡人當離棄自己的道路，不義的人當除掉自己的意念，歸向耶和華，耶和華就必憐恤他。」</p>
+        <p class="scripture-ref">以賽亞書 55:6–7</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 希伯來文字根</span>
+      <p>這段經文中有三個關鍵的希伯來字彙，構成了整個舊約悔改神學的骨架：</p>
+
+      <div class="term-box">
+        <div class="term-original">Darash<br>尋求</div>
+        <div class="term-desc">主動地、積極地去尋找——不是等待神自動出現，而是人帶著意志去找祂。</div>
+      </div>
+      <div class="term-box">
+        <div class="term-original">Shub<br>歸向／轉回</div>
+        <div class="term-desc">字面是「轉身、改變方向」——不只是心裡後悔，而是真實地調頭走向神。</div>
+      </div>
+      <div class="term-box">
+        <div class="term-original">Racham<br>憐恤</div>
+        <div class="term-desc">源自「子宮」的字根——那是母親對孩子最深、最原始的憐愛，是無法用理性解釋的情感。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>先知以西結則更進一步，以神聖的誓言宣告了一件讓人震驚的事：神不喜悅惡人的滅亡。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「主耶和華說：我指著我的永生起誓，我斷不喜悅惡人死亡，惟喜悅惡人轉離所行的道而活。以色列家啊，你們轉回，轉回吧！離開惡道，何必死亡呢？」</p>
+        <p class="scripture-ref">以西結書 33:11</p>
+      </div>
+
+      <span class="depth-label plain-tag">💡 這意味著什麼</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        惡人的死亡，不是神想要的結果，而是人拒絕轉回的法理後果。神的憤怒從來不是「想毀滅你」，而是「你選擇走向毀滅，我攔不住，因為我給了你自由」。
+      </div>
+
+      <p>這條從舊約貫穿而來的線索，給了我們理解神聖本性的第一把鑰匙：神的心，從一開始就是面向人的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">新約的宣告：神愛世界，到了這種地步</h2>
+      <p class="card-hook">約翰福音三章十六節，不只是一句背誦的金句，它是整個宇宙歷史中最大的行動宣言。</p>
+    </div>
+    <div class="card-body">
+
+      <p>當耶穌在深夜與尼哥底母對話時，祂說出了一句話，被後來的人稱為「福音的精華」——但我們太熟悉它了，熟悉到忘記它的重量。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神愛世界，甚至將祂的獨生子賜給他們，叫一切信祂的，不至滅亡，反得永生。」</p>
+        <p class="scripture-ref">約翰福音 3:16</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 希臘文細讀</span>
+      <p>這句話的每一個字都有重量：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">Houtos — 「如此地」</span>
+          這個副詞放在句首，強調的不只是「神愛」，而是「神以這樣的方式愛」——祂愛的方式本身就令人震驚。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">Kosmos — 「世界」</span>
+          不是指美麗的自然，而是指那個處於墮落、悖逆、與神為敵的人類社會。神愛的，正是那個不可愛的世界。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">Monogenes — 「獨生子」</span>
+          獨一無二的、無可替代的愛子。神給出的，是祂最寶貴的。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">Pisteuon — 「信祂的」</span>
+          現在進行式，意指持續不斷地信靠——不是一次的行為，而是生命的方向與姿態。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>彼得後書三章九節則從另一個角度，回答了「為什麼審判還沒來」這個問題：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「主所應許的尚未成就，有人以為祂是耽延，其實不是耽延，乃是寬容你們，不願有一人沉淪，乃願人人都悔改。」</p>
+        <p class="scripture-ref">彼得後書 3:9</p>
+      </div>
+
+      <div class="highlight">
+        <strong>歷史為什麼還沒結束？</strong>
+        彼得說，歷史繼續存在的理由，就是神的忍耐（makrothymia）——祂在等待，等待每一個尚未回頭的人。時間的延續，本身就是恩典。
+      </div>
+
+      <p>神不願有一人滅亡，這不是一句安慰的話術，而是整個救贖歷史的驅動引擎。祂讓時間繼續，讓歷史延續，就是因為還有人尚未聽見這個消息。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">神學史上最大的爭論：神願意救「所有人」嗎？</h2>
+      <p class="card-hook">加爾文主義與亞米念主義，這場跨越五百年的神學論戰，至今仍在教會中激烈進行。</p>
+    </div>
+    <div class="card-body">
+
+      <p>「神不願有一人滅亡」——但歷史上確實有許多人走向了滅亡。這個矛盾，在神學史上引發了一場至今未息的大辯論。</p>
+
+      <p>兩大陣營，各執一詞，都自認為忠於聖經。讓我們先來了解他們各自在說什麼。</p>
+
+      <div class="highlight">
+        <strong>加爾文主義的立場</strong>
+        為了保護神聖主權的絕對性，加爾文主義提出「雙重意志論」：神有一個「祕密的意旨之意」——預定誰得救、誰不得救；以及一個「顯明的訓誨之意」——對所有人說「請悔改」。這兩個意志看似矛盾，但加爾文主義認為它們是神在不同層面的運作。
+      </div>
+
+      <p>在這個框架下，約翰·歐文等神學家主張，基督的十字架只為「選民」代贖——祂的死不是提供「得救的可能性」，而是確實且有效地為選民清償了所有罪債。這被稱為「限制性贖罪」。</p>
+
+      <div class="highlight">
+        <strong>亞米念主義的立場</strong>
+        亞米念主義則拒絕這種限制性解讀。他們認為「神不願有一人滅亡」必須字面理解，神的救贖意志是誠實地面向所有人的。神藉著基督向全人類預備了救贖，並賜下「先在恩典」局部恢復人的意志自由，讓每個人都有機會回應——但這恩典不是強制的，人可以自由拒絕。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">加爾文主義：神的主權是絕對的</span>
+          凡神決意的，必然發生。揀選是無條件的，救贖是有限的，恩典是不可抗拒的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">亞米念主義：神的愛是普世的</span>
+          救贖的大門為所有人敞開，人的自由回應是真實的，神的忍耐是等待每個人的機會。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 兩者的共同點</span>
+
+      <p>儘管爭論激烈，兩個傳統都承認：人類靠自己無法得救，救贖完全出於神的恩典，耶穌基督的十字架是唯一的救贖道路。</p>
+
+      <div class="big-quote">
+        神救人的方式，不是繞過人的自由——而是在人的自由中，持續不斷地發出呼喚。
+        <cite>— 神學爭論背後的共同見證</cite>
+      </div>
+
+      <p>這場爭論提醒我們：神學不是游戲，它碰觸的是「我是誰、神如何看我、我能不能被愛」這些最深的人類問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">又新又活的路：一個刻在語言深處的奧秘</h2>
+      <p class="card-hook">希伯來書用一個希臘文字，藏下了整個福音的精華——那個字的意思是「剛被宰殺的」。</p>
+    </div>
+    <div class="card-body">
+
+      <p>希伯來書十章二十節，說基督為我們開了一條「又新又活的路」。這短短六個字，是整本聖經中對救贖機制描述得最精準、也最震撼的句子之一。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「這路是耶穌藉著幔子，就是藉著祂的身體，為我們新開和活潑的路。」</p>
+        <p class="scripture-ref">希伯來書 10:20</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 Prosphatos：又新的字根奧秘</span>
+
+      <p>希臘原文「又新」這個字是 prosphatos，在全部新約中只出現這一次。它由兩個字根組成：</p>
+
+      <div class="term-box">
+        <div class="term-original">Pros<br>靠近</div>
+        <div class="term-desc">表示「在旁邊、在手邊」的空間介系詞。</div>
+      </div>
+      <div class="term-box">
+        <div class="term-original">Phen<br>宰殺</div>
+        <div class="term-desc">與宰殺、獻祭有關的字根。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>字義：「剛被宰殺的」</strong>
+        在古代祭祀文化中，一隻獻祭的動物在「剛被宰殺」的那一刻是最寶貴、最具神聖效力的——因為血仍然溫熱，生命力最新鮮。希伯來書作者將這個字用於基督的救贖，意味著：從天父的永恆視角來看，加爾各答十字架上的那個宰殺事件，永遠是「剛剛發生的」，它的除罪效能永不褪色。
+      </div>
+
+      <span class="depth-label plain-tag">💡 為什麼這很重要</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩸</span>
+        舊約的大祭司每年必須重複獻祭，因為昨天的祭物今天已經失效。但基督的獻祭是「永遠新鮮的」——你今天帶著的罪，昨天的那個祭仍然有效。它沒有過期。它在永恆的國度裡，依然「剛被獻上」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「又活的」（zao，現在分詞）則說明：這條路是「活生生的」，因為那位開路者本人復活了，祂就是這條路。</p>
+
+      <p>還有一個細節常被忽略：「天良的虧欠已經灑去」。這裡的「天良虧欠」（syneidesis ponera），是那個被罪惡污染、日夜控告自己的「昏花的良心」。基督的血，洗淨的不只是法理上的罪，更是那個深藏在心底、讓人覺得自己不夠好、不被愛、沒有資格來到神面前的黑暗感受。</p>
+
+      <div class="big-quote">
+        你不需要先把自己修好，才能來到神面前。那條路，是用祂的身體鋪成的，不是用你的努力。
+        <cite>— 希伯來書 10 章的核心宣告</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">所以，現在你可以怎麼做？</h2>
+      <p class="card-hook">知識的終點，是一個邀請——不是讓你繼續站在門口思考，而是走進去。</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們走了很長一段路。從舊約的呼喚，到新約的宣告，從神學史的大辯論，到希伯來文字根裡藏著的奧秘。</p>
+
+      <p>但所有這些，最終匯聚成一個最簡單的事實：神不願你在罪惡與痛苦中滅亡。祂為你備好了一條路，那條路不是靠你的努力走出來的，而是祂用自己的身體鋪成的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「所以，弟兄們，我們既因耶穌的血，得以坦然進入至聖所……就當存著誠心，和充足的信心，來到神面前。」</p>
+        <p class="scripture-ref">希伯來書 10:19, 22</p>
+      </div>
+
+      <p>希伯來書在那段偉大的神學論述之後，給了四個非常具體的行動呼籲：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🙏 存誠心來到神面前</span>
+          不必假裝自己夠好。帶著真實的自己，仰賴基督已完成的工，坦然親近神。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚓ 堅守我們所承認的指望</span>
+          在漫長的苦難與等待中，不要輕易丟棄起初的信心。那位應許的神是信實的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">💛 彼此相顧，激發愛心</span>
+          救贖不是孤獨的事。我們被召進入一個相互守望的群體，要主動關心彼此的靈魂。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🏠 不可停止聚會</span>
+          在黑暗加增的日子裡，孤立是最大的危險。聚集在一起，互相扶持，才能持守到底。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>給那個覺得自己不配的你</strong>
+        如果你今天帶著的是破碎、羞恥，或者一顆長期覺得自己「不夠好、不被愛」的心——那條路恰恰是為你而開的。它不是獎勵給值得的人，它是給那些承認自己需要的人。良心的虧欠，可以被洗去。那個一直控告你的聲音，可以被安靜。
+      </div>
+
+      <p>神不是在等你準備好了再讓你進來。祂用祂的身體撕開了那道幔子，那個阻擋你靠近祂的障礙，已經不在了。</p>
+
+      <div class="big-quote">
+        祂不願有一人沉淪——而那個「一人」，包括你。
+        <cite>— 彼得後書 3:9 的個人宣告</cite>
+      </div>
+
+      <p>這個系列到這裡走完了。但那條又新又活的路，仍然在那裡，等著你每一天踏上去。不是一次，而是每一天，帶著你那天的重擔，回到那個永遠新鮮的寶血泉源。</p>
+
+      <p>願你在這條路上，找到那個你一直在尋找的安息。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  神聖意志與救贖之路 · Divine Will & The Way of Redemption
+</footer>
+
+</body>
+</html>

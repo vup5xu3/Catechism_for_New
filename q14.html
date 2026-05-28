@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>為什麼必須信耶穌才有救恩？— Threads 神學系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.3;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩神學系列 · Soteriology Series</div>
+  <h1>為什麼必須信<span>耶穌</span>才有救恩？</h1>
+  <p class="subtitle">神人二性、唯一中保與救贖歷史之原典神學深度評析</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個讓我輾轉難眠的問題</h2>
+      <p class="card-hook">信仰不是要你關掉大腦——而是邀請你帶著最尖銳的問題，走進最深的真理。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我曾有好幾年，這個問題壓在心裡像一塊石頭：「為什麼非信耶穌不可？世界上那麼多善良的人、那麼多宗教、那麼多不同的道路，難道神真的這麼狹隘，只認得耶穌這一個名字？」</p>
+
+      <p>我問過牧師，得到的回答常常讓我更困惑。我查過書，要麼讀不懂，要麼覺得說服力不足。直到有一天，我決定不再迴避，拿起希臘文詞典、系統神學、和一杯涼掉的咖啡，認真坐下來把這個問題拆開來看。</p>
+
+      <div class="highlight">
+        <strong>這個系列的起點</strong>
+        這不是一篇要你「閉嘴去信」的文章。這是一次認真的探索——從聖經原文、神學歷史與哲學邏輯，試著回應這個人類心底最深的追問。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「除他以外，別無拯救；因為在天下人間，沒有賜下別的名，我們可以靠著得救。」</p>
+        <p class="scripture-ref">使徒行傳 四章 12 節</p>
+      </div>
+
+      <p>這節經文，聽起來霸道。但我後來發現，彼得說這話的時候，不是在做宗教歧視，而是在做一項宇宙性的法理宣告。他究竟在說什麼？讓我們從最根本的問題開始。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        想像你在大海中溺水，岸上有一個人向你伸出手。你不會在那時候問：「這個人夠資格救我嗎？」你唯一關心的，是他的手能不能夠到你、他有沒有足夠的力氣把你拉上來。救恩的問題，其實是一個關於「資格」與「能力」的問題。
+      </div>
+
+      <p>接下來六篇，我們會從「引導問題」到「破題核心」，一路深入原文、神學與活生生的生命實況，試著把這個問題說透——不為了贏得辯論，而是為了讓你心裡那塊石頭，找到它的答案。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">約伯的眼淚：人類最古老的那聲吶喊</h2>
+      <p class="card-hook">在所有宗教哲學出現之前，有一個人在灰燼中問出了一個宇宙級的問題。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>在時間很久很久以前，有個叫約伯的人，他不是基督徒，不是猶太人，他只是一個在苦難中被壓碎的人，靜靜地說出了一句讓整個神學史都震動的話。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因祂不像我是人，使我可以回答祂，使我們可以一同聽訟。但願我們中間有位中保，可以兩手按在我們雙方身上。」</p>
+        <p class="scripture-ref">約伯記 九章 32–33 節</p>
+      </div>
+
+      <p>這個畫面太震撼了：約伯想像一個法庭，他站在被告席，上帝坐在審判台。他知道自己無法辯駁，不是因為他做錯了什麼，而是因為——他是人，上帝是神。這兩者之間，有一道根本性的、本體論的深淵。</p>
+
+      <div class="highlight">
+        <strong>本體論深淵（Ontological Gap）</strong>
+        「本體論」是哲學術語，指「存在的本質」。人類是有限、會死、有罪的受造物；上帝是無限、永恆、絕對聖潔的造物主。這兩者之間的距離，不是道德程度的差異，而是存在本質的絕對鴻溝。
+      </div>
+
+      <p>約伯的解方既簡單又震撼——他說：我需要一個「中保」，一個可以「兩手按在我們雙方身上」的人。一手搭在我這個卑微的人身上，一手搭在那位聖潔的神身上。</p>
+
+      <p>這個意象，是人類歷史上對「救贖需求」最誠實、最深刻的表達。它早於任何神學系統，卻已精準地描述了救恩所需要的那個人的輪廓。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 問題的核心</span>
+          神是聖潔且公義的，人類是墮落且有罪的——雙方之間存在無法自我消解的審判張力。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🤲 約伯的洞見</span>
+          需要一位能同時代表神與人、具有雙重本質的「中保」，才能化解這個張力。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✨ 歷史的答案</span>
+          約伯的呼求，在一千多年後的伯利恆，以一個嬰兒的降生得到了回應。
+        </div>
+      </div>
+
+      <p>約伯當時不知道那位中保的名字。但他的靈魂深處，已經感知到了那個必要性。這是人類最誠實的一聲吶喊，而宇宙沒有讓這聲吶喊落空。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">宇宙級的「雙向代理人」：為什麼不能隨便找個好人？</h2>
+      <p class="card-hook">中保的職位，不是憑著熱情或善意就能擔任的——它有嚴格的法理資格。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>想像你捲入了一場跨國的史詩級官司，對手是宇宙中最有權勢、最完美且絕不妥協的至高法庭。你急需一位代表律師。這位律師必須符合三個嚴苛條件，否則法庭根本不受理。</p>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">條件一：與雙方皆有本質關係</span>
+          他必須 100% 精通對方的法律與尊嚴，同時 100% 代表你這個有限、犯了錯的人類。他不能只是局外人。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">條件二：精通雙方的語言與心意</span>
+          他能把法庭那神聖、不可妥協的公義原汁原味地翻譯給你聽；也能把你的軟弱、痛苦與無能為力，完美呈遞上去。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">條件三：自身完全無罪</span>
+          他自己必須清白無罪——否則一站上法庭，自己就先被逮捕了，哪有資格替你求情？
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 神學深度</span>
+
+      <p>提摩太前書二章 5 節說：「在神和人中間，只有一位中保，乃是降世為人的基督耶穌。」這裡的「中保」，希臘原文是 <em>mesitēs</em>——一個在希臘化法律文書中，指「法定擔保人」的詞彙。這個人的角色，是確保合約條款被雙方履行。</p>
+
+      <div class="term-box">
+        <div class="term-original">μεσίτης<br>mesitēs</div>
+        <div class="term-desc">源自 mesos（在中間）。在希臘法律語境中指仲裁者、和解人、盟約法定擔保人。在七十士譯本中僅見於約伯記九章 33 節，正是約伯的那聲呼求。基督作為中保，不只是傳遞神旨意的代言人，更是藉著肉身受死、以自身位格擔保並建立新約的法理執行者。</div>
+      </div>
+
+      <p>放眼人類歷史：孔子、釋迦牟尼、穆罕默德、蘇格拉底——他們都是偉大的道德導師，但他們都只在「人」這一端。他們無法搭上神那一端的手，因為他們自身也在審判之下。唯有耶穌，同時是完全的神、完全的人，兩手都搭得到。</p>
+
+      <div class="big-quote">
+        在神和人中間，只有一位中保，乃是降世為人的基督耶穌。
+        <cite>— 提摩太前書 二章 5 節</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原文考據：聖經語法裡隱藏的神學炸彈</h2>
+      <p class="card-hook">當你看懂希臘文時態的那一刻，整個救恩論會突然變得無比清晰。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>以弗所書二章 8 至 9 節是基督徒最熟悉的經文之一：「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。」但你知道這段話的希臘原文，其實埋著一個讓神學家爭論數百年的語法謎題嗎？</p>
+
+      <span class="depth-label deep-tag">📖 語法深論</span>
+
+      <div class="highlight">
+        <strong>代名詞謎題：「這」到底指什麼？</strong>
+        保羅說「這（touto）並不是出於自己」。但希臘文中，「恩典」（chariti）和「信心」（pisteōs）都是陰性名詞，而 touto 是中性代名詞——語法上，它無法單指其中任何一個。加爾文指出，這個「這」指的是整個「藉著恩典、透過信心得救」的宏偉計畫——而這整個計畫，都是神所主導的。
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">σεσωσμένοι<br>sesōsmenoi</div>
+        <div class="term-desc">動詞 sōzō（拯救）的完美式被動分詞。完美時態：過去完成、效力持續至今。被動語態：人是完全被動的接受者。合起來的意思：你們的得救，是一件「已然完成、永久有效、全由神主導」的事實——不是人努力換來的成果，而是神親手完成的工程。</div>
+      </div>
+
+      <p>這個語法揭示了一件令人震撼的事：即使你「選擇」信耶穌，那個「能夠選擇」的能力本身，也是神恩典的禮物。這不是剝奪你的自由意志，而是說明——在罪的捆綁下，你本來根本不可能自行轉向神；是神先動了，你才能回應。</p>
+
+      <span class="depth-label plain-tag">💡 白話翻譯</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        你走進一家這輩子都付不起的法式餐廳，吃完買單時，服務生說：「有位貴賓已用祂的無限黑卡替你結清了所有帳單，包括你未來每一餐。」這時候你從口袋掏出一毛硬幣說「我要自己付一部分！」——這不只是白費力氣，更是對那位付款者的侮辱。耶穌在十架上喊出「成了！」，就是那張已經結清的帳單。
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">σωτηρία<br>sotēria</div>
+        <div class="term-desc">救恩。源自 sōtēr（救主）。在古典文獻中，最常指從海難、戰爭中「安全返回」或「保全性命」。救恩不只是靈魂脫離地獄的保險，更是整個人類從罪帶來的毀滅、殘缺狀態中，徹底恢復至健全、興盛的「終極醫治」。</div>
+      </div>
+
+      <p>因此，若企圖透過行善、守律法或宗教儀式來「換取」救恩，在神學上就等於是對十字架「成了」之完美時態效力的否定——是說那份禮物還沒完成，需要你來補足。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">其他宗教為何無法帶來救恩？——律法與福音的宇宙分野</h2>
+      <p class="card-hook">普遍啟示告訴我們神存在，但它只能帶來定罪；唯有特殊啟示帶來拯救。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>許多人會問：「世界上有那麼多善良、虔誠的人，難道他們的宗教完全沒有價值嗎？」這是一個值得嚴肅對待的問題，而不是用「他們都是異端」一句話就能打發的。</p>
+
+      <span class="depth-label deep-tag">📖 神學深論</span>
+
+      <p>系統神學將上帝的自我啟示分為兩類：「普遍啟示」與「特殊啟示」。這個區分，是回答這個問題的關鍵鑰匙。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌍 普遍啟示</span>
+          透過大自然、宇宙規律與人心中的良知，上帝向所有人彰顯祂的存在與道德律。這是任何人都無法推諉的知識（羅馬書一章 20 節）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚖️ 普遍啟示的功能</span>
+          彰顯上帝的絕對公義與聖潔——也就是說，它在功能上等同於「律法」。律法的工作是「定罪」，讓人看見自己達不到神的標準，而非提供拯救的方法。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">📖 特殊啟示</span>
+          聖經中透過耶穌基督所啟示的救恩計畫。這是唯一帶有「福音」（好消息）的啟示——不只說你有罪，更說有人替你承擔了那個罪。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🚫 其他宗教的限制</span>
+          所有宗教（包括墮落後的猶太主義形態）在結構上，都是人試圖透過行為、修行、儀式來「向上」爬向神的努力。這些努力再真誠，也只能在律法的框架內打轉，無法帶來真正的赦免。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>路德宗神學的洞見</strong>
+        在基督之外，確實存在上帝的自我彰顯（普遍啟示），但那裡所彰顯的，唯有上帝的「律法」（Lex）。在基督之外，絕對沒有任何「福音」（Evangelium）——沒有帶來生命、和好與赦罪的救贖話語。
+      </div>
+
+      <p>換句話說，問題不在於其他宗教「不真誠」或「沒有智慧」——許多宗教有深刻的倫理洞見、真摯的敬虔精神。問題在於：它們本質上都是「人向上爬」的系統，而人類靠著自己，根本爬不到那個神聖審判台的高度。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。」</p>
+        <p class="scripture-ref">以弗所書 二章 8–9 節</p>
+      </div>
+
+      <p>使徒行傳四章 12 節的「別無拯救」，不是一種文化帝國主義，而是一項宇宙性的醫學診斷：在基督以外，沒有任何一個「向上爬」的系統能處理那道本體論深淵。唯有神「向下來」，才能解決問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">這條「唯一的路」，其實是一份愛的禮物</h2>
+      <p class="card-hook">排他性不是神的冷漠，而是神捨得用最深的代價，為你鋪好的那條回家的路。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>讀到這裡，也許你心裡還有一個抗拒：「唯一的路」這個說法，聽起來還是太霸道了。我完全理解這個感受。</p>
+
+      <p>但讓我換一個角度來說這件事。</p>
+
+      <div class="highlight">
+        <strong>排他性的代價</strong>
+        當神說「只有一條路」，這條路的代價是什麼？是神自己的兒子，用自己的死來鋪成的。這不是一個站在高處冷眼旁觀的神，說「按我的規矩來，否則滾」；這是一個親自俯身下來，用自己的血肉填平那道深淵的神。
+      </div>
+
+      <p>約翰福音三章 16 節說：「神愛世人，甚至將他的獨生子賜給他們。」這裡的「獨生子」，希臘原文是 <em>monogenēs</em>——不只是「唯一的兒子」，更是「在同類中獨一無二、最珍貴的存在」。神把祂最珍貴的東西給了你。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神愛世人，甚至將他的獨生子賜給他們，叫一切信他的，不至滅亡，反得永生。因為神差他的兒子降世，不是要定世人的罪，乃是要叫世人因他得救。」</p>
+        <p class="scripture-ref">約翰福音 三章 16–17 節</p>
+      </div>
+
+      <p>那道「唯一的路」不是神的傲慢，是神的捨得。在祂可以讓你公義地滅亡的時候，祂選擇了讓自己的兒子代你受死。這條路是用愛鋪成的，不是用規條。</p>
+
+      <div class="highlight">
+        <strong>給你帶回家的那句話</strong>
+        信耶穌不是說「我比別人更高貴」，也不是說「其他人都不好」。信耶穌是說：「我承認我跨不過那道深淵，但我感謝那位已經替我搭好橋的神。」這是謙卑，不是驕傲。這是接受，不是征服。
+      </div>
+
+      <p>約伯在灰燼中哭喊：「但願有位中保，兩手按在我們雙方身上。」那位中保，在兩千年前的一個早晨，從一座空墳墓裡走出來，向這個世界宣告：那聲呼求，我聽見了。</p>
+
+      <p>你的呼求，祂也聽見了。</p>
+
+      <div class="big-quote">
+        在天下人間，沒有賜下別的名，我們可以靠著得救——但這「別無他名」，是一個人用整個生命來為你喊出的名字。
+        <cite>— 使徒行傳 四章 12 節 · 再讀</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  救恩神學系列 · Soteriology Threads · 神人二性 · 唯一中保 · 救贖歷史
+</footer>
+
+</body>
+</html>

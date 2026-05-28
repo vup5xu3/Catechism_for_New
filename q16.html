@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信耶穌的五個步驟 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩之路 · The Way of Salvation</div>
+  <h1>信耶穌的<span>五個步驟</span></h1>
+  <p class="subtitle">從知罪到接納，一條通往永生的完整路徑</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Share</div>
+      <h2 class="card-title">你有沒有想過，「信耶穌」到底是什麼意思？</h2>
+      <p class="card-hook">不是舉手決志，不是每週上教堂——是一場靈魂深處的真實相遇</p>
+    </div>
+    <div class="card-body">
+      <p>有一個問題，我在信仰路上被問過很多次，自己也問過很多次：「信耶穌，到底要怎麼信？」</p>
+      <p>也許你也有過這種感覺。坐在教堂裡，聽到台上說：「現在，請你在心裡接受耶穌為你的救主。」你低下頭，閉上眼睛。但心裡有個聲音悄悄問：「這樣就夠了嗎？我真的……得救了嗎？」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏥</span>
+        想像一個醫生走進病房，對一位病人說：「你體內長了腫瘤。」這個診斷是事實，是重要的。但光是知道這件事，並不能讓病人痊癒。診斷只是開始，不是結局。
+      </div>
+
+      <p>「信耶穌」也是一樣。它不是一個時刻，而是一條路。一條有起點、有轉折、有終點的路。這條路，在基督信仰的傳統裡，被歸納為五個核心步驟：<strong>知罪、悔罪、認罪、求救、接納。</strong></p>
+
+      <div class="highlight">
+        <strong>這個系列要說的事</strong>
+        我想帶你走完這五步。不只是告訴你「做什麼」，而是讓你理解「為什麼」——每一步背後的神學根基，以及它如何在你的靈魂裡真實發生。
+      </div>
+
+      <p>無論你是剛開始認識信仰的朋友，還是在教會多年卻仍有些模糊的弟兄姊妹，我相信這趟旅程值得你走一遍。因為救恩，從來不是廉價的。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Guide</div>
+      <h2 class="card-title">一張地圖，先讀懂才能出發</h2>
+      <p class="card-hook">五個步驟不是心理程序，而是聖靈在靈魂深處動工的完整路徑</p>
+    </div>
+    <div class="card-body">
+      <p>在深入每一步之前，我們需要先看清楚整幅地圖的結構。因為如果搞錯了地圖，走的方向就會偏。</p>
+
+      <p>這五個步驟可以分成兩個階段：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">📋 第一階段：得救的準備（先決條件）</span>
+          知罪 · 悔罪 · 認罪——這三步是靈性的診斷，它們暴露你的需要，但本身並不能拯救你。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✝️ 第二階段：救恩的獲取（工具性途徑）</span>
+          求救 · 接納——這兩步才是真正將基督的拯救與你的生命連結在一起的關鍵動作。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>最關鍵的神學前提</strong>
+        知罪、悔罪、認罪這三步，本身「不能使人得救」。這不是說它們不重要，而是說：診斷不能代替醫治。唯有基督十字架上的代贖，才是拯救的唯一根源。
+      </div>
+
+      <p>這個區分非常重要。許多人在前三步停下來，以為自己已經走完全程。他們知道自己是罪人，也心存懊悔，甚至在禱告中承認了自己的罪——但沒有真正向基督「求救」，沒有在意志的深處「接納」祂管理自己的一生。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信；這並不是出於自己，乃是上帝所賜的；也不是出於行為，免得有人自誇。」</p>
+        <p class="scripture-ref">以弗所書 2:8-9</p>
+      </div>
+
+      <p>救恩是神的禮物，不是人的成就。但領受這份禮物，需要你主動伸出手。這五步，就是伸手的過程。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Unveil</div>
+      <h2 class="card-title">你病了，但你不知道——知罪與悔罪的真相</h2>
+      <p class="card-hook">扁鵲見齊桓公的古老警告，在靈魂的世界裡，依然每天上演</p>
+    </div>
+    <div class="card-body">
+      <p>中國古典有一個令人心驚的故事：名醫扁鵲三見齊桓公，每次都說：「你有病，但還能治。」齊桓公每次都輕蔑地回答：「我沒病。」最後一次，扁鵲什麼也沒說，轉身就走——因為病已入骨髓，連神醫也束手無策了。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩺</span>
+        靈魂的疾病，也是如此。罪，常常是無聲的、隱匿的。它不痛，所以人不知。它讓人覺得自己「還不錯」，直到有一天，神的光照來了——那才是靈性眼目的真正開展。
+      </div>
+
+      <span class="depth-label deep-tag">📖 神學根基</span>
+      <p>真正的「知罪」，不是靠人類自然的理性或道德感。根據約翰福音十六章，知罪是聖靈超自然光照的工作。聖靈如同一面鏡子，讓罪人看清自己污穢、殘缺、與神隔絕的真實本相——尤其是最根本的罪：「不信基督」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「他既來了，就要叫世人為罪、為義、為審判，自己責備自己。」</p>
+        <p class="scripture-ref">約翰福音 16:8</p>
+      </div>
+
+      <div class="card-divider"></div>
+      <span class="depth-label plain-tag">💡 悔罪的真假</span>
+
+      <p>知罪之後，是悔罪。但什麼是「真正的悔罪」？清教徒神學家湯姆·華森說過一句犀利的話：「悔改若沒有憂傷，就如同婦人生產未經疼痛。」</p>
+
+      <p>歷史上有一個讓人印象深刻的比喻：一個青年宣稱悔改，將要殺仇敵的斧頭埋入土中——但刻意把斧柄留在地面。他的意思是：隨時都可以再挖出來。這叫做「埋斧留柄」，是一種偽裝的悔改。</p>
+
+      <div class="highlight">
+        <strong>悔罪的試金石</strong>
+        真正的悔罪包含兩個層面：「悔」——對罪深切的憂傷；「改」——意志上徹底的離棄。少了任何一個，都只是情緒的宣洩，而非生命的歸正。
+      </div>
+
+      <p>你願意把斧柄也埋進去嗎？這是悔罪真假的試金石。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Examine</div>
+      <h2 class="card-title">認罪的希臘文，藏著一個法庭的秘密</h2>
+      <p class="card-hook">Homologeo 不只是承認錯誤——它是在神的審判台前，放棄一切自我辯護</p>
+    </div>
+    <div class="card-body">
+      <p>第三步「認罪」，在我們日常語言裡聽起來很簡單——不就是說「我錯了」嗎？但新約原文希臘文揭示了一個更深刻、更嚴肅的畫面。</p>
+
+      <span class="depth-label deep-tag">📖 原文字源</span>
+
+      <div class="term-box">
+        <div class="term-original">Homologeo<br>ὁμολογέω</div>
+        <div class="term-desc">由「homou（相同、共同）」與「lego（說話、宣告）」組成。字面意義是「說同樣的話」——不是向神提供新資訊，而是完全同意神對你罪惡處境的客觀判定。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>司法性的宣告</strong>
+        真正的認罪，是罪人在神的審判座前，放棄一切自我辯護、否認或掩蓋，與神說出完全相同的話：「是的，我就是這樣的罪人。」
+      </div>
+
+      <p>大衛的詩篇五十一篇，是歷史上最震撼的認罪之一。他不是私下向神悄悄認罪——他把這首記錄自己通姦與謀殺醜事的詩，交給聖殿的伶長，讓全國人在敬拜中公開唱誦。一個王，把自己最黑暗的罪惡擺在所有人面前，毫無保留。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「遮掩自己罪過的，必不亨通；承認離棄罪過的，必蒙憐恤。」</p>
+        <p class="scripture-ref">箴言 28:13</p>
+      </div>
+
+      <div class="card-divider"></div>
+      <span class="depth-label plain-tag">💡 認罪是一生的操練</span>
+
+      <p>值得注意的是，約翰一書一章九節「若認自己的罪」這個動詞，用的是「現在時態的虛擬語氣」——代表這不是一次性的交易，而是信徒一生持續不斷的靈性操練。</p>
+
+      <p>相比之下，猶大也曾口頭說「我賣了無辜之人的血是有罪了」，但他的認罪只停留在良心的層面，沒有指向與神的和好。這是真假認罪最深刻的對比。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        認罪不是療程，不是換取神憐憫的籌碼。它是一個人在審判台前，徹底卸下防衛，讓神的光照射進每一個角落——包括那些你最不想被看見的地方。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Depth</div>
+      <h2 class="card-title">求救是上訴，接納是主權移交</h2>
+      <p class="card-hook">羅馬公民的法律術語，藏著「凡求告主名的，就必得救」最深的神學意涵</p>
+    </div>
+    <div class="card-body">
+      <p>前三步——知罪、悔罪、認罪——讓你知道自己需要被拯救。但現在，你必須真正「去求」拯救。這是第四步：求救。</p>
+
+      <span class="depth-label deep-tag">📖 Epikaleo 的法律意涵</span>
+
+      <div class="term-box">
+        <div class="term-original">Epikaleo<br>ἐπικαλέω</div>
+        <div class="term-desc">「epi（在……之上）」加上「kaleo（呼叫、召喚）」。在第一世紀羅馬帝國，這是一個嚴肅的法律術語：向最高司法權威提出上訴。</div>
+      </div>
+
+      <p>使徒保羅在羅馬巡撫非斯都面前受審，深知地方官員無法給他公正的審判，於是大聲宣告：「我要上訴到凱撒那裡！」這就是 epikaleo——援引最高主權者進行終極裁決。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為凡求告主名的，就必得救。」</p>
+        <p class="scripture-ref">羅馬書 10:13</p>
+      </div>
+
+      <div class="highlight">
+        <strong>求告的本質</strong>
+        「求告主名」不是一句輕描淡寫的禱告。這是靈魂在罪惡死刑的判決下，向宇宙最高主權者——主耶穌基督——提出生命的上訴，承認祂是唯一能撤銷這個死亡判決的主宰。
+      </div>
+
+      <div class="card-divider"></div>
+      <span class="depth-label plain-tag">💡 接納：Lambano 的主動性</span>
+
+      <div class="term-box">
+        <div class="term-original">Lambano<br>λαμβάνω</div>
+        <div class="term-desc">「主動奪取、緊握、接過、接受為己所有」。不是被動的等待，而是意志的主動選擇——在特定的時間點，決意性地將耶穌接受為自己生命的主宰。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👨‍👦</span>
+        一個被生父遺棄的男孩，被一位慈愛的繼父合法收養。有一天，生父突然出現，試圖對他施加權威。男孩必須做一個意志上的決定：他選擇留在家裡，認同並接受（lambano）那位對他擁有合法收養權的養父。接受耶穌，也是這樣的選擇。
+      </div>
+
+      <p>許多人願意接受耶穌做「救主」，卻不願讓祂做「主」。這就是二十世紀末福音派界那場著名辯論的核心：「主權救恩」vs「廉價決志」。馬丁·路德說得清楚：稱義雖然唯獨藉著信心，但真正的信心絕不可能單獨存在——它必然帶出生命的改變，就如太陽必然發光。</p>
+
+      <div class="big-quote">
+        如果一個人宣稱已「接納」耶穌，卻拒絕耶穌管治他的時間、金錢與生活，這只證明他起初的「信」是一場未經聖靈重生的理智假象。
+        <cite>— 改革宗神學的嚴肅警告</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Conclusion</div>
+      <h2 class="card-title">這不是一套程序，是一場相遇</h2>
+      <p class="card-hook">走完這五步，你不是完成了一個任務，而是開始了一段關係</p>
+    </div>
+    <div class="card-body">
+      <p>我們走完了這條路的全貌：知罪、悔罪、認罪、求救、接納。</p>
+
+      <p>如果要用一句話來總結：前三步讓你看見自己需要被拯救；後兩步讓你真正得著拯救。缺少任何一步，都不完整。</p>
+
+      <div class="highlight">
+        <strong>給還在猶豫的你</strong>
+        也許你已經知罪了很久。也許你有懊悔，卻從未真正開口向神「求救」。也許你怕自己不夠誠心，怕神不會接納你。但記住：求告這個動作本身，就已經是一種承認——承認你需要祂，承認祂是主。神不等候完美的人，祂等候真實的人。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡接待他的，就是信他名的人，他就賜他們權柄，作上帝的兒女。」</p>
+        <p class="scripture-ref">約翰福音 1:12</p>
+      </div>
+
+      <p>這節經文裡有一個美麗的應許：「接待他的」——用的是那個主動的字 lambano——「他就賜他們權柄，作上帝的兒女。」你不是在換取什麼，你是在領受一份早已備好的禮物。</p>
+
+      <p>我想把這篇文章獻給那些在信仰路上走得辛苦的人。你不是一個需要做對每件事才能被愛的學生；你是一個被無限慈愛的父所尋找的孩子。知罪讓你看見自己迷路了，悔罪讓你願意回頭，認罪讓你誠實面對，求救讓你開口呼喚，而接納——是你終於讓祂把你抱回家的那一刻。</p>
+
+      <div class="big-quote">
+        救恩不是你爬到夠高才能夠到的終點，而是神彎下身來，將你托起的那一刻。
+        <cite>— 恩典的本質</cite>
+      </div>
+
+      <p>如果你今天願意，你可以就在這一刻，用你自己的話，對神說出這五件事。不需要完美的措辭，不需要等到自己足夠好。只需要，真實。</p>
+
+      <p>祂在等你。一直都在等你。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  救恩之路 · The Way of Salvation · 五步走完，一生相隨
+</footer>
+
+</body>
+</html>

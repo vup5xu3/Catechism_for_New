@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信耶穌 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩論系列 · Soteriology Series</div>
+  <h1>真正的<span>信耶穌</span></h1>
+  <p class="subtitle">從字詞宣告到生命主權的移交 · 約翰福音一章十二節</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Share</div>
+      <h2 class="card-title">你「信耶穌」了嗎？——一個比你想的更深的問題</h2>
+      <p class="card-hook">在教會裡，這句話太熟悉，熟悉到幾乎讓人忘了它到底在說什麼。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果你在台灣的教會長大，或者認識幾個基督徒朋友，你一定聽過這句話：「你信耶穌了嗎？」也許你自己也說過。你舉過手，跟著帶領者念過那個禱告，在某個營會或主日結束時填過決志卡。</p>
+
+      <p>那一刻，確實有什麼東西發生了。心裡某種重量被放下，某種溫暖進來，某種屬於另一個世界的氣息輕輕碰觸了你。</p>
+
+      <div class="highlight">
+        <strong>一個很多人沒問過自己的問題</strong>
+        但是——那之後呢？你的生活變了嗎？你的時間、你的錢、你的脾氣、你看待受苦鄰居的眼光……有沒有什麼，真的不一樣了？
+      </div>
+
+      <p>不是要論斷誰得沒得救。而是：「信耶穌」這三個字，在聖經裡，究竟是一個輕飄飄的宣示，還是一場從地基開始的生命大翻修？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「凡接待祂的，就是信祂名的人，祂就賜他們權柄，作神的兒女。」</p>
+        <p class="scripture-ref">約翰福音 1:12</p>
+      </div>
+
+      <p>約翰福音第一章第十二節，是整個基督教救恩論的起點之一。這節經文看起來簡單，卻在兩千年的神學辯論中，一次又一次地被翻開、被爭論、被活出來——也被誤解。</p>
+
+      <p>接下來的六篇，我想帶你慢慢走進這節經文的深處。不是要讓你更焦慮，而是要讓「信耶穌」這件事，在你心中變得更真實、更有重量、更值得你用一生去活。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Guide</div>
+      <h2 class="card-title">「接待」不是點頭，是開門讓人進來作主</h2>
+      <p class="card-hook">希臘文告訴我們：這個動作，比你想的主動得多。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>讓我們從語言學的角度，慢慢讀這節經文。因為當我們讀的是翻譯版本，有些重要的東西，有時候會在翻譯的縫隙裡悄悄滑走。</p>
+
+      <span class="depth-label deep-tag">📖 原文深探</span>
+
+      <div class="term-box">
+        <div class="term-original">λαμβάνω<br>lambanō</div>
+        <div class="term-desc">「接待」這個字的希臘原文。它不是被動地「被接受」，而是主動地「伸手擁抱、迎入」。這個動作有強烈的意志性——你必須選擇打開門。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">πιστεύω eis<br>信入</div>
+        <div class="term-desc">「信祂名的人」，原文用的是「信入」（pisteuō eis）——不只是「相信耶穌存在」，而是「將自己的重量整個投進去」，像是從懸崖跳入父親的懷裡。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        這樣想吧：假設你家淹水了，有一個人來說「我可以幫你修」。「相信他能修」，跟「讓他進你家、給他鑰匙、讓他從地基開始改」，是完全不同的兩件事。前者只是智識上的同意；後者才是約翰說的「接待」。
+      </div>
+
+      <p>約翰故意把「接待」和「信祂名」放在一起，互相定義。因為在他的神學裡，真正的信心本來就不是一個被動的點頭——它是一個主動的開門動作，一個將主權交出去的決定。</p>
+
+      <div class="highlight">
+        <strong>「名」代表全部人格</strong>
+        聖經裡，「名」不只是一個稱呼——它代表一個人完整的本質、身份和權柄。「信耶穌的名」，意思是把整個自己，托付給耶穌這個人——不只是他的「救贖功能」，而是他的整個主宰身份。
+      </div>
+
+      <p>這就是為什麼，信心不能是只在星期天存在的那種。它是週一早上面對一個讓你想發火的同事時，你怎麼選擇的那個東西。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Crux</div>
+      <h2 class="card-title">祂是「救主」，也是「主宰」——這兩個可以分開嗎？</h2>
+      <p class="card-hook">二十世紀最大的救恩論爭議，今天依然活在你的禱告文裡。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這是一個看起來很學術、但其實每個週日在教會佈道台上都在上演的問題：「信耶穌，只要接受祂作救主就夠了嗎？還是必須同時接受祂作生命的主宰？」</p>
+
+      <p>這場辯論在1980年代因美國牧師約翰·麥克阿瑟的著作而全面爆發，神學界稱它為「主權救恩爭議」。兩邊都有聰明、虔誠的學者，都引用聖經，卻得出截然不同的結論。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🔱 主權救恩論（改革宗立場）</span>
+          代表人物：麥克阿瑟、約翰·派博、斯普羅。主張：「救主」與「主宰」是基督不可分割的兩個面向。得救的信心必然包含悔改與對基督王權的臣服。若口稱得救卻拒絕讓祂管理生命，那個「信」只是魔鬼式的智識同意，不是救恩信心。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✝️ 白白恩典神學（時代論立場）</span>
+          代表人物：查費、賴里、霍奇斯。主張：接受耶穌為救主即可稱義，接受祂為主宰是「門徒階段」的事。若將主權順服納入稱義條件，等同把行為帶入恩典之門，是律法主義的復辟。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>兩邊都在護衛真實的神學關懷。前者怕廉價恩典，後者怕律法主義。這個張力，其實是宗教改革以來最核心的問題在現代的迴響。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        用婚姻比喻來說：主權救恩論說，「娶一個人卻不讓她進家門，這不叫結婚」。白白恩典論說，「結婚那天不需要你已經成為完美的丈夫，但你確實娶了她」。兩個都有道理，矛盾也在這裡。
+      </div>
+
+      <div class="highlight">
+        <strong>更精準的問題</strong>
+        也許問題不該是「先有救主還是先有主宰」，而是：真正的信心，在本質上，是否包含一顆願意被管理的心？就算那顆心還很軟弱、很不完全——它有沒有那個「轉向」的動作？
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Research</div>
+      <h2 class="card-title">三條神學線索：改革宗、衛理宗、天主教怎麼說稱義？</h2>
+      <p class="card-hook">同樣一本聖經，讀出了三幅截然不同的救恩地圖。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>要真正理解「信耶穌」的深度，需要知道歷史上最偉大的神學家們，在這件事上的共識與分歧。他們的辯論不是書房裡的文字遊戲——他們在爭的，是「人怎樣才能與神和好」這個人類最根本的問題。</p>
+
+      <span class="depth-label deep-tag">📖 三大救恩論傳統</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 改革宗神學：法庭式歸算</span>
+          稱義是一次性的法律宣告，神將基督的義「歸算」給信徒賬上。它是客觀的身份改變，不是內在的道德注入。好行為是這個宣告之後必然生長的果子，而非稱義的原因。真正得救的人必然堅忍到底，救恩不會失落。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🕊️ 衛理公會神學：先在恩典與完全聖化</span>
+          衛斯理認為神給所有人「先在恩典」，部分修復墮落後的自由意志。稱義是起點，但目標是追求「基督徒的完美」。由於人意志仍然自由，若故意持續悖逆，救恩可能失落。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⛪ 天主教神學：注入之義與聖事</span>
+          特倫托會議主張，稱義不只是法庭宣告，而是神將聖潔實質「注入」靈魂。初次稱義（洗禮）是恩典，但之後需透過善功與聖事使義持續增長。犯大罪則義完全消失，需藉告解重建。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我的公義是從神而來的，本乎信心。」</p>
+        <p class="scripture-ref">腓立比書 3:9</p>
+      </div>
+
+      <p>三條路徑，各自護衛一個真實的聖經洞見：改革宗強調恩典的客觀性，衛理宗強調人的回應與責任，天主教強調救恩的具身性與群體性。它們的分歧，不是有人在說謊，而是聖經本身的豐富，一本書讀不完。</p>
+
+      <div class="highlight">
+        <strong>真正共識所在</strong>
+        三個傳統都同意：真正的稱義不會讓人原地不動。不管是歸算出來的義、注入的義，還是聖靈引導下的完全，它的方向都是同一個——人要更像神，要活出愛，要在這個世界留下聖潔的印記。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Deep Dive</div>
+      <h2 class="card-title">「決志禱告」之後：主權交出去的四個生活戰場</h2>
+      <p class="card-hook">讓耶穌「作主作王」，不是一句屬靈術語，是具體的生活革命。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>教牧實踐的歷史告訴我們，「決志禱告」是一個美好的開始，但它的風險是讓人以為：念完那個禱告，就完成了。司布真牧師每週二下午親自接見初信者，歷史上一些最嚴謹的佈道家甚至故意讓人「回去想清楚再決志」——就是因為他們知道，一場短暫的情感觸動，撐不住一生的主權移交。</p>
+
+      <p>那麼，「讓耶穌管理一生」，在日常的週一到週六，長什麼樣子？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⏰ 時間與責任的管理</span>
+          路加福音十二章的「忠心管家」比喻指出，讓耶穌作王，意味著你不再只為自己活。你的時間不是你的，你的才幹不是你的，你被「托付」了，你要準備交賬。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🏠 家庭與婚姻的結構</span>
+          詩篇一二七篇說得直接：「若非耶和華建造房屋，建造的人就枉然勞力。」讓基督管理家庭，不是在牆上掛十字架，是在最難相處的人面前，選擇福音的方式而非世界的方式。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌿 屬靈生命的持守</span>
+          約翰福音十五章：「枝子若不常在葡萄樹上，自己就不能結果子。」無論工作多繁重，像但以理一樣守住禱告和讀經，不是紀律主義，是為了保持那個「常在祂裡面」的狀態。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🤝 鄰舍與社會的介入</span>
+          馬太福音二十五章讓人驚震：「你們這樣行在我這弟兄中一個最小的身上，就是行在我身上了。」接待耶穌的主權，最終展現在你對社會最邊緣、最脆弱者的對待方式。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="big-quote">
+        信心若沒有行為就是死的——但行為也不能製造信心。生命的次序是：先被愛，再去愛；先被接納，再去接納別人。
+        <cite>— 雅各書 2:17 的神學詮釋</cite>
+      </div>
+
+      <p>這四個維度不是得救的「條件」，而是真實的得救信心向外溢出的「形狀」。當一個人真正把主權交了出去，生命開始變形——不是因為他努力表現，而是因為有一個更大的主人搬進來了。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Epilogue</div>
+      <h2 class="card-title">你不是要夠好，才能讓祂進來——你是讓祂進來，才能變得好</h2>
+      <p class="card-hook">這是一場恩典的旅程，不是道德表現的考試。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們走過了六篇：從一個日常的問題，到原文語言學的探索，到神學辯論的核心，再到跨宗派的地圖，最後到生活的四個戰場。如果這一切讓你感到沉重，請讓我說一句可能最重要的話——</p>
+
+      <p>神在約翰福音一章十二節用的字，是「賜予」。祂「賜給」他們權柄，作神的兒女。這不是你掙來的，不是你表現好才拿到的。這是一份禮物，白白的，從那位一開始就愛你的神那裡來的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「祂賜他們權柄，作神的兒女——這等人不是從血氣生的，乃是從神生的。」</p>
+        <p class="scripture-ref">約翰福音 1:12–13</p>
+      </div>
+
+      <p>「信耶穌」的確有深度，有主權移交的嚴肅性——但它的起點，永遠不是你的表現，而是祂的恩典。你不是要先把生命整理好，才有資格讓耶穌進來。你是讓祂進來，然後，祂開始整理。</p>
+
+      <div class="highlight">
+        <strong>給每一個還在路上的人</strong>
+        也許你已經信了很多年，卻覺得生命沒什麼改變；也許你剛開始認識這條信仰，充滿懷疑；也許你很久以前念過一個決志禱告，現在不確定那算不算數。
+        無論你在哪個位置——重要的不是那個儀式，而是現在，你願不願意把門再打開一點，讓那位一直在等的主人多進來一些。
+      </div>
+
+      <div class="big-quote">
+        「信耶穌」不是一個結束的儀式，而是一段永遠向更深走去的旅程——每一天，多交出一點，多接待一次，多讓祂作王一件事。
+        <cite>— 一個持續學習交出主權的人</cite>
+      </div>
+
+      <p>歷史神學的光芒、原文字義的嚴謹，最終都指向同一個溫暖的邀請：祂是主，也是救主。祂是審判者，也是擁抱你的父親。而這條「信耶穌」的路，從你打開門的那一刻就開始了，一直走到永遠。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  信耶穌 · Believing in Jesus · 約翰福音 1:12
+</footer>
+
+</body>
+</html>
