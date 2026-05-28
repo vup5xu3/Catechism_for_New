@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖言之鏡與聖靈指證 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(28px, 5.5vw, 58px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.25;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .analogy              { background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(201,168,76,0.02)); border-color: rgba(201,168,76,0.25); color: var(--gold-light); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); border: 1px solid rgba(201,168,76,0.4); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══ SITE HEADER ══ -->
+<header class="site-header">
+  <div class="eyebrow">聖經神學系列 · Biblical Theology</div>
+  <h1>聖言之鏡與<span>聖靈指證</span></h1>
+  <p class="subtitle">世人如何知罪？從原文到靈魂的六章解析</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Share · 分享</div>
+      <h2 class="card-title">鏡子前，你看見了什麼？</h2>
+      <p class="card-hook">我們每天照鏡子，卻從不照靈魂——直到某一天，聖經突然讓你看清了自己的臉。</p>
+    </div>
+
+    <div class="card-body">
+      <p>你有沒有過這樣的經歷？坐在禮拜堂裡，或者翻開聖經的某一頁，突然感到一股說不清楚的不安？不是恐懼，也不完全是愧疚，而是一種奇怪的清醒——像是長時間在昏黃的房間裡，突然有人拉開了窗簾。</p>
+
+      <p>那個瞬間，你看見了某樣以前從未正視的東西。也許是心裡某個長期合理化的習慣，也許是對某人深埋著的嫌惡，也許只是一種隱隱的空洞——一種「我其實沒有自己以為的那麼好」的感覺。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        這就是「知罪」的開始。不是別人指著你說「你犯罪了」，而是在某個安靜的時刻，靈魂對自己誠實了一次。
+      </div>
+
+      <p>聖經雅各書把這個過程比作照鏡子。在兩千年前，鏡子不是玻璃做的，而是用高度拋光的青銅或銅板製成，成像不完全清晰，需要你湊近了、調整角度、反覆端詳，才能看清自己臉上真實的樣子。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為聽道而不行道的，就像人對著鏡子看自己本來的面目，看見，走後，隨即忘了他的相貌如何。」</p>
+        <p class="scripture-ref">雅各書 1:23-24</p>
+      </div>
+
+      <p>這個系列，是一場六章的旅程。我們要一起走進聖經最核心的問題之一：<strong>世人怎樣知道自己的罪？</strong>從原文字義、到神學框架、到屬靈生命的真實轉化，一步一步，看清那面鏡子裡的真相。</p>
+
+      <div class="highlight">
+        <strong>這個系列適合你，如果——</strong>
+        你曾感到「自己好像沒有那麼差」，也曾感到「自己好像哪裡不對勁」；你想知道知罪到底是什麼感覺，以及那感覺從哪裡來。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">為什麼我們需要「外力」才能看見自己的罪？</h2>
+      <p class="card-hook">人天生就有一套精密的自我保護系統——在靈性上，這套系統叫做「自義」。</p>
+    </div>
+
+    <div class="card-body">
+      <p>在認識「知罪」之前，我們需要先問一個更根本的問題：為什麼人不能靠自己看見自己的罪？</p>
+
+      <p>這不是在說人「沒有良心」。每個人都有良心，都有某種道德直覺。問題在於，墮落的人心有一種驚人的能力——我們極其擅長「合理化」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📸</span>
+        想像你的手機相機裝了一個永遠開著的「美顏濾鏡」，而且你完全忘記那個濾鏡的存在。你對著鏡頭拍攝的每一張「自拍」，都是被美化過的版本——而你還以為那就是真實的你。
+      </div>
+
+      <p>這就是聖經所說的「行不義壓阻真理」（羅馬書1:18）的狀態。人類在墮落後，心靈的本能傾向是自我美化：把自己的過失合理化，把別人的失誤放大，把神聖標準調低到自己剛好達得到的高度。</p>
+
+      <div class="highlight">
+        <strong>三種最常見的靈性美顏濾鏡</strong>
+        一、比較法：「我至少比某某人好。」二、環境論：「是因為我的成長背景才這樣。」三、善行遮罪：用做了好事來抵消不願面對的壞事。
+      </div>
+
+      <p>正因為如此，單純的道德教育、人生哲學或自我反省，往往無法真正讓人「知罪」。你用美顏濾鏡拍的照片，再怎麼仔細看，都只會看見一張美化後的臉。</p>
+
+      <p>這就是為什麼需要兩樣外力介入：<strong>聖言之鏡</strong>與<strong>聖靈的指證</strong>。前者提供客觀的診斷標準，後者在靈魂深處點燃光照。兩者缺一不可，共同完成這件事——讓人真實地看見自己。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「他來了，要在關於罪、關於義、關於審判的事上，使世界知罪。」</p>
+        <p class="scripture-ref">約翰福音 16:8（中文標準譯本）</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Expose · 破題</div>
+      <h2 class="card-title">那面古老的銅鏡：聖言如何照出靈魂的真相</h2>
+      <p class="card-hook">詳細察看，而非走馬看花——雅各書給了我們一個關於知罪的動作清單。</p>
+    </div>
+
+    <div class="card-body">
+      <p>雅各書第一章的「鏡子比喻」，表面看起來很簡單，但當我們把它放回第一世紀的文化脈絡中，它的深度會讓人驚嘆。</p>
+
+      <span class="depth-label deep-tag">📖 原文考察</span>
+
+      <p>雅各用來描述「鏡子」的希臘文是 <em>Esoptron</em>（ἔσοπτρον），指的正是當時以高度拋光的青銅或金屬製成的反射板。這種鏡子的成像不像現代鍍銀玻璃那樣清晰，而是需要觀看者湊近、調整角度、從多個方位反覆端詳，才能辨識細節。</p>
+
+      <div class="term-box">
+        <div class="term-original">Katanoeō<br>κατανοέω</div>
+        <div class="term-desc">「詳細察看」（雅各書1:25）的原文。這不是走馬看花式的一瞥，而是哲學與修辭學中，指集中全部注意力進行理性深思的動詞——字面上有「向內凝視」的意思。</div>
+      </div>
+
+      <p>雅各筆下有兩種人：一種人「聽道而不行道」，像一個急忙中瞥了銅鏡一眼，看見了臉上的汙點，轉身就忘了。另一種人「詳細察看那全備使人自由之律法」，並持續如此，在生活中把所見的付諸實踐。</p>
+
+      <div class="highlight">
+        <strong>雅各書的「本來的面目」</strong>
+        原文是 Prosopon tēs geneseos，直譯是「受造時的相貌」或「出生時的臉」。鏡子照出的，不是社交場合中的精心裝扮，而是人靈魂在受造時本應擁有的神聖形象——以及墮落後真實殘破的狀態。
+      </div>
+
+      <p>這裡雅各暗示了一個深刻的神學洞見：那面鏡子照出的真相分兩層——<strong>你本應成為什麼樣的人</strong>，以及<strong>你現在實際是什麼樣的人</strong>。兩層之間的落差，就是罪。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎭</span>
+        我們每天在社交生活中扮演各種角色——職場上的專業人、家庭裡的稱職者、朋友間的幽默者。但聖言這面鏡子完全不在意你的角色扮演。它穿透一切外在形象，直擊那個在所有角色卸下之後、真實存在的你。
+      </div>
+
+      <p>那麼，為什麼有人照了鏡子，卻「隨即忘了相貌如何」？雅各沒有說那人是故意的。但在神學上，這種迅速的遺忘，本質上是人意志對罪之真相的一種拒絕——一種企圖通過遠離鏡子，來逃避隨之而來的悔改責任。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「惟有詳細察看那全備、使人自由之律法的，並且時常如此，這人既不是聽了就忘，乃是實在行出來，就在他所行的事上必然得福。」</p>
+        <p class="scripture-ref">雅各書 1:25</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">「罪」的四張臉：聖經原文如何立體描繪人的罪</h2>
+      <p class="card-hook">希伯來文至少用了四個完全不同的字來描述「罪」——因為罪的面貌，遠比我們以為的更複雜。</p>
+    </div>
+
+    <div class="card-body">
+      <p>中文讀者讀到「罪」，往往只看到一個字。但當我們打開希伯來文聖經，會驚訝地發現，舊約用了至少四個截然不同的詞彙來刻畫罪的各種形態，每一個都描繪了罪在人靈魂中不同維度的殺傷力。</p>
+
+      <span class="depth-label deep-tag">📖 原文考察</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">שָׁגַג Shagag｜無意走偏</span>
+          字面意思是羊群因疏忽而無意中跨越了邊界。罪的起點，往往不是轟轟烈烈的叛逆，而是一個小小的「不夠專注」——忽略了神的標準，不小心踏入了不該踏入的地方。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">חָטָא Chata｜未中靶心</span>
+          源自古代投石、射箭時「未擊中紅心」的意象。人本應活在神榮耀的標準之中，但因軟弱與私慾，偏離了方向，成了一發偏離靶心的箭。新約的 Hamartia 正繼承了這個意象。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">עָוֹן Avon｜心靈彎曲</span>
+          描繪道路的折曲與結構的變形。罪久了，會開始扭曲人的性格結構本身——讓人的眼光、動機、愛好都逐漸走樣，形成一種深層的人格變形。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">פֶּשַׁע Pesha｜蓄意背叛</span>
+          古代近東政治語言，指藩屬國蓄意撕毀盟約、向合法君王公開叛亂。這是罪最嚴重的形態：明知神的主權，仍刻意跨越界限，代表的是關係的徹底決裂。
+        </div>
+      </div>
+
+      <p>這四個字描繪了一條罪性深化的軌跡：從起初無心的走偏，到習慣性的偏離，到心靈結構的變形，最終演變為對神主權的蓄意對抗。沒有一個人是從一開始就「壞透了」，但每一個不悔改的步驟，都讓人離起點更遠。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎸</span>
+        想像靈魂是一把精心設計的吉他。Shagag 是調音鍵輕輕轉動了一格；Chata 是琴弦微微走音；Avon 是琴頸開始輕微彎曲；Pesha 是琴弦被刻意剪斷。每一步都讓這把吉他距離和諧的音調越來越遠。
+      </div>
+
+      <p>新約希臘文的 Hamartia（ἁμαρτία）繼承了 Chata 的意象，但更進一步：它的字根由 Hama（合一、在場）與 Artios（完整、健全）加上否定前綴構成，意思是「失去協調與完整」。罪，在聖經最深的定義裡，不只是違規，而是人與造物主之間一種存在性的失調——生命的音律破碎了。</p>
+
+      <div class="highlight">
+        <strong>羅馬書 3:23 的深度</strong>
+        「因為世人都犯了罪（Hamartia），虧缺了神的榮耀。」這裡的「虧缺」不是道德評分不夠高，而是存在性的殘缺——人不再是受造時應有的完整狀態，生命目標的靶心被徹底錯過了。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">聖靈的司法指證：那位神聖偵探在良心深處開庭</h2>
+      <p class="card-hook">聖靈知罪的工作，不是道德說教，而是一場在靈魂法庭裡無可推諉的司法審訊。</p>
+    </div>
+
+    <div class="card-body">
+      <p>即使聖言是面完美的鏡子，人依然可以選擇不去照，或照了就轉身離開。這就是為什麼約翰福音16章揭示了聖靈工作的必要性——祂不只是提供資訊，而是在人心的深處主動做工。</p>
+
+      <span class="depth-label deep-tag">📖 司法用語：Elegchō</span>
+
+      <div class="term-box">
+        <div class="term-original">Elegchō<br>ἐλέγχω</div>
+        <div class="term-desc">約翰福音16:8「使世界知罪」的動詞原文。這是羅馬帝國法庭的專業術語，指公訴人出示無可反駁的鐵證，讓被告在法律與良心上徹底啞口無言，心服口服地承認罪責。</div>
+      </div>
+
+      <p>聖靈的工作是以一種具有神聖法庭性質的方式，在罪人的內心深處開展的。這不是一種隱隱的不安、一種籠統的罪惡感，而是一種具體的、指向性極強的靈魂審訊。約翰記下了三個精確的起訴維度：</p>
+
+      <div class="highlight">
+        <strong>維度一：關於罪——不信的核心之罪</strong>
+        「是因為他們不信我」（約16:9）。聖靈的起訴不是從道德失誤開始的，而是直擊那個最根源的問題：拒絕承認耶穌基督為主。一切具體的過犯是症狀，「不信」才是根源的疾病。
+      </div>
+
+      <div class="highlight">
+        <strong>維度二：關於義——自義的徹底破產</strong>
+        「是因為我往父那裡去」（約16:10）。唯一的義的標準，是那位復活升天的基督所樹立的。人一切自以為是的道德建構，在神絕對聖潔的標準前，如以賽亞所說，都不過是污穢的破爛衣服（賽64:6）。
+      </div>
+
+      <div class="highlight">
+        <strong>維度三：關於審判——審判的必然性</strong>
+        「是因為這世界的統治者受了審判」（約16:11）。撒旦在十字架上已被宣判，末日審判的結局已被確定。聖靈讓罪人清醒地意識到：繼續依附現世、拒絕悔改，就是選擇了與已被定罪者同歸於盡。
+      </div>
+
+      <p>聖靈的這三重指證，具有徹底摧毀人自我防禦機制的力量。在五旬節彼得佈道的現場，聖靈主動動工，聽眾「心裡刺痛」（使徒行傳2:37），原文 katanyssō 描繪的是一種如被尖銳之物刺穿的劇烈靈性疼痛。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔦</span>
+        想像一個人在完全黑暗的房間裡待了很久，已經習慣了黑暗，甚至開始覺得黑暗是正常的。聖靈的工作，就是突然打開一盞強力探照燈——讓他不只看見房間裡的灰塵，更看見自己其實一直活在黑暗之中。
+      </div>
+
+      <p>然而，這種刺痛不是為了將人推入絕望，而是救贖的必要前奏。就像外科手術的疼痛是治癒的代價——那種被聖靈刺穿的感受，正是人打破自我防衛、轉向救主的靈性轉捩點。</p>
+
+      <div class="big-quote">
+        聖靈的指證不是宣判，而是呼召；不是定罪，而是開門。
+        <cite>— 神學家 John Owen 對約翰福音16章的詮釋核心</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Grace · 結論與溫馨</div>
+      <h2 class="card-title">「主啊！救我」——那一聲呼求之後，發生了什麼</h2>
+      <p class="card-hook">知罪的終點，不是羞愧的深淵，而是恩典的入口。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走到這裡，讓我們把所有的線索收攏起來。</p>
+
+      <p>聖言是鏡子，照出靈魂受造時的本相，以及墮落後真實的殘破。聖靈是神聖公訴人，在良心法庭上出示鐵證，讓一切自我美化的辯護詞全面崩潰。當這兩股力量同時在靈魂中成就工作，一個人會來到一個特殊的地方——徹底的謙卑，徹底的誠實，徹底的無處可逃。</p>
+
+      <p>在那個地方，會有一種極其純粹的禱告從靈魂深處升起，不需要華麗的措辭，不需要複雜的神學語言。只是：<strong>「主啊！救我。」</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">「得赦免其過、遮蓋其罪的，這人是有福的！凡心裡沒有詭詐、耶和華不算為有罪的，這人是有福的！」</p>
+        <p class="scripture-ref">詩篇 32:1-2</p>
+      </div>
+
+      <p>詩篇32篇的「得赦免其過」，希伯來原文用的動詞是 <em>Nasa</em>，字面意思是「被提起來、被搬走、被承擔走」。那個壓垮你的重擔，那個讓你無法直視的真相，那個名叫罪的重石——它被搬走了。</p>
+
+      <div class="highlight">
+        <strong>盟約轉移的奇蹟</strong>
+        以賽亞書53章預言，彌賽亞要為我們的「背叛」（Pesha）受傷，為我們的「扭曲」（Avon）被壓碎，親自承擔（Nasa）眾人的罪（Chata'ah）。那一聲「主啊！救我」，就是信心將自己無法承受的重量，徹底轉移到十字架的那一刻。
+      </div>
+
+      <p>這意味著：<strong>知罪不是旅程的終點，而是恩典的入口</strong>。那面照出真相的鏡子，不是為了讓你永遠停在羞恥裡，而是為了讓你看見你需要什麼。那位在良心法庭指證你的聖靈，同一位聖靈，也是那位「保惠師」——安慰者、代求者、陪伴者。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎶</span>
+        記得那把失調的吉他嗎？它最終落在了神聖調音師的手中。那一聲「主啊！救我」，就是把那把走音的破琴，親手交到祂手裡的那個動作。祂接過來，不是要把它丟棄，而是要讓它重新發出它本來應有的聲音。
+      </div>
+
+      <p>所以，如果你今天在讀完這個系列之後，感到某種說不清楚的不安；如果你發現心裡有什麼東西，在聖言的光照下無所遁形——那個感覺，不是要把你壓垮的訊號，而是恩典正在敲門的聲音。</p>
+
+      <div class="big-quote">
+        知罪的恩典，是靈魂重新聽見自己本來聲音的起點。
+        <cite>— 詩篇 32:1</cite>
+      </div>
+
+      <p>你不需要先把自己整理好，才能走近那扇門。帶著那把走音的破琴走近就好。那位調音師，已在那裡等候很久了。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<!-- ══ FOOTER ══ -->
+<footer class="site-footer">
+  聖言之鏡與聖靈指證 · Biblical Theology Series · 六章全文
+</footer>
+
+</body>
+</html>

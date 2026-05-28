@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>應當怎樣認罪？— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">認罪神學 · Theology of Confession</div>
+  <h1>我們應當<span>怎樣認罪</span>？</h1>
+  <p class="subtitle">從希伯來文與希臘文原典，走向真實的心靈自由</p>
+</header>
+
+
+<!-- ══════════════ 第一章：分享 ══════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">那個讓我停下來的問題</h2>
+      <p class="card-hook">我以為自己一直在認罪——直到有一天，我意識到我只是在「報到」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>曾經有很長一段時間，我每天晚上的禱告都有一個固定的結尾：「主啊，也求祢赦免我今天所有的罪。」說完，翻個身，睡著了。</p>
+
+      <p>我不覺得有什麼問題。認罪了嘛，不是嗎？</p>
+
+      <p>直到有一次，一位老弟兄輕描淡寫地問了我一句：「你上次在神面前，具體說出自己做了什麼事，是什麼時候？」</p>
+
+      <div class="highlight">
+        <strong>那個問題卡住我好幾天</strong>
+        不是因為它太難，而是因為我突然發現——我根本想不起來。我的認罪生活，其實是一場長達多年的「模糊交差」。
+      </div>
+
+      <p>後來我開始追問：聖經裡說的「認罪」，到底是什麼意思？它應該是什麼感覺？一定要痛苦嗎？還是有一種認罪，其實比我以為的更像是「回家」？</p>
+
+      <p>這個系列文章，就是我帶著這個問題，走入聖經原典後所找到的答案。不是神學論文，是真實地走了一趟之後，想拉你一起看的風景。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪟</span>
+        認罪有點像打開窗戶通風。不是因為家裡起火了才開窗，而是因為每天都需要新鮮空氣進來、讓舊氣流出去。問題不是「你有沒有開過窗」，而是「你多久才開一次，每次開了多寬」。
+      </div>
+
+      <p>如果你也有那種感覺——認罪這件事，好像是宗教義務，卻不太知道它的滋味應該長什麼樣——歡迎你繼續往下讀。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ 第二章：引導 ══════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
+      <h2 class="card-title">認罪，其實是一種「對齊」</h2>
+      <p class="card-hook">在說任何教義之前，先讓我們回到那個字的本意</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>很多人對「認罪」的直覺印象，是一間陰暗的懺悔亭、一份沉重的悔過書，或者是一個用哭泣和痛苦來「交換」赦免的談判現場。但這個印象，其實離聖經原文非常遠。</p>
+
+      <p>新約描述認罪用的希臘文，是一個讓人意外地直白的詞：</p>
+
+      <div class="term-box">
+        <div class="term-original">ὁμολογέω<br>homologeo</div>
+        <div class="term-desc">由「ὁμοῦ（相同）」與「λόγος（言語）」組成，字面意思就是「說相同的話」。不是認錯書，不是認罰書——而是「與神說同一句話」。</div>
+      </div>
+
+      <p>這個字告訴我們：認罪的本質，是一種「對齊」。</p>
+
+      <div class="highlight">
+        <strong>認罪的真正動作</strong>
+        當上帝說「這是嫉妒」，你也說「是，這是嫉妒」。當上帝說「這是驕傲」，你不再辯解，而是說「是，這是驕傲」。認罪，是犯罪者終於放下防衛，與神的診斷完全同意的那一刻。
+      </div>
+
+      <p>這意味著一件非常重要的事：認罪並不是在給上帝提供新資訊。祂早就知道了。認罪，是你願意終於承認你也知道了。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們若認自己的罪，上帝是信實的，是公義的，必要赦免我們的罪，洗淨我們一切的不義。」</p>
+        <p class="scripture-ref">約翰一書 1:9</p>
+      </div>
+
+      <p>約翰在這裡寫的「認」（homologōmen），用的是現在時態——不是過去完成的一次性事件，而是一種「持續進行中的生活方式」。認罪，不是你人生某個特殊時刻做過的事，而是成聖道路上，你每天都在進行的靈性呼吸。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩺</span>
+        就像定期回診不是因為你快死了，而是因為你在乎自己的健康狀態。認罪也是如此——不是緊急求救訊號，而是與醫治你的那一位保持日常溝通的管道。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ 第三章：破題 ══════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Breaking · 破題</div>
+      <h2 class="card-title">「求主赦免所有的罪」——這句話有什麼問題？</h2>
+      <p class="card-hook">含糊的認罪，是靈性上「裝睡」的表現</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>讓我們直接講一個讓很多人不舒服的問題：籠統的認罪，到底哪裡不夠？</p>
+
+      <p>答案藏在舊約的一個場景裡。每年的贖罪日，以色列的大祭司要把雙手按在活羊的頭上，然後「承認以色列人一切的罪惡、過犯和罪惡」——不是一個模糊的概括，而是清清楚楚地，把那一年百姓所犯的具體過犯一條一條說出來，放在那隻羊身上。</p>
+
+      <div class="highlight">
+        <strong>具體才有真實的重量</strong>
+        如果大祭司只是說「我們都是罪人，求神赦免」，那隻羊要背走什麼？認罪的具體性，不是一種律法主義的苛求，而是因為只有具體的，才是真實的。
+      </div>
+
+      <p>改革宗神學的核心信條——《西敏信條》——在第 15 章第 5 條明確指出：信徒不可滿足於籠統的悔改，而是有責任為自己具體的罪進行具體的悔改。</p>
+
+      <p>含糊的認罪，往往暴露出一個問題：我們根本沒有認真審視自己。那句「求主赦免所有的罪」，有時候不是謙遜，而是迴避——迴避正視那件我們其實心知肚明的事。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">❌ 籠統的認罪</span>
+          「主啊，我今天做了很多不好的事，求祢赦免我所有的罪。」——沒有停下來，沒有面對具體的事。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚠️ 半具體的認罪</span>
+          「主啊，我今天對家人發了脾氣，求祢赦免我。」——好一些，但仍未觸及動機與根源。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✅ 真正具體的認罪</span>
+          「主啊，我今天用傷人的言語對妻子說話，那話的背後是驕傲和自憐。我承認我傷害了她，也承認我的內心輕看了祢賜給我的這個人。」
+        </div>
+      </div>
+
+      <p>不是要你折磨自己，把每一個念頭都放大審判。而是——當聖靈在你心裡發出光，照出某個具體的事情時，不要轉身，轉而直視它，清楚地說出它的名字。</p>
+
+      <p>醫治，從準確的診斷開始。洗淨，從誠實地陳明開始。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ 第四章：研究 ══════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">舊約裡的「罪」，不只是一個字</h2>
+      <p class="card-hook">詩篇 32 篇用三個詞描述罪，用三個動詞描述神的救贖——精確得令人屏息</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 原典深度</span>
+
+      <p>詩篇 32 篇是大衛寫的，背景是他與拔示巴的事件後，終於面對並承認自己所做之事的那段歷程。這首詩裡，他用了三個不同的希伯來字描述「罪」，又用三個不同的動詞描述神如何處理這些罪——對稱得宛如一件精心設計的詩學建築。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r2">
+          <span class="ring-label">פֶּשַׁע (pesha) — 蓄意叛逆</span>
+          知道那條線在哪裡，卻主動跨越它。不是無知，是叛亂。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">חַטָּאָה (chatta'ah) — 失焦偏離</span>
+          源自「未中靶心」的意象。人生瞄準的方向，偏離了神設定的目的。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">עָוֹן (avon) — 內在扭曲</span>
+          不只是行為上的錯誤，而是人心深處的彎曲、本性的邪僻。
+        </div>
+      </div>
+
+      <p>大衛不只描述了罪，他也描述了神如何回應認罪的靈魂。三個令人動容的動詞：</p>
+
+      <div class="term-box">
+        <div class="term-original">נָשָׂא nasa</div>
+        <div class="term-desc">「舉起並帶走」。罪的重擔不是被壓扁，而是被神舉起，挪移到別處去了。</div>
+      </div>
+      <div class="term-box">
+        <div class="term-original">כָּסָה kasah</div>
+        <div class="term-desc">「遮蓋」。神用恩典蓋住罪，使神的公義忿怒不再落在罪人身上。</div>
+      </div>
+      <div class="term-box">
+        <div class="term-original">לֹא חָשַׁב lo'yahshob</div>
+        <div class="term-desc">「不算為有罪」。在神的帳本上，那個罪不再被登記——法庭宣告無罪。</div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「得赦免其過、遮蓋其罪的，這人是有福的！凡心裡沒有詭詐、耶和華不算為有罪的，這人是有福的！」</p>
+        <p class="scripture-ref">詩篇 32:1–2</p>
+      </div>
+
+      <p>這三重恩典有一個前提：「心裡沒有詭詐」。希伯來文中，「詭詐」（remiyah）在此特指自欺——口頭上說認罪，心裡卻毫無真實離棄罪惡的意圖。這種認罪本身，就構成了一種新的欺騙。</p>
+
+      <div class="highlight">
+        <strong>最美麗的聖經辯證</strong>
+        人若自己「遮掩」(kasa) 罪，就會枯乾。神若為人「遮蓋」(kasah) 罪，就帶來自由。同一個字根，兩個截然相反的結果——分野只在於：是你在遮掩，還是你放下遮掩，讓神來遮蓋。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ 第五章：深論 ══════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">認罪、悔改、轉向——三個階梯，缺一不可</h2>
+      <p class="card-hook">光是「承認」還不夠；完整的復原是一條走向深處的路</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 神學架構</span>
+
+      <p>聖經的認罪神學，包含三個層層遞進的階段，缺少任何一個，都只是完整圖畫的一部分。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">第一階：ὁμολογέω 認罪——言語的對齊</span>
+          在口頭與認知上，同意神對罪的診斷。說出它的名字，不找藉口，不轉移焦點。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">第二階：μετανοέω 悔改——心意的轉變</span>
+          「metanoia」：meta（改變）+ noia（心智）。不只是後悔，而是思想框架的根本重整——對罪的評估徹底翻轉。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">第三階：στρέφω 轉向——行為的方向改變</span>
+          真實的悔改必然在具體行為上顯明。人生的行走方向，從原本的路掉頭，轉向神的道。
+        </div>
+      </div>
+
+      <p>使徒彼得的故事，是這三個階段最生動的注腳。他早就在西門彼得的家附近宣認了基督的神性（第一階完成了），但直到他三次否認主之後，在庭院裡痛哭，才真正經歷了心意的破碎與重塑（第二階）。後來他在提比哩亞海邊被問了三次「你愛我嗎」，才在恢復與使命的承擔中完成了真正的轉向（第三階）。</p>
+
+      <div class="highlight">
+        <strong>缺乏第二、三階的認罪會變成什麼？</strong>
+        只停留在言語層次、沒有內心更新的「認罪」，很容易變成廉價的自我安慰，甚至是宗教表演——做完了一個宗教動作，良心短暫得到緩解，卻對生命沒有任何真實的影響。
+      </div>
+
+      <p>宗教改革的兩位先驅，路德與加爾文，對如何引導信徒走向真實的認罪，也各有深刻的洞見。</p>
+
+      <p>路德建議信徒根據「十誡」以及自己的生活職分（父母、配偶、員工）來具體省察：在這段關係中，我是否不忠、懶惰、暴躁、輕蔑？他每晚透過十誡做自我審視，成為歷代信徒效法的範本。</p>
+
+      <p>加爾文則將「公共認罪與宣赦」列為每週主日崇拜的開端。他認為，當會眾聚集在神面前，最合宜的起點是承認自身的污穢與不配，然後由牧師宣告基督寶血所帶來的赦免。不是靠哭泣換取赦免，而是讓福音的安慰，直接對著憂傷的靈魂宣告。</p>
+
+      <div class="big-quote">
+        真正的悔改不從苦毒而來，乃從信心而來。先看見基督的恩典，才有可能真正轉離罪惡。
+        <cite>— 約翰·加爾文</cite>
+      </div>
+
+      <p>認罪的範圍，也應當與罪所造成的傷害範圍相稱。若罪只波及個人與神的關係，在隱密處陳明即可；若傷害了具體的人，就必須向那個人認罪和好；若罪的影響是公開性的，公開的收回與認罪，也是恢復見證的必要路徑——這正是大衛在詩篇 51 篇所示範的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ 第六章：結論與溫馨 ══════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Conclusion · 結論與溫馨</div>
+      <h2 class="card-title">認罪不是法庭，是回家</h2>
+      <p class="card-hook">這不是一場你必須用痛苦贏得的談判——這是天父等著打開的門</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走到這裡，讓我用最簡單的話做一個收整。</p>
+
+      <p>認罪，不是宗教義務的履行，不是痛苦的屬靈懲罰，不是用眼淚換取一張赦免券。它的希臘文原意，不過是「說相同的話」——你終於願意站在神的真理之光中，承認祂所說的是對的。</p>
+
+      <div class="highlight">
+        <strong>認罪的四個特徵</strong>
+        持續的（不是一次性的），具體的（不是籠統的），真實的（不是表演性的），有範圍的（傷了誰就向誰認）。這四個維度合在一起，才是一個完整而健康的認罪生活。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「遮掩自己罪過的，必不亨通；承認離棄罪過的，必蒙憐恤。」</p>
+        <p class="scripture-ref">箴言 28:13</p>
+      </div>
+
+      <p>箴言說的那個「遮掩」，和神為我們所做的「遮蓋」，在原文裡是同一個字根。這不是一個巧合，而是一個邀請——你一旦放下自己的遮掩，神那厚重、慈愛的遮蓋，就已經在那裡等候你了。</p>
+
+      <p>詩篇 32 篇的大衛，在承認一切之後，說的不是「我感到羞愧」。他說的是：「你是我藏身之處，你必保佑我脫離苦難，以得救的歌曲四面環繞我。」</p>
+
+      <p>這才是認罪的終點。不是羞愧，是藏身。不是定罪，是被環繞。</p>
+
+      <p>所以，今晚，不要只說「求主赦免所有的罪」就翻身睡著。試著停一停，讓聖靈的光照在今天發生的那件事上，誠實地、具體地，說出它的名字。</p>
+
+      <p>然後，相信那位「信實公義」的神，祂赦免的意願，比你的羞愧更早存在，比你的眼淚更加確定。</p>
+
+      <div class="big-quote">
+        人若主動不遮掩，神就主動來遮蓋。這是整本聖經裡，最溫柔的一道辯證。
+        <cite>— 基於詩篇 32 篇</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  認罪神學系列 · Theology of Confession · 約翰一書 1:9
+</footer>
+
+</body>
+</html>

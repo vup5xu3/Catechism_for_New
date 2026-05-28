@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>懊悔與悔改——Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩論系列 · Soteriology Series</div>
+  <h1>悔改，是<span>心意改變</span></h1>
+  <p class="subtitle">從聖經語言學到救恩次序，重新認識罪人歸神的那條路</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Opening</div>
+      <h2 class="card-title">一個在教會待了十年的誤解</h2>
+      <p class="card-hook">你以為「悔改」是把壞習慣改掉——其實那件事你想錯了整整十年</p>
+    </div>
+    <div class="card-body">
+
+      <p>我認識一個弟兄，信主之後拼命戒菸、戒酒、改脾氣。他每隔幾個月就重新「悔改」一次——因為他以為悔改就是改掉那些壞毛病。改成了，感覺跟神近了；沒改成，就覺得自己還不夠資格站在神面前。</p>
+
+      <p>他的信仰生活因此充滿了反覆的羞愧與疲憊。他從來不知道，他花了整整十年，把「悔改」這件事做錯了。</p>
+
+      <div class="highlight">
+        <strong>這是今天要談的核心命題</strong>
+        悔改，指的是「改變心意」，不是「改變行為」。行為的改變，是信主重生之後才發生的事——是果子，不是入場券。
+      </div>
+
+      <p>這個區別，看起來微妙，但它牽動的是整個福音的根基：你是因為「改好了」才得救，還是因為「承認自己改不好、完全仰望基督」才得救？</p>
+
+      <p>這六篇文章，我們從語言、神學、歷史到實踐，一層一層把這件事說清楚。如果你曾經在信仰中感到莫名的疲倦，或者一直覺得自己「還不夠好」，這個系列是寫給你的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「主的靈在我身上，因為他用膏膏我，叫我傳福音給貧窮的人……」</p>
+        <p class="scripture-ref">路加福音 4:18</p>
+      </div>
+
+      <p>福音是給貧窮的人的。貧窮不是身份，而是心靈的姿態——那種清楚知道自己一無所有、只能伸手的狀態。這，正是真悔改的起點。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Orientation</div>
+      <h2 class="card-title">兩個字，兩種人生方向</h2>
+      <p class="card-hook">漢語的「悔改」與「懊悔」，在聖經裡其實走的是完全不同的兩條路</p>
+    </div>
+    <div class="card-body">
+
+      <p>在日常漢語裡，「懊悔」是「深切後悔」，「悔改」是「承認錯誤並加以改正」。這兩個定義都指向過去的錯誤，以及對錯誤的情感回應或行為修補。</p>
+
+      <p>但聖經不是這樣說的。</p>
+
+      <span class="depth-label deep-tag">📖 語言學層次</span>
+
+      <p>聖經的「悔改」與「懊悔」，在原文中各有兩個核心詞彙，它們描繪的不是「修補過去」，而是「轉向未來」：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">Shub（שׁוּב）── 希伯來文，舊約</span>
+          字面意思是「轉向」、「回轉」。希伯來人把人生視為一條路，Shub 就是在這條路上做一百八十度的掉頭——轉離惡，轉向神。這是意志與腳步的移動。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">Nacham（נָחַם）── 希伯來文，舊約</span>
+          字面與「嘆息」或「深呼吸」有關，描述因著過去的事態而產生的深切憂傷與痛悔。這是情感深處的破碎。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">Metanoia（μετάνοια）── 希臘文，新約</span>
+          由「meta（在後、改變）」加「noeo（思考、心智）」組成——字面就是「心意的改變」、「重新思考」。這是認知框架的根本顛覆。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">Metamelomai（μεταμέλομαι）── 希臘文，新約</span>
+          側重情感的懊悔與遺憾。像猶大出賣耶穌後的那種「後悔」——但他的後悔沒有帶出信靠，最終走向毀滅。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>你看到了嗎？這四個詞，都不是在說「把壞行為改掉」。它們說的是路的轉向、內心的破碎、心智的改變、情感的痛悔。這些，全都發生在「行為改善」之前，也比行為改善更深。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        想像一個人在森林裡迷路，走了很久的錯路。「悔改」不是他突然開始把路走得更整齊、步伐更穩健——而是他停下來，認清方向，然後轉身。轉身，才是一切的起點。至於他往後走得好不好，那是轉身之後的事了。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Thesis</div>
+      <h2 class="card-title">浪子的故事：悔改分兩幕</h2>
+      <p class="card-hook">路加福音十五章，藏著一個關於悔改最完整的敘事結構</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌說的浪子比喻，是整本聖經對「悔改」描述得最完整、最有人情味的一段敘事。讓我們仔細看它的結構——你會發現，悔改確實分兩幕，而這兩幕正好對應著「心意改變」與「行為轉向」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「他醒悟過來，就說：我父親有多少的雇工，口糧有餘，我倒在這裡餓死嗎？我要起來，到我父親那裡去……」</p>
+        <p class="scripture-ref">路加福音 15:17–18</p>
+      </div>
+
+      <span class="depth-label plain-tag">💡 第一幕：豬圈裡的覺悟</span>
+
+      <p>「他醒悟過來」——這是第一幕。小兒子在豬圈裡，窮困潦倒，飢腸轆轆。他在那個骯髒的地方，忽然清醒了：他認識到自己得罪了天，也得罪了父親；他意識到自己連作兒子的資格都沒有；他看清了自己的真實處境，不再自欺欺人。</p>
+
+      <p>這就是 Metanoia——心意的改變。這一刻，他的認知框架被徹底翻轉。他沒有先「把自己整理乾淨」，他只是清醒了，並且承認了真相。</p>
+
+      <span class="depth-label plain-tag">💡 第二幕：起身走回去</span>
+
+      <p>「我要起來，往我父親那裡去」——這是第二幕。如果小兒子停留在豬圈裡抱頭痛哭，悔改就沒有完成。但他起身了，他走了，他回去了。</p>
+
+      <p>這就是 Shub——身體與意志的具體轉向。心意改變（第一幕）必然帶出行動轉向（第二幕）。兩幕缺一不可，但順序不能顛倒。</p>
+
+      <div class="highlight">
+        <strong>關鍵洞見</strong>
+        他回家的時候，身上還帶著豬圈的氣味。父親看見他，就跑過去抱住他——在他換衣服之前，在他「表現良好」之前。這就是恩典：神在你還未改好的時候，已經奔向你了。
+      </div>
+
+      <p>悔改的完整樣貌，是「清醒 + 起身」。清醒是心意改變，起身是信心回轉。而整件事的動力，是父親那道永遠敞開的門和那雙望穿秋水的眼睛。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Investigation</div>
+      <h2 class="card-title">救恩次序：悔改在哪一格？</h2>
+      <p class="card-hook">系統神學把得救的過程畫成一條邏輯鏈——弄清楚悔改在哪裡，一切就通了</p>
+    </div>
+    <div class="card-body">
+
+      <p>系統神學有一個術語叫做「救恩次序」（Ordo Salutis），用來描述聖靈將基督完成的救贖應用在一個人身上時，各個步驟的邏輯順序（注意：是邏輯順序，不一定是時間順序）。</p>
+
+      <span class="depth-label deep-tag">📖 救恩次序流程</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 重生（Regeneration）</span>
+          聖靈主權性地賜予新生命。人死在罪中，無法自發歸向神，所以神必須先動工。除掉「石心」，賜下「肉心」（結36:26）。這是完全神的作為。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 歸正（Conversion）= 悔改 + 信心</span>
+          甦醒的罪人對神的呼召做出回應。悔改（心意改變）與信心（信靠基督）如同硬幣的兩面，同時發生。這是罪人的主動回應，但由重生使其成為可能。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 稱義（Justification）</span>
+          神在法律地位上宣告罪人無罪，並將基督的義歸算給他。這是完全基於基督的功勞，而非任何人的行為。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 成聖（Sanctification）</span>
+          信徒在稱義之後，依靠居住在心中的聖靈，一生漸進地治死舊人、活出新人。「行為改變」在這裡發生——是果子，是成長，不是入場費。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>你看到了嗎？「行為改變」在第四格，「悔改（心意改變）」在第二格。把第四格的東西移到第二格的前面，要求人「先把行為改好才算悔改」，這在邏輯上是把果子放在樹根前——這棵樹是長不出來的。</p>
+
+      <div class="highlight">
+        <strong>為什麼這個順序至關重要</strong>
+        若稱義之前需要外在行為改變，那救恩就不再是白白的恩典，而是有條件的交換。福音的根基就此動搖。保羅在加拉太書為此震怒，稱之為「另一個福音」。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我要賜給你們一個新心，將新靈放在你們裡面；又從你們的肉體中除掉石心，賜給你們肉心。」</p>
+        <p class="scripture-ref">以西結書 36:26</p>
+      </div>
+
+      <p>重生在先，悔改隨之，稱義緊接，成聖終身。這是神奇妙恩典的次序，每一步都由神的愛托住，每一步都有基督的血作保證。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Deep Dive</div>
+      <h2 class="card-title">兩場神學論戰，一個永恆的張力</h2>
+      <p class="card-hook">「白白恩典論」vs「主權救恩論」——二十世紀最重要的一場福音辯論，你需要知道</p>
+    </div>
+    <div class="card-body">
+
+      <p>二十世紀後期，福音派神學界圍繞著「得救的信心到底是什麼」爆發了一場著名的論爭，兩個陣營各自抓住了真理的一端，卻也各自帶著危險。</p>
+
+      <span class="depth-label deep-tag">📖 白白恩典論（Free Grace Theology）</span>
+
+      <p>以 Zane Hodges、Charles Ryrie 為代表。他們的核心主張：得救只需要對基督救贖的單純確信，悔改必須嚴格限於「心意的改變」，絕不能包含任何行為上的要求或承諾，否則恩典就不再是恩典。</p>
+
+      <div class="highlight">
+        白白恩典論的貢獻在於：捍衛了救恩完全免費的本質，拒絕把任何人的行為成就混入稱義的根基。這是真實的神學直覺。
+      </div>
+
+      <p>然而，在極端的立場中，此派有時會走向另一個危險：一個人可以「相信基督」但生命毫無改變，依然得救。這形成了神學家所批判的「廉價恩典」。</p>
+
+      <span class="depth-label deep-tag">📖 主權救恩論（Lordship Salvation）</span>
+
+      <p>以 John MacArthur 為代表。他們的核心批判：真正的信心必然改變生命，一個生命長期毫無改變的人，他起初的信心是否真實令人質疑。悔改必然包含意志的降服——承認基督為主（Lord），而不只是承認基督為救主（Savior）。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩱</span>
+        這個陣營的神學家曾用一個極端的比喻說明悔改的本質：一個罪人在聖靈光照下覺悟自己的罪，就好像一個人渾身被自己的尿液濕透，惡臭難聞。他清楚知道自己的骯髒，知道自己無法自我潔淨，於是他不等換上乾淨衣服，就在惡臭中向神呼喊求憐憫。這就是真悔改的起點——是深刻的覺悟，而非先自我整理。但神救了他之後，聖靈絕不會讓他繼續穿著那件骯髒的衣服生活——成聖的修剪隨之而來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 兩者的平衡點</span>
+
+      <p>兩場論戰的張力，其實都回到同一個救恩次序的問題：行為改變是「稱義的條件」還是「稱義的必然結果」？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">正確的理解</span>
+          行為改變是「稱義後成聖的必然結果」，而非「得到稱義的前提條件」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">白白恩典論的危險</span>
+          若行為毫無改變也算真信心，恩典就成了許可罪惡的執照，是保羅在羅馬書6:1所嚴厲拒絕的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">主權救恩論的危險</span>
+          若把行為改變列為稱義的入場條件，就是在因信稱義的根基上加添人的功德，破壞福音。
+        </div>
+      </div>
+
+      <p>真正的答案：真悔改是心意的改變（不含行為要求），但真重生的心必然孕育出行為改變的果子。兩者不可分割，但順序不能顛倒。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Grace & Rest</div>
+      <h2 class="card-title">你可以帶著惡臭回家</h2>
+      <p class="card-hook">神不是等你「改好了」才愛你——祂在你還在豬圈裡的時候，就已經望著那條回家的路</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們用六篇文章走過了語言學、神學架構和歷史論爭。現在讓我把這一切收攏成一句你可以帶走的話：</p>
+
+      <div class="big-quote">
+        悔改不是「把自己改好再來見神」，而是「清醒地看見自己改不好，然後轉身回去」。
+        <cite>— 系列結語</cite>
+      </div>
+
+      <p>那個在豬圈裡清醒的小兒子，他沒有等到自己洗乾淨、換上新衣、找好說詞再回去。他身上還帶著豬圈的氣味，就踏上那條回家的路。而父親，遠遠就看見他了，就跑過去，就抱住他了。</p>
+
+      <p>這個「就」字，是全本聖經最美麗的時間詞。不是「等到」，不是「先把問題解決之後」，而是「就」——父親在你還不夠好的時候就已經奔向你了。</p>
+
+      <div class="highlight">
+        <strong>三個核心記憶點</strong>
+        第一：悔改 = 心意改變（Metanoia），不是行為改善。第二：行為改變是重生後成聖的果子，不是得救的入場費。第三：神愛你，先於你的一切改變——這才是悔改的動力，而非律法的壓力。
+      </div>
+
+      <p>如果你曾經因為「還沒改好」而不敢來到神面前，請聽這個好消息：神從來不是在等你改好。祂等的，是你那個「醒悟過來」的時刻，是你那個轉身的動作，是你那句「我要起來，往我父親那裡去」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「他離得還遠，他父親看見，就動了慈心，跑去抱著他的頸項，連連與他親嘴。」</p>
+        <p class="scripture-ref">路加福音 15:20</p>
+      </div>
+
+      <p>行為的改變，會隨著聖靈的修剪一點一點在你生命中成形。那不是你努力換來的成就，而是新生命自然結出的果子。你不需要先結出果子才能回家——回家之後，果子自然會長出來。</p>
+
+      <p>就這樣。就這麼簡單。就這麼深。</p>
+
+      <div class="big-quote">
+        心意轉了，腳步自然跟上。這，就是悔改。
+        <cite>— Shub × Metanoia</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  悔改與救恩 · Repentance & Grace · Threads Series
+</footer>
+
+</body>
+</html>
