@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世人都必得救嗎？— Threads 救恩系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">救恩神學系列 · Soteriology Series</div>
+  <h1>世人都必<span>得救</span>嗎？</h1>
+  <p class="subtitle">普世預備與個體回應 · 神學解析與原文考據</p>
+</header>
+
+
+<!-- ══ 第一章：分享 ══ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個讓我停下來的問題</h2>
+      <p class="card-hook">「既然神愛世人，最後難道不是大家都上天堂嗎？」——這句話，我聽了不下百次。</p>
+    </div>
+    <div class="card-body">
+      <p>有一次在聚會結束後，一位朋友攔住我，神情認真地問了我一個問題：「你說神愛世人，也說祂不願有一人沉淪——那到底還有沒有人會下地獄？如果有，那神還算慈愛嗎？」</p>
+
+      <p>我沉默了好幾秒。不是因為我不知道答案，而是因為我意識到，這個問題背後藏著的，是真實的掙扎——一個人試圖在「慈愛的神」與「公義的神」之間找到出路。</p>
+
+      <div class="highlight">
+        <strong>這個系列為誰而寫</strong>
+        這六篇文章，獻給那些曾經有過同樣疑問的人。不管你是信徒、慕道者，還是純粹對神學感到好奇的讀者——我們要一起把這個問題認真地翻開來看。
+      </div>
+
+      <p>這不是一個可以用「反正神會處理」帶過的問題。它觸及了基督教信仰最深的核心：上帝的性情是什麼？救恩到底是怎麼運作的？而「信」或「不信」，究竟有多大的份量？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        想像你站在一座大橋上，橋下是洶湧的河流。橋的另一端有人朝你大喊：「過來！這裡是安全的！」——你聽到了聲音，你也看到了橋。但你要不要走過去，這一步，只有你能踏出。
+      </div>
+
+      <p>帶著這個畫面，我們開始這趟旅程。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第二章：引導 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">你可能聽過的三種說法</h2>
+      <p class="card-hook">普救論、有限代贖、還是中間那條路？先搞清楚問題本身。</p>
+    </div>
+    <div class="card-body">
+      <p>在正式進入聖經文本之前，我們需要先認識這個討論的地圖。歷史上，教會對「得救範圍」這個問題，主要出現了三種立場：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌍 普救論（Universalism）</span>
+          主張：最終全人類都會得救，無論信仰與行為。地獄要麼不存在，要麼只是暫時的煉淨。部分現代神學家與自由派教會持此立場。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚔️ 有限代贖論（Limited Atonement）</span>
+          主張：基督的死只為預定的選民而流。其餘人的沉淪，是神主權的安排。此為加爾文主義（TULIP）的核心教義之一。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✝️ 普世充足，有條件有效（正統立場）</span>
+          主張：基督的贖罪價值足以拯救所有人（Universal Sufficiency），但實際效力只臨到悔改信主者（Conditional Efficiency）。這是本系列所要闡述的立場。
+        </div>
+      </div>
+
+      <p>第三種立場並非折衷或妥協，而是聖經文本最自然呈現的張力——神的愛廣大無邊，同時人的回應具有真實的份量。</p>
+
+      <div class="highlight">
+        <strong>本系列的立場</strong>
+        我們不打算迴避這個張力，而是要正面進入它。因為只有坐在張力裡，我們才能真正見識上帝那同時充滿憐憫與公義的偉大性情。
+      </div>
+
+      <p>接下來，我們要看聖經原文怎麼說。不是用大略的印象，而是用字根、時態、語境來一字一句地拆解。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第三章：破題 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">神「願意萬人得救」——但萬人都得救了嗎？</h2>
+      <p class="card-hook">兩組經文，構成一個完整的真理。普世的預備，與有條件的領受。</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經在「救恩的範圍」這個問題上，同時說了兩件事。矛盾嗎？不。這是精密設計的雙重真理。</p>
+
+      <span class="depth-label plain-tag">💡 第一組：普世的預備</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「我若從地上被舉起來，就要吸引萬人來歸我。」</p>
+        <p class="scripture-ref">約翰福音 12:32</p>
+      </div>
+
+      <p>當時有幾位希臘人（外邦人）想見耶穌。耶穌的回應令人震撼——祂沒有回答是否接見，而是宣告：祂的十字架，將成為打破一切藩籬的宇宙磁石。「萬人」在此無可爭議地超越了猶太民族的邊界。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「他願意萬人得救，明白真道。」</p>
+        <p class="scripture-ref">提摩太前書 2:4</p>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「不願有一人沉淪，乃願人人都悔改。」</p>
+        <p class="scripture-ref">彼得後書 3:9</p>
+      </div>
+
+      <p>這三節經文確立了一個神學基石：上帝渴望萬人得救，十字架的贖價為全人類而備。神學界稱這為「無限的充分性」（Universal Sufficiency）——基督的寶血足以洗淨所有人類的罪。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 第二組：有條件的領受</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「信他的人，不被定罪；不信的人，罪已經定了，因為他不信神獨生子的名。」</p>
+        <p class="scripture-ref">約翰福音 3:18</p>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「信而受洗的，必然得救；不信的，必被定罪。」</p>
+        <p class="scripture-ref">馬可福音 16:16</p>
+      </div>
+
+      <p>這兩組經文不是矛盾，而是一幅完整圖畫的兩面：神預備了無限的救恩，但救恩的落實，需要人真實的回應。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎁</span>
+        全世界最珍貴的禮物已送到每個人的家門口，連快遞費用都替你付清了。但如果你拒絕開門簽收，禮物不會自己走進家裡。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第四章：研究 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">回到希臘文——字根裡藏著的神學</h2>
+      <p class="card-hook">四個希臘文字，拆解「得救」、「吸引」、「悔改」、「交託」的真正意思。</p>
+    </div>
+    <div class="card-body">
+
+      <p>新約聖經用通用希臘文（Koine Greek）寫成。許多中文翻譯因語言限制，壓縮了原文豐富的層次。要真正理解救恩的機制，我們必須回到字根。</p>
+
+      <span class="depth-label deep-tag">📖 原文考據</span>
+
+      <div class="term-box">
+        <div class="term-original">σῴζω<br>sōzō</div>
+        <div class="term-desc">「得救」。源於 sōs（安全、完好）。在世俗希臘文中指從海難、戰爭或疾病中獲救。在新約神學中，它指從罪的刑罰、罪的權勢，以及最終毀滅中被拯救，帶入神聖的永恆安全。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἑλκύω<br>helkō</div>
+        <div class="term-desc">「吸引」（約 12:32）。原意包含物理上的「牽引、拖曳」。在救恩脈絡中，指聖父透過被舉起的基督，對人心發出強大的神聖吸引力——這是恩典主動性（Divine Initiative）的核心詞彙。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">μετάνοια<br>metanoia</div>
+        <div class="term-desc">「悔改」。由 meta（改變）+ nous（心智）組合而成。不僅是情感上的懊悔，而是全人道德與意志的根本轉向（radical moral turn）——徹底離棄罪惡，轉向神，並結出相稱的行為果子。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">πιστεύω<br>pisteuō</div>
+        <div class="term-desc">「相信、信靠」。源於 peithō（說服）。絕非僅是理智同意某個歷史事實，而是將自己的屬靈福祉、生命主權完全「交託」（entrust）給基督。這種委身，才是「得救之信」（saving faith）。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>提摩太前書 4:10 的解經關鍵</strong>
+        「他是萬人的救主，更是信徒的救主。」——希臘文 μάλιστα（malista，「更是」）揭示了救恩的雙重層次：神向萬人發出普世要約（Universal Offer），但救恩的實際效力（Special Efficacy），唯臨信徒。神建造了一座為所有人開放的避難所，但只有親自走入的人，才真正得到保護。
+      </div>
+
+      <p>聖經學者 T.C. Skeat 甚至主張 malista 在此應譯作「也就是」（namely）——意即「萬人的救主，也就是信徒的救主」，將「所有得救的人」直接定義為「信徒」，徹底封閉了普救論的空間。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第五章：深論 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">神聖主動 × 人類責任——一幅完整的救恩圖畫</h2>
+      <p class="card-hook">愛是無條件的，但委身是有重量的。上帝不會強行綁架任何人進天國。</p>
+    </div>
+    <div class="card-body">
+
+      <p>到目前為止，我們確立了兩件事：神普世地渴望萬人得救；但實際上並非人人都得救。這引出救恩論最核心的張力——神聖主權與人類責任，如何同時為真？</p>
+
+      <span class="depth-label deep-tag">📖 神聖主動的三個面向</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 聖父的愛</span>
+          「神愛世人，甚至將祂的獨生子賜給他們。」（約 3:16）救恩的源頭完全來自神的主動，人類毫無功勞可言。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✝️ 聖子的代贖</span>
+          耶穌在十字架上被舉起，成為歷史的磁石。祂的犧牲具備無限的道德與屬靈價值，足以為全世界的人贖罪。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🕊️ 聖靈的吸引</span>
+          「若不是差我來的父吸引（helkō）人，就沒有能到我這裡來的。」（約 6:44）人之所以能回應，本身也是恩典的運作。
+        </div>
+      </div>
+
+      <p>然而，聖靈的 helkō（吸引）是可以被人類自由意志所抵擋的。使徒行傳 7:51 記載司提反的嚴厲指控：「你們常時抗拒聖靈！」這是不可迴避的真相——恩典的呼召是真實且巨大的，但人可以拒絕。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 約翰福音 3:18 的「完成時態」震撼</span>
+
+      <p>「不信的人，罪已經定了」——「已經定了」在希臘文使用的是完成時態（perfect tense）。這意味著：人類並非生來處於中立狀態，等待未來才被審判。因為亞當的墮落，全人類目前就已在被定罪的狀態中。</p>
+
+      <div class="big-quote">
+        基督的到來，是進入死囚牢房，宣佈特赦。不信者的沉淪，不是神施加的額外懲罰，而是他們拒絕了唯一的特赦令，留在原有的定罪狀態中。
+        <cite>— 約翰福音 3:18 神學解析</cite>
+      </div>
+
+      <p>使徒行傳 17:30-31 中，保羅在雅典的講道同樣震撼：神過去容忍外邦人的無知，但在基督完成十字架救贖後，祂現在向「各處的人」發出「必須悔改」的神聖命令——不是建議，是詔令。而末世論的審判（v.31），使得普救論徹底失去立足之地：若人人都自動得救，公義的審判還有什麼意義？</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 第六章：結論與溫馨 ══ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">救生艇就停在你面前</h2>
+      <p class="card-hook">無限的愛，真實的選擇——神不強迫，但祂等待。</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們走了很長一段路。從神學流派的地圖，到希臘文的字根，到系統神學的結構。現在，讓我們把這一切拉回最根本的圖像。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚢</span>
+        一艘鐵達尼號正在沉沒（這是我們的世界）。造船廠的主人（神）差派了一艘空間無限大的救生艇（耶穌基督）。祂用大聲公向所有人喊：「這艘船為你們所有人預備！一個都不要淹死！」——但要上船，你必須做兩件事：放開手中緊抓的沉重行李（悔改，metanoia），然後親自踏上那艘船（信靠，pisteuō）。
+      </div>
+
+      <p>上帝的愛是「無差別的邀請」——沒有任何一個靈魂，會因為「神的贖價不夠」或「神沒有為我預備救恩」而無法得救。基督十字架的贖價是無限量的，足以填平所有人類罪惡的深淵。這賦予了每一位基督徒向任何人傳福音的絕對合法性：</p>
+
+      <div class="big-quote">
+        「基督為你而死，只要你願意，救恩現在就是你的。」
+        <cite>— 普世福音呼召的心</cite>
+      </div>
+
+      <p>但上帝同時是絕對公義的。祂不會把一個熱愛罪惡、拒絕祂主權的人，強行帶入聖潔的天國。約翰福音 3:19 道出了沉淪者的實情：「他們不信，是因為愛黑暗勝過光明。」他們沉淪，不是因為神的恩典短缺，而是因為他們主動選擇了拒絕。</p>
+
+      <div class="highlight">
+        <strong>給還在思考的你</strong>
+        世人都必得救嗎？正統神學的答案是：否。但這個「否」，並非出於神恩典的短缺，而是出於人類對恩典的拒絕。救恩的門扉寬廣無比，宇宙中任何人皆可進入；但跨越門檻的條件只有一個：帶著「悔改的破碎」與「信心的交託」。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為神差他的兒子降世，不是要定世人的罪，乃是要叫世人因他得救。」</p>
+        <p class="scripture-ref">約翰福音 3:17</p>
+      </div>
+
+      <p>這是整個救恩論最溫柔的核心：神來，不是為了定罪。祂來，是為了拯救。這份愛是真實的，普世的，無條件的——祂只等待一件事：你願不願意伸出手。</p>
+
+      <p>救生艇就停在你面前。船長認識你的名字。今天，你要上船嗎？</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  救恩神學系列 · Soteriology Threads · 願每一個靈魂都找到那艘船
+</footer>
+
+</body>
+</html>

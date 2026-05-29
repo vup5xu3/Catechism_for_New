@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>唯獨信心與生命的果子 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">信仰深探 · Faith Threads</div>
+  <h1>唯獨信心，<span>生命的果子</span></h1>
+  <p class="subtitle">救恩與好行為之關係的六章深探 · 六篇連貫的屬靈旅程</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一個讓我困惑了好幾年的問題</h2>
+      <p class="card-hook">「只要信耶穌，好行為重要嗎？」——這個問題，你有沒有也曾偷偷想過？</p>
+    </div>
+    <div class="card-body">
+      <p>我信主之後不久，有一次和一位非信徒朋友喝咖啡。他問了我一個問題，讓我當場語塞：</p>
+
+      <div class="big-quote">
+        「你們基督徒說只要『信』就能得救，那你們是不是可以做壞事、說謊、對人冷漠，反正上天堂不靠這些？」
+        <cite>— 一個坦率的朋友</cite>
+      </div>
+
+      <p>我記得當時心裡很不舒服，卻說不出個所以然。我知道答案「不是這樣的」，但我無法清楚地解釋「到底是怎樣的」。</p>
+
+      <p>後來我才明白，這個困惑不只是我朋友的困惑，也是很多基督徒心裡真實存在的張力——我們在主日學學過「因信稱義」，也聽牧師講過「好行為是信心的果子」，但這兩件事在心裡，就是拼不起來。</p>
+
+      <div class="highlight">
+        <strong>你有同感嗎？</strong>
+        如果「信心」救了你，那「好行為」到底算什麼？它是可選的裝飾、是維持救恩的條件，還是有別的角色？這個系列，就是要認真回答這個問題。
+      </div>
+
+      <p>我後來發現，這個問題之所以讓人困惑，是因為我們習慣用「交換邏輯」來理解救恩——做好事換福氣，做壞事受懲罰。但上帝對救恩的設計，根本不是這套邏輯。祂用的，是「生命邏輯」。</p>
+
+      <p>接下來六篇，我們一起把這件事說清楚。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">信心究竟是什麼？不是你以為的那種「相信」</h2>
+      <p class="card-hook">很多人把「信心」理解成「同意某些事情是真的」——但聖經說的，遠比這深</p>
+    </div>
+    <div class="card-body">
+      <p>要談救恩與好行為的關係，我們必須先搞清楚一個關鍵字：信心，到底是什麼？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的；也不是出於行為，免得有人自誇。」</p>
+        <p class="scripture-ref">以弗所書 二章 8-9 節</p>
+      </div>
+
+      <p>這裡的「信」，希臘文是 <em>pistis</em>。它的字根是動詞 <em>peithô</em>，意思是「被說服」——不是你努力說服自己去相信，而是你<strong>被上帝說服了</strong>，從內心深處認定祂的話是真的、祂的恩典是真實的，於是把你整個生命都押注在祂身上。</p>
+
+      <span class="depth-label deep-tag">📖 原文洞察</span>
+
+      <div class="term-box">
+        <div class="term-original">Pistis<br>πίστις</div>
+        <div class="term-desc">信心。源自「被說服」的動詞，強調這是上帝主動在人心中動工產生的確信，而非人靠意志力自行製造的宗教感情。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Pisteuo<br>πιστεύω</div>
+        <div class="term-desc">信靠、委託。信心的動詞形式，含有「將生命完全交託」的意思——不只是頭腦認同，而是意志上的主權轉移。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 白話理解</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">✈️</span>
+        你搭飛機，你「相信」這架飛機能飛，這是知識上的同意。但當你真的走進機艙、坐下來繫好安全帶，把自己的身體交給這架飛機——那才是 pisteuo，是把性命押注在上面的「信靠」。聖經說的信心，是第二種。
+      </div>
+
+      <p>這個區別至關重要。雅各書說「鬼魔也信」——牠們知道上帝存在，但牠們沒有把生命交託給祂。那種「相信」，不叫信心，不能救人。</p>
+
+      <p>真正的信心，是一種全人的委託，它必然會帶來生命方向的轉變。就像一個人真的相信飛機能到達目的地，他才會登機；真的相信基督是主，他的生命才會隨之轉向。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">保羅說「不靠行為」，雅各說「信心加行為」——他們矛盾嗎？</h2>
+      <p class="card-hook">這是新約神學最常被誤解的張力。破解它，整個救恩觀就清晰了</p>
+    </div>
+    <div class="card-body">
+      <p>很多人讀聖經到這裡會卡住：保羅在以弗所書說，得救「不是出於行為」；雅各在雅各書卻說，「信心若沒有行為就是死的」，甚至說「人稱義是因著行為，不是單因著信」。</p>
+
+      <p>這兩個人到底誰說得對？他們講的是同一件事嗎？</p>
+
+      <div class="highlight">
+        <strong>破題關鍵</strong>
+        他們說的「行為」和「稱義」，根本不在同一個層面上。一旦你明白這一點，矛盾就自動消失了。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 保羅的「行為」——功德性的行為</span>
+          指那種試圖靠自己的道德成就、律法遵守，來換取上帝接納的行為。這種行為的動機是「我要靠自己的努力讓上帝欠我一個恩典」，帶著自誇與驕傲的根。保羅說：這種行為，完全無法使人在上帝面前稱義。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🌿 雅各的「行為」——生命性的行為</span>
+          指那種因著真實領受上帝恩典、愛神愛人的心，自然流露出來的道德實踐與愛的關懷。這種行為的動機是「我被愛，所以我去愛」，不是換取救恩，而是救恩已然發生後的必然生命反應。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🏛️ 保羅的「稱義」——上帝面前的法理宣判</span>
+          在法庭背景下，上帝宣告相信基督的罪人「無罪」——這是垂直的、上帝與人之間的宣告，根基在於基督的義被歸算給信徒，完全不靠人的行為。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">👀 雅各的「稱義」——世人面前的生命證明</span>
+          在具體生活中，信徒的信心因著行為而被「證實」、「顯明」——這是水平的、眾人都能觀察到的。亞伯拉罕先因信稱義（創十五），後在獻以撒中彰顯了這信心的真實（創廿二）。
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「這樣，信心若沒有行為就是死的……信心是與他的行為並行，而且信心因著行為才得成全。」</p>
+        <p class="scripture-ref">雅各書 二章 17、22 節</p>
+      </div>
+
+      <p>改教家馬丁·路德曾有一句名言精準地總結了這個神學真理：「唯獨信心稱義，但能稱義的信心絕非獨自存在。」好行為不是稱義的原因，而是稱義的結果與憑證。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">救恩的三個維度：過去、現在、未來</h2>
+      <p class="card-hook">「得救」不是一個瞬間完成的打卡，而是一段跨越時間的生命旅程</p>
+    </div>
+    <div class="card-body">
+      <p>要理解好行為在信徒生命中的位置，我們需要先知道一件事：聖經所說的「救恩」（希臘文 <em>soteria</em>），其實涵蓋三個不同的時間維度。很多爭論，都是因為把這三個維度混在一起談，才造成混亂。</p>
+
+      <span class="depth-label deep-tag">📖 救恩的三個時態</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✅ 過去式：稱義——脫離罪的「刑罰」</span>
+          你相信基督的那一刻，已經完全發生。上帝宣告你在法理上無罪，基督的義歸算給你。這是一次性、永久性的宣告，不會因為你之後犯錯而撤銷。就像法官宣判無罪後，被告就自由了，不需要隔天再審一次。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⏳ 現在進行式：成聖——脫離罪的「主宰」</span>
+          你今生正在經歷的屬靈成長過程。聖靈在你裡面持續動工，幫助你漸漸擺脫舊有的罪性模式，活出越來越像基督的生命。這是一生的旅程，有進步、有退步，但方向是確定的。好行為，就在這個維度中生長出來。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🌅 未來式：得榮——脫離罪的「存在」</span>
+          基督再來時，信徒的身體復活，徹底脫離一切罪惡與苦難，進入完美的新天新地。那時，成聖才算完全完成。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>明白這三個維度，就能清楚地說：稱義（過去式）是完全靠信心，是上帝單方面的恩典行動，好行為對它毫無貢獻。但好行為屬於成聖（現在進行式）的範疇——它是稱義之後，聖靈在信徒生命中的必然工作成果。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們原是祂的工作，在基督耶穌裡造成的，為要叫我們行善，就是神所預備叫我們行的。」</p>
+        <p class="scripture-ref">以弗所書 二章 10 節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意這個邏輯順序</strong>
+        以弗所書 2:8-10 先說「不是出於行為」（稱義），然後立刻說「為要叫我們行善」（成聖）。好行為是救恩的「目的地」，不是救恩的「入場券」。上帝救你，是為了讓你活出好行為——不是讓你靠好行為得救。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">葡萄樹的比喻：好行為是「拼命努力」還是「自然流露」？</h2>
+      <p class="card-hook">約翰福音十五章給了一幅極其精準的圖像，徹底改變了我對屬靈成長的理解</p>
+    </div>
+    <div class="card-body">
+      <p>很多基督徒把「活出好行為」理解成一件很吃力的事——要努力克制脾氣、強迫自己去服事、硬撐著維持屬靈操練。這種理解，讓信仰變成了一場消耗戰。</p>
+
+      <p>但耶穌在約翰福音十五章用了一個有機的比喻，完全顛覆了這種認知：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我是葡萄樹，你們是枝子。常在我裡面的，我也常在他裡面，這人就多結果子；因為離了我，你們就不能做甚麼。」</p>
+        <p class="scripture-ref">約翰福音 十五章 5 節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍇</span>
+        一根接在葡萄樹上的枝子，從來不需要「努力結果子」。它唯一要做的，就是繼續接著樹幹。當樹幹的養分源源不斷地流入枝子，果子就會自然而然地長出來。枝子的責任不是「用意志力擠出果子」，而是「讓自己繼續接著樹」。
+      </div>
+
+      <p>這幅圖像說明了好行為的本質：它不是信徒靠意志力「製造」出來的道德成就，而是基督生命的能量（聖靈）流入信徒生命後，自然產生的果實。</p>
+
+      <div class="highlight">
+        <strong>這幅圖像排除了兩個極端</strong>
+        一方面，它排除了律法主義：你不能靠自己拼命「掙扎立功」結出果子，那樣的果子是假的。另一方面，它也排除了反律法主義的怠惰：一根真正接在葡萄樹上的枝子，絕不可能是乾枯、毫無生機的。如果你聲稱與基督有生命連結，卻長年不結任何果子，這本身就是一個需要認真面對的問題。
+      </div>
+
+      <p>天父在這過程中的角色，是「修剪」——有時候生命中的苦難、困境、管教，正是天父在修剪那些阻礙果子生長的枝條。這個過程不總是舒適的，但目的是讓你的生命更豐盛、果子更甜美。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們的光也當這樣照在人前，叫他們看見你們的好行為，便將榮耀歸給你們在天上的父。」</p>
+        <p class="scripture-ref">馬太福音 五章 16 節</p>
+      </div>
+
+      <p>好行為的終極意義，不是讓別人稱讚你這個人，而是讓人透過你的生命，看見並歸榮耀給那位使你改變的上帝。果子的香氣，是為了指向那棵樹。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你是被愛的孩子，不是表現優異的員工</h2>
+      <p class="card-hook">這個系列的終點，是一個讓人可以安心呼吸的真相</p>
+    </div>
+    <div class="card-body">
+      <p>走過這六章，讓我們回到最根本的溫柔事實：你的救恩，從來都不是靠你的好行為換來的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍼</span>
+        一個嬰兒出生的那一刻，不論他是否哭得好看、是否長得俊秀、是否有朝一日能為這個家貢獻什麼——他作為「父母的孩子」的身份，就已經在生命誕生的那一刻徹底確立了。這份身份，不靠表現，不靠成就，只靠一件事：他從這對父母那裡得了生命。
+      </div>
+
+      <p>你也是。當你信靠基督的那一刻，天父就接納了你、宣告了你——不是因為你好，而是因為祂愛你，因為基督已經為你完成了一切。這份兒女身份的安全感，建立在天父那永不改變的愛上，不取決於你今天靈修了沒有、這周有沒有犯罪、服事得夠不夠殷勤。</p>
+
+      <div class="highlight">
+        <strong>但故事不在這裡結束</strong>
+        正因為你是祂的孩子，天父不會漠然地看著你生活在屬靈的病態中。祂愛你到一個地步，要帶你進入真正的生命健康——仁愛、喜樂、和平、忍耐……那些你曾以為自己天生做不到的美好品格，祂要一點一點地在你生命裡建造。
+      </div>
+
+      <p>所以，「好行為」對基督徒來說，既不是沉重的義務、也不是換取救恩的籌碼，而是一種生命被醫治、被更新之後，由衷流露出來的自然反應。就像一個病癒的人，不需要有人逼迫，就會想要起身走動、感受陽光。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們在外邦人中，應當品行端正……便在鑒察的日子歸榮耀給神。」</p>
+        <p class="scripture-ref">彼得前書 二章 12 節</p>
+      </div>
+
+      <p>如果你今天感覺自己的生命乾枯、果子稀少，不要先責備自己不夠努力。先問的問題是：我和那棵葡萄樹的連結，是否還緊密？讓自己回到祂面前，讓祂的話語和聖靈繼續在你裡面流淌——果子的事，交給祂。</p>
+
+      <div class="big-quote">
+        唯獨信心稱義，但能稱義的信心，絕非獨自存在。
+        <cite>— 馬丁·路德</cite>
+      </div>
+
+      <p>你被愛了。你被接納了。現在，讓這份愛，從你的生命裡流出去。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  唯獨信心與生命的果子 · Faith Threads Series
+</footer>
+
+</body>
+</html>

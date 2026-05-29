@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>「信而受洗」的救恩邏輯與屬靈實質 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.3;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .analogy              { background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(201,168,76,0.02)); border-color: rgba(201,168,76,0.3); color: var(--gold-light); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="eyebrow">洗禮神學系列 · Baptism Theology Series</div>
+  <h1>「信而受洗」的<span>救恩邏輯</span>與屬靈實質</h1>
+  <p class="subtitle">從希臘文字根、聖約法律到當代屬靈意義的六章全探索</p>
+</header>
+
+
+<!-- ══════════ 第一章：分享 ══════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Share</div>
+      <h2 class="card-title">一個困擾了我很久的問題</h2>
+      <p class="card-hook">「不洗禮能上天堂嗎？」——這個問題比你想的，深得多。</p>
+    </div>
+
+    <div class="card-body">
+      <p>我第一次思考這個問題，是在一個朋友的洗禮典禮之後。那天下午，一位親戚悄悄問我：「他如果上週就心臟病發走了，沒來得及洗，那怎麼辦？」</p>
+
+      <p>我沒有立刻回答，因為我發現自己其實也不確定。</p>
+
+      <div class="highlight">
+        <strong>你有沒有問過自己這些問題？</strong>
+        洗禮是「得救的條件」還是「得救的結果」？如果是條件，那些在沙漠裡沒有水的信徒怎麼辦？如果只是儀式，為什麼耶穌自己也親自受了洗，還說「信而受洗的必然得救」？
+      </div>
+
+      <p>這種困惑並不是個人的軟弱，而是兩千年來教會持續在格鬥的真實神學張力。東正教、改革宗、浸信會，對這個問題各有不同的答案，而他們爭論的核心，其實不是「水量多少」，而是：上帝的救恩，究竟是怎麼運作的？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「信而受洗的，必然得救；不信的，必被定罪。」</p>
+        <p class="scripture-ref">馬可福音 16:16</p>
+      </div>
+
+      <p>這一句話，是耶穌升天前最後的命令之一。它既簡單，又深刻得足以讓神學家爭辯數百年。這個系列，我想帶你一起，把這句話從頭到尾，好好拆一次。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧵</span>
+        我們不是要「解決」這個問題，我們是要把這條神學的線，從古代希臘文字典一路拉到你今天的信仰生命——看看這條線，究竟連著什麼。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 第二章：引導 ══════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Guide</div>
+      <h2 class="card-title">洗禮，究竟是哪一種「洗」？</h2>
+      <p class="card-hook">當你以為你懂了「受洗」這兩個字，希臘文原典告訴你，你可能只看到了表面。</p>
+    </div>
+    <div class="card-body">
+      <p>新約聖經的語言是希臘文。而「洗禮」這個動作，在希臘文原典裡，並不只有一個字——它有一個字族，每個字的份量，差距懸殊。</p>
+
+      <span class="depth-label plain-tag">💡 先從最基本的說起</span>
+
+      <p>最簡單的那個字，叫做 <strong>bapto（βάπτω）</strong>。在整本新約聖經裡，它只出現了三次，而且每一次都是生活化的小動作：富人求拉撒路「用手指頭尖蘸水」，耶穌「蘸」一塊餅給猶大。你把餅蘸一下醬料，那就是 bapto——蘸進去，立刻拿出來，物體本身完全沒有改變。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 關鍵的字根跳躍</span>
+
+      <p>但是，當新約論到基督徒的洗禮，使徒們用的是另一個字：<strong>baptizō（βαπτίζω）</strong>。這個字，在新約出現超過七十次，而且每一次，都是在說那件嚴肅的事——受洗。</p>
+
+      <div class="term-box">
+        <div class="term-original">baptizō<br>βαπτίζω</div>
+        <div class="term-desc">在 bapto 後面加上了希臘文的「使動後綴」-izō，意思從「蘸一下」變成了「使之被徹底淹沒並留在其中」。這個後綴，讓整個動詞的力道，從輕觸變成了沉沒。</div>
+      </div>
+
+      <p>古典希臘文獻裡，船隻沉沒時用的就是 baptizō。一艘船被 baptizō，意思是它整個被水呑噬，永遠回不到海面了。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚢</span>
+        bapto 是你把茶杯蘸一下水，立刻拿起來。baptizō 是你的船被大海整個吞下去，從此不再屬於海面的世界。這兩者之間，是生死的距離。
+      </div>
+
+      <p>正是這個細微卻決定性的語言學差異，告訴我們：新約聖經描述洗禮，從一開始就不是在說一個輕巧的「潔淨儀式」，而是一場涉及身分與主權的<strong>徹底位移</strong>。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 第三章：破題 ══════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Breakthrough</div>
+      <h2 class="card-title">洗禮是一場「靈界的主權過戶」</h2>
+      <p class="card-hook">當保羅說「受洗歸入基督耶穌」，他其實是在說一場不可逆轉的生死翻轉。</p>
+    </div>
+    <div class="card-body">
+      <p>現在我們知道了「baptizō」這個字有多重。那麼，保羅在羅馬書6章用這個字的時候，他在說的究竟是什麼事？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「豈不知我們這受洗歸入基督耶穌的人，是受洗歸入他的死嗎？所以，我們藉著洗禮歸入死，和他一同埋葬……」</p>
+        <p class="scripture-ref">羅馬書 6:3-4</p>
+      </div>
+
+      <p>保羅用了一個驚人的邏輯鏈：受洗歸入基督（eis Christon）= 受洗歸入祂的死（eis ton thanaton）。這不是比喻，這是一個屬靈的法律陳述。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⬇️ 入水——靈界的葬禮</span>
+          當信徒整個人被按進水裡，那是一場宣告：在亞當裡、被罪惡轄制的舊我，在這一刻被正式宣判死亡，就地埋葬。與耶穌一同在十架上死去。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⬆️ 出水——靈界的復活</span>
+          當信徒從水裡被拉起來，那是一場宣告：與基督一同復活的新生命，在這一刻正式開機。靈魂的國籍，已從「在亞當裡」遷移到「在基督裡」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔑 主權轉移——不可逆轉</span>
+          就如同沉沒的船不再屬於海面，洗禮所象徵的主權過戶是單向的。舊有的罪惡轄制，在水底被宣告終止；新生命的主，是基督。
+        </div>
+      </div>
+
+      <p>這就是為什麼浸禮傳統堅持要「完全浸入」——因為那個視覺語言，是無可取代的：你親眼看見一個人被「埋進去」，又親眼看見他「從死人堆裡復活起來」，全身滴水，仰望天空，那個場景，正是保羅在羅馬書6章試圖用文字傳達的神學真實。</p>
+
+      <div class="big-quote">
+        你進入洗禮的水中，不是去洗澡，而是去赴自己的葬禮——然後，帶著基督復活的生命，從水裡走出來。
+        <cite>— 羅馬書 6:3-4 的神學核心</cite>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 第四章：研究 ══════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Research</div>
+      <h2 class="card-title">上帝的雙重安全鎖：印記與定金</h2>
+      <p class="card-hook">以弗所書1章藏著兩個古代商業法律術語，它們是你救恩安全感的終極根基。</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">「既然信他，就受了所應許的聖靈為印記。這聖靈是我們得基業的憑據，直等到神之民被贖……」</p>
+        <p class="scripture-ref">以弗所書 1:13-14</p>
+      </div>
+
+      <p>這段話裡，保羅用了兩個在羅馬帝國人人都懂、卻深刻到令人屏息的商業法律詞彙。</p>
+
+      <span class="depth-label deep-tag">📖 第一道鎖：sphragis（印記）</span>
+
+      <div class="term-box">
+        <div class="term-original">sphragis<br>σφραγίς</div>
+        <div class="term-desc">古羅馬帝國的「官方印章」。君王或富商在私人財產、法律文件上蓋上蠟印，代表「這是我的，誰敢動它誰就是挑戰帝國的權威」。一旦蓋上，任何私自破印的行為都是死罪。</div>
+      </div>
+
+      <p>保羅說，當你信了基督，上帝就用聖靈在你靈魂深處蓋上了這顆印章。這不是隱喻式的說法，而是一個嚴肅的神學主權宣告：你現在是上帝的「認證財產」，整個靈界都知道，誰也不能動你。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 第二道鎖：arrhabon（憑據/定金）</span>
+
+      <div class="term-box">
+        <div class="term-original">arrhabon<br>ἀρραβών</div>
+        <div class="term-desc">源自希伯來文商業術語 ʿērāḇōn，在古希臘商業合約中是「不可退還的首期款」。買方一旦付了定金，在法律上就有義務在未來付清全額，否則定金被沒收。此字在民間亦指「訂婚戒指」。</div>
+      </div>
+
+      <p>保羅說，上帝賜給你的聖靈，是那個 arrhabon——一筆法律上不可退還的「第一期款」。這意味著：上帝把聖靈放在你心裡的那一刻，祂就在法律上「欠了你全額」——那全額，是你完美的復活身體、永恆的天堂基業，以及在新天新地與神同在的永恆。</p>
+
+      <div class="highlight">
+        <strong>邏輯的核心</strong>
+        上帝是全宇宙信用評等第一名的買家。祂既然已經付下「聖靈」這麼昂貴的定金，就絕不可能違約。你的救恩，不靠你自己撐著——它靠著上帝的商業信用與盟約誠信，被雙重鎖定。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔐</span>
+        你的靈魂，外面掛著「天國業主出入證」（sphragis），裡面裝著「永恆基業的訂金收據」（arrhabon）。你還需要每天擔心自己會不會被「退貨」嗎？
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 第五章：深論 ══════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Deep Dive</div>
+      <h2 class="card-title">「不信的必被定罪」——洗禮究竟救了什麼？</h2>
+      <p class="card-hook">馬可福音16:16的邏輯，比你讀到的還要精準。掌握它，就掌握了洗禮神學的核心鑰匙。</p>
+    </div>
+    <div class="card-body">
+      <p>很多人讀到馬可福音16:16「信而受洗的，必然得救」，立刻得出結論：洗禮是得救的物理前提，沒洗就沒得救。但這個結論，在邏輯上犯了一個嚴重的錯誤。</p>
+
+      <span class="depth-label deep-tag">📖 讀懂後半句，才讀懂這節經文</span>
+
+      <p>耶穌說了兩句話，這兩句話的邏輯結構，完全不對稱：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">前半句：信 + 受洗 → 得救</span>
+          「信」與「受洗」並列，共同構成得救的外在表徵。在使徒時代，信主與受洗幾乎是同一天完成的事，是「歸信」的一體兩面。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">後半句：不信 → 定罪（注意：不是「不洗禮」）</span>
+          耶穌說「不信的，必被定罪」，而不是「不洗禮的，必被定罪」。被定罪的唯一根本原因是「不信（apistēsas）」——這句話從邏輯上確立了：信心，才是救恩的決定性要素。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">十字架上的強盜——終極反例</span>
+          他完全沒有機會受洗，但他對耶穌說「你得國降臨的時候，求你記念我」，耶穌立刻回應：「今日你要同我在樂園裡了。」信心，就是他的洗禮。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 那麼洗禮是可有可無的嗎？</span>
+
+      <p>絕對不是。這裡有個精妙的張力需要同時持守：</p>
+
+      <div class="highlight">
+        <strong>信心是救恩的管道，洗禮是信心的宣告</strong>
+        真正的信心，必然帶出順服的行動。一個真心信主卻說「洗禮太麻煩，我不需要」的人，他的「信」是需要被嚴肅質疑的。洗禮不是得救的「魔法儀式」，但它是一個信徒在聖約中無可迴避的順服宣告。
+      </div>
+
+      <p>歷代教會（包括路德宗）也因此主張：若有信徒臨終前清楚信主，卻來不及正式受洗，身旁的平信徒也應當奉三一真神之名為其施洗。這不是出於「水有魔力」的迷信，而是出於對主基督命令的絕對敬畏，要在最後一刻，為靈魂蓋上那道客觀的聖約印記。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「這洗禮本不在乎除掉肉體的污穢，只求在神面前有無虧的良心。」</p>
+        <p class="scripture-ref">彼得前書 3:21</p>
+      </div>
+
+      <p>彼得在這裡用的那個字——「懇求（eperōtēma）」——在羅馬法律裡，是正式簽約時雙方宣誓的「問答式效忠」。洗禮不是在洗掉你的污垢，洗禮是你在靈界法庭前，向上帝宣告：「我在此效忠。我這一生，歸你。」</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 第六章：結論與溫馨 ══════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Conclusion</div>
+      <h2 class="card-title">你的生命，早已被「簽字蓋章」了</h2>
+      <p class="card-hook">洗禮不是你換來救恩的籌碼，而是上帝為你完成的、最美的公開見證。</p>
+    </div>
+    <div class="card-body">
+      <p>走了六章，我們從希臘文字典，走到古羅馬法庭，再走到十字架上的強盜身旁。現在，讓我們把所有的線，收在一起。</p>
+
+      <div class="highlight">
+        <strong>核心結論</strong>
+        洗禮的水救不了你，但洗禮的信心宣告，是你對上帝最莊嚴的效忠誓言。救恩的根基不是那盆水，而是上帝那顆蓋在你靈魂上、永不磨滅的聖靈印記，與那筆已經付下、永不違約的救恩定金。
+      </div>
+
+      <p>如果你問我：「那我如果沒有洗禮，上帝還愛我嗎？」——我的答案是：上帝愛你，遠超過任何儀式所能承載的重量。十字架上的強盜是你永遠的見證人。</p>
+
+      <p>但如果你問我：「既然信心才是關鍵，我可不可以一直不受洗？」——我想把問題還給你：一個人愛上了他的婚約對象，卻一直不願意舉行婚禮、不願意在眾人面前宣告「我愛你」，你相信他的愛嗎？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💍</span>
+        洗禮是你對基督說「我願意」的那個婚禮。聖靈是祂送給你的訂婚戒指——而那枚戒指，祂從未打算收回去。
+      </div>
+
+      <div class="big-quote">
+        你不是因為受洗而得救，你是因為得救而去受洗——然後，在那盆水裡，你向全宇宙大聲說：「從今天起，我屬於祂。」
+        <cite>— 洗禮神學的盟約核心</cite>
+      </div>
+
+      <p>如果你還沒有受洗，我邀請你認真思考：不是出於恐懼，不是出於宗教義務，而是出於愛——你是否願意，在水裡為你那顆信主的心，舉行一場最真實的就職典禮？</p>
+
+      <p>而如果你已經受洗了，每一次你想起那一天，讓它不只是一個溫暖的記憶，讓它是你在靈界盟約中，那一份永遠有效的「簽字蓋章」。你的過去被赦免，你的現在有聖靈居住，你的未來已被上帝的定金預定——Signed, Sealed, and Delivered。</p>
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  洗禮神學系列 · Baptism Theology Threads · 六章全文
+</footer>
+
+</body>
+</html>
