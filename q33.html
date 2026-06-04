@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恩典、審判與成聖 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="eyebrow">神學研究系列 · Theological Series</div>
+  <h1>恩典、審判<span>與成聖</span></h1>
+  <p class="subtitle">得救後信徒犯罪問題的神學與原文交互研究 · 六章連貫長文</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個問題，幾乎每個人都想過</h2>
+      <p class="card-hook">「反正後面有無限保險，那得救之後……是不是可以想幹嘛就幹嘛？」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>在基督教信仰中，有一個問題幾乎不分背景、不分年紀，幾乎每個剛接觸信仰的人——甚至包括信了許多年的老信徒——都曾在心裡某個角落偷偷想過。</p>
+
+      <p>那個問題長這樣：「既然耶穌已經為我的罪付了代價，那我得救之後若是繼續犯罪，是不是也算在恩典的覆蓋範圍裡？」</p>
+
+      <div class="highlight">
+        <strong>這不是壞問題</strong>
+        這個問題之所以讓許多人說不出口，是因為聽起來太「厚臉皮」。但事實上，能問出這個問題的人，才是真正在認真思考恩典的人。這系列文章，就是為了認真回答這個問題。
+      </div>
+
+      <p>兩千年來，基督教神學界稱這個傾向為「放縱主義」（Antinomianism）——「反律法主義」，意思是：既然恩典無限，律法自然廢除，道德早已無關緊要。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「這樣，我們可以繼續在罪中，叫恩典顯多嗎？斷乎不可！我們在罪上死了的人，豈可仍在罪中活著呢？」</p>
+        <p class="scripture-ref">羅馬書 六:1-2</p>
+      </div>
+
+      <p>使徒保羅的回答極其果斷——不只是「不行」，而是用希臘文最強烈的否定語氣 <em>mē genoito</em>（「斷乎不可！」，等同「這種事絕對不可能發生！」）來予以拒絕。</p>
+
+      <p>但光說「不行」是不夠的。接下來的六章，我們將逐一拆解：為什麼得救後繼續縱罪在神學上是自我矛盾的？恩典與道德責任之間究竟是什麼關係？那個讓許多信徒既害怕又困惑的「基督審判台」，到底是什麼樣的法庭？當人真的跌倒了，又有哪條路可以走回來？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧵</span>
+        這六章文章，就像一根針引著一條線——從生活中最真實的困惑出發，穿過歷史文化、原文字義、神學深論，最終抵達那個信仰最溫柔的核心。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">恩典不是「無約束力的禮物」</h2>
+      <p class="card-hook">古羅馬人早就知道：收了恩惠，就有了義務——而這正是保羅想告訴你的事</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>要真正理解《以弗所書》二章八至十節，光看字面遠遠不夠。必須把它放回第一世紀地中海世界的日常生活脈絡裡，才能看見保羅究竟在說什麼。</p>
+
+      <span class="depth-label plain-tag">💡 文化背景</span>
+
+      <p>古羅馬社會的運作，高度依賴一套稱為「贊助人——客戶關係」（Patronage System）的社會機制。在這套系統裡，上位者（贊助人，Patron）向下位者（客戶，Client）賜予財富、機會或保護，而這種賜予完全不是因為下位者「值得」。這種「不相稱的利益」，古羅馬人稱之為 <em>charis</em>（χάρις）——也就是新約聖經中「恩典」這個字。</p>
+
+      <div class="term-box">
+        <div class="term-original">Charis<br>χάρις</div>
+        <div class="term-desc">字根來自「喜悅」（chairo），直譯為「帶來喜悅的餽贈」。在第一世紀的羅馬文化中，它是整個社會贊助體系的核心運作貨幣——上位者施予下位者不配得的恩惠。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Pistis<br>πίστις</div>
+        <div class="term-desc">「信心／忠誠」。在贊助關係中，指客戶對贊助人展現的絕對忠貞、感恩、公開讚美與盟約誠實——遠不只是頭腦中的「相信」。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>關鍵洞見</strong>
+        古人的共識是：恩典雖然是「不相稱的」（incongruous，即不看你的功績），但絕非「無約束力的」（non-circular）。收了別人的巨額恩惠卻背叛忠誠，在當時被視為極其可恥的道德背叛，足以導致整段關係的破裂與嚴厲的社會審判。
+      </div>
+
+      <p>保羅完全吸納了這套社會機制，並將其改造為福音的敘事骨架。上帝是宇宙至高的神聖贊助人——祂施予恩典的「不相稱性」，在基督的代贖中達到了人類歷史的極致，因為神是在人類還作「仇敵」時便賜下救恩。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信……我們原是他的工作，在基督耶穌裡造成的，為要叫我們行善。」</p>
+        <p class="scripture-ref">以弗所書 二:8-10</p>
+      </div>
+
+      <p>這三節的邏輯並非「因恩得救，所以善行無關緊要」，而恰恰相反：第十節緊接著告訴我們，成為上帝「傑作」的信徒，是「為要行善」而被創造的。</p>
+
+      <p>善行不是天堂的入場券。但善行是得救之後，客戶（信徒）對神聖贊助人（上帝）的恩典，最自然、最必要的忠誠回報——也是盟約所賦予的責任。</p>
+
+      <div class="big-quote">
+        恩典不是免罪的通行證，而是啟動忠誠的起點
+        <cite>— 保羅神學的核心邏輯</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">罪，不只是「犯錯」——它是你前任的奴隸主</h2>
+      <p class="card-hook">當你理解了「罪」這個字的真正含義，「得救後繼續縱罪」這件事就會顯得完全荒謬</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>為什麼使徒保羅在《羅馬書》六章一節聽到「繼續在罪中讓恩典顯多」這個邏輯時，反應如此激烈？要回答這個問題，必須先理解「罪」（ἁμαρτία，Hamartia）在保羅神學裡究竟是什麼東西。</p>
+
+      <span class="depth-label deep-tag">📖 原文深度</span>
+
+      <div class="term-box">
+        <div class="term-original">Hamartia<br>ἁμαρτία</div>
+        <div class="term-desc">字根由否定前綴 a-（否定）與 meros（份額、份分）組成，直譯為「無份」。荷馬史詩中指「未中靶心」；古典作家用它描述因無知或判斷失誤而犯錯。</div>
+      </div>
+
+      <p>然而，當這個字進入保羅的神學系統後，它的意涵發生了根本性的昇華。在《羅馬書》中，保羅常常讓 Hamartia 以「單數」的形式出現，賦予它幾乎是「人格化」的特徵——一個殘酷的奴隸主、一個擁有統治權的黑暗政權。</p>
+
+      <div class="highlight">
+        <strong>神學核心：主權轉移</strong>
+        保羅的救恩論，從本質上說是一場「主權轉移」。在基督之前，全人類生活在「罪性權勢」這位暴君的管轄下，沒有自由。當信徒藉著洗禮「與基督同死、同埋葬」，在法理上已被宣告「向罪死了」——這意味著舊奴隸主對這個人已失去了所有合法的統治索索權。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 法理地位（稱義）</span>
+          信徒在基督裡被宣告義人，永恆定罪的判決已被撤除。這是神在法庭上的一次性宣判，永不改變。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❤️ 主權轉移（歸入基督）</span>
+          信徒的主人從「罪性權勢」轉移為「基督」，舊奴隸主對信徒失去了合法的統治權。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🌏 實際生活（成聖過程）</span>
+          信徒在日常生活中，需要透過聖靈的更新與操練，讓法理上已成就的「自由」在實際生命中愈來愈彰顯。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✨ 得救後繼續縱罪的矛盾</span>
+          若得救後繼續習慣性地生活在罪中，等於主動向已被粉碎的舊奴隸主俯首稱臣——這在神學上是自我毀滅的矛盾。
+        </div>
+      </div>
+
+      <p>因此，保羅的回答不只是道德上的勸誡，更是一個邏輯上的糾正：「你難道不知道，你已經不再是罪的奴隸了嗎？繼續屈服於罪，就是拒絕接受基督已為你贏得的自由。」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們在罪上死了的人，豈可仍在罪中活著呢？」</p>
+        <p class="scripture-ref">羅馬書 六:2</p>
+      </div>
+
+      <p>成聖的本質，正是上帝邀請信徒在實際生活中，一步步體驗並活出那個在基督裡早已成就的自由宣告。這不是律法的捆綁，而是自由的彰顯。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那個「審判台」不是你以為的死亡法庭</h2>
+      <p class="card-hook">基督的 Bēma——它是競技場的授獎台，而不是定罪的絞刑架</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>《哥林多後書》五章十節中提到的「基督審判台」，是許多信徒既害怕又困惑的一個概念。一聽到「審判台」三個字，腦海中浮現的往往是嚴厲的法官、沉重的罪狀、隨時可能落下的判決。</p>
+
+      <p>但當我們回到原文，這幅圖像將會被徹底改寫。</p>
+
+      <span class="depth-label deep-tag">📖 原文與文化考據</span>
+
+      <div class="term-box">
+        <div class="term-original">Bēma<br>βῆμα</div>
+        <div class="term-desc">指藉由台階升起的平台。在羅馬的司法語境中是官員的審判席；但在體育競技文化中，它更是運動場終點處，裁判長高坐其上向得勝者頒發冠冕的「授獎台」。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>雙重意象的神學意義</strong>
+        保羅在寫給哥林多教會的信中，刻意借用了當時哥林多地峽運動會（Isthmian Games）的 Bēma 意象。哥林多信徒對這個場景再熟悉不過：裁判長坐在授獎台上，他的職責不是對運動員進行刑事審判，而是嚴格評估他們的競賽表現，並向得勝者頒授榮耀。
+      </div>
+
+      <p>更深一層的原文線索，藏在「善」與「惡」的選字裡。保羅說：「各人要照所行的，或善或惡受報。」許多人以為這裡的「惡」指的是犯罪作惡——但保羅在此選用的是 <em>phaulos</em>（φαῦλος），而非代表道德邪惡的 <em>kakos</em> 或 <em>ponēros</em>。</p>
+
+      <div class="term-box">
+        <div class="term-original">Phaulos<br>φαῦλος</div>
+        <div class="term-desc">核心字義為「無價值的、微不足道的、粗糙的、劣質的」——並非道德上的「邪惡」，而是質量上的「不值一提」。</div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為我們眾人必要在基督台前顯露出來，叫各人按著本身所行的，或善或惡受報。」</p>
+        <p class="scripture-ref">哥林多後書 五:10</p>
+      </div>
+
+      <p>結合《哥林多前書》三章十三至十五節的「工程測試」比喻，這幅圖像就更加清晰了：信徒在成聖生活中，若以順服聖靈的「金、銀、寶石」建造人生，將在 Bēma 前獲得末世的稱許與冠冕；若以依靠肉體私慾的「草木、禾秸」建造，其工程將被神聖之火付之一炬。</p>
+
+      <div class="term-box">
+        <div class="term-original">Komizō<br>κομίζω</div>
+        <div class="term-desc">「得回、受報」。字根直譯為「攜帶、保存」，在商業與法律語境中指「結算並收回本屬於自己的事物」——末世時收回自己得救後所積累（或虛度）的末世份額。</div>
+      </div>
+
+      <div class="big-quote">
+        得救後的行為不決定永恆生死，卻絕對決定了人生在永恆中的實質價值
+        <cite>— Bēma 的末世邏輯</cite>
+      </div>
+
+      <p>信徒自身雖因信得救、永不喪失，卻會面臨失去獎賞的末世「受虧損」。這是一份嚴肅的末世警醒，卻不是信徒的定罪判決——因為基督已徹底免除了那個判決（羅馬書八:1）。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">認罪、中保與體恤：跌倒後的三重保障</h2>
+      <p class="card-hook">聖經為犯錯的信徒設計了一套極其完備的挽回機制——而它的核心不是懲罰，是復原</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>成聖是一條漸進的道路，而人在世上難免偶有跌倒。面對這個現實，新約聖經並沒有要求信徒擁有不可能的完美——相反，它提供了一套極其精緻、極其完備的挽回機制。</p>
+
+      <span class="depth-label deep-tag">📖 三重挽回機制</span>
+
+      <p><strong>第一重保障：認罪（Homologeō）</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Homologeō<br>ὁμολογέω</div>
+        <div class="term-desc">由 homos（相同）與 logos（言語）組成，直譯為「說相同的話」。在希臘法庭中指公開、不加辯護地承認某項客觀事實或盟約條款。</div>
+      </div>
+
+      <p>認罪，在聖經的語境中絕不是出於恐懼的「刑事自首」。它的本質，是信徒在聖靈的光照下，完全站在上帝公義與聖潔的視角，對自己的過犯宣告與上帝完全一致的評判——不為罪惡進行任何功德性的自我辯護，不任何辯解，只是完全承認上帝的判斷是對的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們若認自己的罪，神是信實的，是公義的，必要赦免我們的罪，洗淨我們一切的不義。」</p>
+        <p class="scripture-ref">約翰一書 一:9</p>
+      </div>
+
+      <div class="highlight">
+        <strong>語法細節</strong>
+        希臘文原文的「認罪」（homologōmen）採用現在時態虛擬語氣，強調「持續性、習慣性」的生命常態——不是一生一次的入教宣告，而是一種對罪持續敏感、持續與神對齊的生命節律。真正有神聖生命的信徒，其標誌之一便是這種持守認罪的生活規律。
+      </div>
+
+      <p><strong>第二重保障：中保（Paraklētos）</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Paraklētos<br>παράκλητος</div>
+        <div class="term-desc">由 para（在旁）與 kaleo（召喚）組成，直譯為「被召喚至身旁者」。在古希臘法庭中指陪同當事人出庭、提供人格擔保、進行代求的親友或權貴顧問。</div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我小子們哪，我將這些話寫給你們，是要叫你們不犯罪。若有人犯罪，在父那裡我們有一位中保，就是那義者耶穌基督。」</p>
+        <p class="scripture-ref">約翰一書 二:1</p>
+      </div>
+
+      <p>耶穌基督作為天上的中保，不靠廢除律法，也不靠否定罪的存在，而是以祂自身的公義與那一次獻上、永遠有效的代贖，為犯錯的信徒做絕對的法理擔保。這位中保的力量，恰恰在於祂是「那義者」——祂的無罪讓祂有資格為有罪者辯護。</p>
+
+      <p><strong>第三重保障：大祭司的體恤（Sympatheō）</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Sympatheō<br>συμπαθέω</div>
+        <div class="term-desc">由 syn（共同）與 pathos（經歷、受苦）組成。物理學中指琴弦的「共振」現象——另一根弦被撥動，這根弦也隨之共鳴。新約中指深刻的感同身受。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎻</span>
+        當一把提琴的琴弦被撥動，附近調頻相同的另一根弦，即便無人觸碰，也會自動產生共鳴。這就是 sympatheo——不是冰冷的理性同情，而是靈魂深處因相同的頻率而產生的共振。基督曾在完全的人性中承受了完整且毫無妥協的試探，祂的靈魂深處與信徒在世上面臨的痛苦產生了歷史性的共振。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為我們的大祭司，並非不能體恤我們的軟弱，他也曾凡事受過試探，與我們一樣，只是他沒有犯罪。」</p>
+        <p class="scripture-ref">希伯來書 四:15</p>
+      </div>
+
+      <p>「並非不能體恤」——新約特意使用雙重否定，極力肯定基督體恤的深度與真實性。這確保了信徒在軟弱跌倒時，不必因羞恥而躲避神，反而能坦然無懼地來到施恩寶座前，尋求隨時的憐憫與恩助。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 終章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那個打碎玻璃的孩子，身邊一直有人站著</h2>
+      <p class="card-hook">恩典不是終點，成聖不是刑罰——它是一趟有人陪伴的旅程</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走過了六章的神學深論，是時候讓這一切回到人心最柔軟的地方。</p>
+
+      <p>有一個孩子，不小心打碎了鄰居家的玻璃。他嚇壞了，第一個念頭是躲起來，假裝什麼都沒發生。但他鼓起勇氣，回到家，看著父親的眼睛，誠實地說出了那件事。</p>
+
+      <p>這一刻，就是「認罪」（Homologeō）的本質——不是刑事自首，而是在親密關係中，勇敢地選擇說與神相同的話，不再為自己辯護，不再逃避。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏡</span>
+        家庭中的長子——同時也是最優秀的家族律師——耶穌基督，在這一刻主動站到那個嚇得發抖的孩子身旁。祂告訴父親：自己已經用生命代價全額賠償了鄰居的損失，祂用自己無可挑剔的完美名譽，為這個孩子做人格擔保。
+      </div>
+
+      <p>而這位長兄，絕不是一個冰冷的、高高在上的法律機器人。祂因為親自走過了世間萬般的艱難與誘惑，祂的靈魂能與這個受挫折的孩子產生強烈的共振——祂完全懂得，在誘惑來臨時，那種無助與渴望的感受究竟是什麼。</p>
+
+      <div class="highlight">
+        <strong>這套機制的完美之處</strong>
+        它既維護了家庭的公義（罪不被忽視），又給予了犯錯者最溫柔、最安全的復原路徑。上帝不是冷漠的法官，也不是縱容一切的溺愛長輩——祂是一位公義與慈愛完美統合的父親。
+      </div>
+
+      <p>至於「得救後繼續縱罪」這件事——現在應該已經明白了，這不只是「不被允許」，而是從根本上自相矛盾。當一個人真正明白自己已從罪的奴役中被買贖出來、明白上帝作為神聖贊助人的恩典所蘊含的盟約呼召、明白審判台前那份嚴肅的末世評估——沒有一個靈魂在這份理解下，還會想要把恩典當成縱罪的藉口。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「所以，我們只管坦然無懼地來到施恩的寶座前，為要得憐恤，蒙恩惠，作隨時的幫助。」</p>
+        <p class="scripture-ref">希伯來書 四:16</p>
+      </div>
+
+      <p>這條成聖之路，不是一個人踽踽獨行的苦旅。有一位中保在天上為信徒辯護，有一位大祭司對信徒的軟弱深刻共鳴，有一位父神的恩典在前方等候著每一次真誠的認罪與歸回。</p>
+
+      <div class="big-quote">
+        恩典不是終點的免死金牌，而是每一步旅途中，那雙永遠不會放開的手
+        <cite>— 成聖旅途的溫柔真相</cite>
+      </div>
+
+      <p>每一個在成聖路上蹣跚學步的信徒，跌倒後都可以重新站起來。不是因為跌倒無所謂，而是因為有人始終站在身旁——懂得你的軟弱，擔得起你的審判，帶著你走向那條追求聖潔與光明的路。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  恩典、審判與成聖 · 神學研究 Threads 系列 · 六章完結
+</footer>
+
+</body>
+</html>

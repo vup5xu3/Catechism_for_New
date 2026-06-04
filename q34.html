@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>得救以後——靈命進深六章 · Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,70,0.5); }
+.card.final .card-divider         { background: rgba(201,168,76,0.15); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); border: 1px solid rgba(201,168,76,0.3); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">靈命進深系列 · Sanctification Series</div>
+  <h1>得救以後<span>，然後呢？</span></h1>
+  <p class="subtitle">從恩典宣告到基督門徒的漸進式成聖 · 六章連貫深論</p>
+</header>
+
+
+<!-- ══════ 第一章：分享 ══════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我曾以為，門票就是終點</h2>
+      <p class="card-hook">信主那天，是全新人生的第一天——而不是最後一天</p>
+    </div>
+    <div class="card-body">
+
+      <p>我認識一個弟兄，信主那年哭得稀哩嘩啦。他說，那一刻像是被幾十年的重量突然卸下，輕盈得像要飛起來。但三個月後，他找我說：「我好像……沒什麼感覺了。」</p>
+
+      <p>這幾乎是每一個新信徒都會遇上的問題。初信的火熱，慢慢冷卻。高山的體驗之後，是漫長的平原。有人開始懷疑，自己信得夠不夠。有人開始比較，別人怎麼好像還是那麼喜樂。有人乾脆不再想這些，讓信仰慢慢變成生活的背景音樂，可有可無。</p>
+
+      <div class="highlight">
+        <strong>一個常見的誤會</strong>
+        很多人把「得救」當成一張遊樂園的門票——拿到了就夠了，接下來在門口躺平等著進去就好。但聖經告訴我們，得救是新生命的第一天，不是最後一天。
+      </div>
+
+      <p>我想分享一件事，不是學術理論，是我自己走過來的真實：靈命停滯，不是因為你信心不夠，而是因為沒有人告訴你，得救之後還有一條路，而那條路是有地圖的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們與神同工的，也勸你們不可徒受他的恩典。」</p>
+        <p class="scripture-ref">哥林多後書 六章1節</p>
+      </div>
+
+      <p>「徒受恩典」——這四個字讓我震動很久。恩典是白白給的，這沒有問題。但「徒受」的意思是：只拿了卻沒有讓它在生命裡真正產生作用。就像你收到一份精心準備的禮物，卻把它放在角落，一次都沒有打開。</p>
+
+      <p>接下來這六章，我想帶你走過聖經原文裡隱藏的六條靈命進深路徑。不是宗教規條，不是道德表現壓力，而是一份你早就該拿到的屬靈說明書。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ 第二章：引導 ══════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">你不需要靠意志力撐起靈命</h2>
+      <p class="card-hook">在進入六條路徑之前，先搞清楚「誰」在主導這件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>談靈命進深，最容易掉入的一個陷阱，就是把它變成「我要更努力」的道德決心計畫。讀經、禱告、聚會，三件事每天打卡，靠著意志力維持紀律。</p>
+
+      <p>這樣的路線，短則三個月，長則一年，幾乎必然走向疲憊。不是因為你不夠認真，而是因為你搞錯了主語。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚗</span>
+        想像你坐在副駕駛座，車上有一位最頂尖的導航員。但你一直伸手去搶方向盤，深怕他開錯路。結果是：你精疲力竭，車子也搖搖晃晃。靈命進深的真諦，是學習把方向盤交出去——而不是練習把它握得更緊。
+      </div>
+
+      <p>以弗所書五章18節有一個令人意外的命令：「乃要被聖靈充滿。」這個動詞在希臘原文裡，是「現在時態、被動語態、命令語氣」的罕見組合。「被動」，意味著充滿你的主體是聖靈，而不是你自己；「命令」，意味著這不是少數靈命高深者的特權，而是給所有基督徒的指令；「現在時態」，意味著這是每天持續的生命常態，不是偶爾一次的高峰體驗。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「不要醉酒，酒能使人放蕩；乃要被聖靈充滿。」</p>
+        <p class="scripture-ref">以弗所書 五章18節</p>
+      </div>
+
+      <p>保羅在這裡做了一個讓人目瞪口呆的對比——醉酒與聖靈充滿並排而列。在當時的希臘羅馬文化裡，酒神（Dionysus）崇拜的信徒相信藉由醉酒可以達到「與神合一」的狂喜狀態。保羅說：那是毀滅性的假路；真正的「神人相遇」，是每天清醒地讓聖靈在你生命中掌主權。</p>
+
+      <div class="highlight">
+        <strong>進深的核心前提</strong>
+        靈命進深不是「我更努力」，而是「我更放手」。六條路徑，每一條都是在打開一扇門，讓聖靈進來——而不是在堆疊讓神滿意的道德積分。
+      </div>
+
+      <p>帶著這個前提，我們才能不帶誤解地走進接下來的六條路。因為這些路徑不是枷鎖，它們是打開了就通往自由的門。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ 第三章：破題 ══════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">六條路，六個原文密碼</h2>
+      <p class="card-hook">聖經原文裡隱藏的靈命地圖，每個字詞都是一把鑰匙</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經翻譯成中文，有時會磨去一些讓人震驚的稜角。當我們回到希伯來文和希臘文原典，那些「叫人打冷顫」的細節才會重新浮現。</p>
+
+      <p>以下是得救後靈命進深的六條核心路徑。每條路都有一個原文關鍵字，和它背後讓人驚奇的神學意涵：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🕊️ 路徑一：終末聚會</span>
+          原文：Episynagoge（終末召聚）——每一次聚會，是末日復活大典的現場預演
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">📖 路徑二：話語咀嚼</span>
+          原文：Hagah（獅子低吼）——默想不是放空，而是用嘴把神的話嚼碎、內化
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🙏 路徑三：全人禱告</span>
+          原文：Glossa ＋ Nous（靈與心智）——禱告有兩個頻道，都要打開
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">💡 路徑四：活出身份</span>
+          原文：Halas ＋ Phos（鹽與光）——你「已經是」鹽和光，不是被命令「去成為」
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">✨ 路徑五：動態成聖</span>
+          原文：Hagiasmos（過程名詞）——聖潔是一生的軌跡，不是一瞬間的狀態
+        </div>
+      </div>
+
+      <p>第六條路徑——被聖靈充滿（Pleroo）——我們已在上一章提過，它是整個系統的動力核心，統攝其他五條。</p>
+
+      <div class="highlight">
+        <strong>六條路徑的關係</strong>
+        這六條路不是獨立的打卡清單，而是一個有機的屬靈生態系統：聖靈充滿提供動力，話語咀嚼更新心智，禱告接通天線，聚會提供群體，身份宣告提供勇氣，動態成聖是整條旅途的軌跡描述。
+      </div>
+
+      <p>接下來，我們要進入這六條路最深的原文研究與神學深論。請帶著一顆願意被震驚的心——聖經比我們以為的，更豐富、更精準、更活潑。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ 第四章：研究 ══════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原文深挖：每個字詞都是一個世界</h2>
+      <p class="card-hook">當我們回到原文，「聚會」不只是聚會，「默想」不只是默想</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 路徑一：終末聚會</span>
+
+      <p>希伯來書十章25節的「聚會」，希臘原文是 <strong>episynagoge</strong>（G1997）。這個字在整個新約裡只出現兩次：一次在這裡，另一次在帖撒羅尼迦後書二章1節——那一次，它描述的是「基督再來時聖徒聚集到祂那裡」的末世大事件。</p>
+
+      <div class="term-box">
+        <div class="term-original">Episynagoge<br>G1997</div>
+        <div class="term-desc">字面義為帶有強化前綴 <em>epi-</em> 的「召聚」；新約中僅出現兩次，另一次明確指向基督再來時聖徒的終極大聚集。</div>
+      </div>
+
+      <p>換言之，每一次我們不顧懶惰、不畏風雨地走進教會，在神學意義上，我們正在進行末日復活大典的「現場彩排」。停止聚會，不只是缺席一次聚會，而是在預示上放棄了終末盼望的宣告。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 路徑二：話語咀嚼</span>
+
+      <p>詩篇一篇2節說義人「晝夜思想」耶和華的律法，這個「思想」在希伯來文是 <strong>hagah</strong>（H1897）。這個字在聖經中出現25次，是個擬聲詞，本義是「低吼、呻吟、喃喃自語」。以賽亞書31章4節用它描繪「大獅子護食時的低吼」，38章14節用它形容「鴿子的哀鳴」。</p>
+
+      <div class="term-box">
+        <div class="term-original">Hagah<br>H1897</div>
+        <div class="term-desc">擬聲詞，本義為低吼、呻吟、喃喃自語。古代近東的閱讀多為出聲朗讀，透過物理性的發聲將神的話語刻入心靈，與東方「放空冥想」截然相反。</div>
+      </div>
+
+      <p>更令人震撼的是：詩篇二篇1節用同一個字 hagah 來描述外邦人的「謀算」虛妄之事。意思是：人心的嘴巴永遠在「低吼」著什麼——問題只是，你讓它低吼神的話，還是低吼世界的焦慮？</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 路徑三：全人禱告</span>
+
+      <p>哥林多前書十四章14至15節呈現了禱告的兩個維度：方言禱告（glossa，G1100）讓人的靈（pneuma）直接與神相通，是超越理性認知的密契管道；悟性禱告（nous，G3563）讓理性運作，建立自己也造就群體。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我要用靈禱告，也要用悟性禱告；我要用靈歌唱，也要用悟性歌唱。」</p>
+        <p class="scripture-ref">哥林多前書 十四章15節</p>
+      </div>
+
+      <p>保羅的立場精準：他沒有廢除靈的禱告，但他強調兩者必須並行。一個成熟的靈命，不是選擇神秘或理性的其中一端，而是讓兩個頻道都保持暢通。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 路徑四：活出身份</span>
+
+      <p>馬太福音五章13至14節裡，耶穌說的是「你們是世上的鹽」、「你們是世上的光」——用的是希臘文直陳語氣（Indicative Mood），不是命令語氣（Imperative Mood）。這不是命令你去成為什麼，而是宣告你已經是什麼。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧂</span>
+        鹽不需要努力去「展現防腐力」——它本身的化學性質就是防腐劑。信徒的見證，不是刻意表演出來的道德形象，而是新生命的本質自然流露出的氣息與影響力。
+      </div>
+
+      <p>但哥林多後書六章1節補充了另一面：「也勸你們不可徒受他的恩典。」希臘文用了現在分詞 synergountes（G4903），意為「持續與神同工」。本質的改變是神做的，但那個本質能否在歷史中具體彰顯，需要信徒主動地與聖靈協同。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ 第五章：深論 ══════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">系統神學視角：一個有機的屬靈生態</h2>
+      <p class="card-hook">六條路徑不是獨立規條，它們是一個彼此支撐的生命系統</p>
+    </div>
+    <div class="card-body">
+
+      <p>到了這裡，我們需要從單一路徑的描述，提升到更寬廣的神學鳥瞰。因為如果我們只把這六條路當成個別的「靈修操練技巧」，就會重新掉進「靠自己努力」的陷阱。它們必須被理解為一個整體系統。</p>
+
+      <span class="depth-label deep-tag">🧩 聖靈論與救贖論的動態協調</span>
+
+      <p>稱義（Justification）是地位上一次性完成的宣告——神在法庭上宣判你無罪。但成聖（Sanctification）是一生的動態軌跡。希臘文 hagiasmos（G38）帶有後綴 <em>-mos</em>，在構詞學上明確標示著「持續進行的過程」，而非靜態結果。</p>
+
+      <div class="term-box">
+        <div class="term-original">Hagiasmos<br>G38</div>
+        <div class="term-desc">後綴 <em>-mos</em> 的名詞標示動態過程（to hagiazein），而非靜態結果（後者用 hagiosune）。成聖是一生在聖靈引導下，不斷將生命各層面「分別出來歸神使用」的動態旅程。</div>
+      </div>
+
+      <p>脫離聖靈主導的道德努力，只會淪為新一輪的律法主義掙扎。六條路的每一條，都必須在「被聖靈充滿」（pleroo，允許性被動語態）的前提下才能真正發揮作用。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">🧠 啟示論與人論的有機結合</span>
+
+      <p>人的大腦在墮落後，充斥著自我懷疑與敵擋神的「虛妄謀算」（詩篇二篇1節的 hagah）。信徒若要打破這種心智的墮落常態，必須透過有聲的、反覆的吟誦（hagah）將啟示真理強行介入並重塑其思維模式。</p>
+
+      <div class="highlight">
+        <strong>話語內化的神經機制</strong>
+        詩篇一篇的 hagah 提供了羅馬書十二章2節「心意更新而變化」的具體操作路徑。當信徒用嘴巴反覆低吼神的話語，他是在用啟示的頻率覆蓋墮落的預設頻率，這是心智重塑最深沉的機制。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「唯喜愛耶和華的律法，晝夜思想，這人便為有福！」</p>
+        <p class="scripture-ref">詩篇 一篇2節</p>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">⛪ 教會論與終末論的現實交織</span>
+
+      <p>信徒在地方堂會的 episynagoge（恆常聚集），不只是社群活動，而是末世影響力的釋放現場。當信徒在聚會中用靈（glossa）與悟性（nous）共同向神頌讚，他們就是在歷史當下釋放末世的影響力，對抗黑暗權勢。</p>
+
+      <p>這種「終末預演」的性質，使得聚會本身成為一項宣告：我們宣告基督必再來，我們宣告死亡不是終點，我們宣告這個世界的權柄結構有一天將被徹底顛覆。</p>
+
+      <div class="big-quote">
+        成聖不是變得完美無缺，而是每天把更多的自己歸回那個設計你的創造主
+        <cite>— 基於提摩太後書二章21節</cite>
+      </div>
+
+      <p>六條路徑的神學統一性在這裡清晰浮現：它們共同構成一個「屬靈生態系統」——聖靈是動力，話語是食物，禱告是呼吸，聚會是群體，身份是根基，成聖是生長軌跡。缺少任何一條，這個生態就會失衡。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════ 第六章：結論與溫馨 ══════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你不需要從今天變成另一個人</h2>
+      <p class="card-hook">靈命進深的起點，只是明天早上睜開眼睛的那一刻</p>
+    </div>
+    <div class="card-body">
+
+      <p>走到這裡，我知道有些人讀完可能感到既興奮又有點喘不過氣。六條路、原文分析、系統神學——這些加在一起，聽起來像是一份很重的功課。</p>
+
+      <p>但我想說：不是的。</p>
+
+      <p>這整趟旅程說的，其實只有一件事：你不需要靠自己撐起靈命。聖靈已經住在你裡面。祂不是等你夠好才進來的客人，祂是在你還很爛的時候就已經在的那一位。</p>
+
+      <div class="highlight">
+        <strong>六條路徑的白話總結</strong>
+        ① 去聚會——因為那是你參與末世故事的方式。② 大聲唸聖經——用神的話把腦海裡的垃圾擠出去。③ 用靈和理智都來禱告——兩個頻道都打開。④ 記住你是誰——你已經是鹽和光，不是努力去成為。⑤ 每天交出一點主權——這就是成聖的樣子。⑥ 把方向盤還給聖靈——每天早上重新做一次這個決定。
+      </div>
+
+      <p>我那位弟兄，後來在一次聚會中把這幾件事都說開了。他說：「原來我一直在等靈命高峰再出現，但其實，靈命不是靠高峰撐著的。」</p>
+
+      <p>對。靈命是靠每天早上那個不起眼的決定撐著的：今天，我把方向盤交出去。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們要追求與眾人和睦，並要追求聖潔；非聖潔沒有人能見主。」</p>
+        <p class="scripture-ref">希伯來書 十二章14節</p>
+      </div>
+
+      <p>「追求」這個字在希臘文是 dioko——它的意思是「奔跑、積極地追趕」。聖潔不是等來的，是追的。但追的動力不是恐懼，不是績效壓力，而是因為你已經知道——前方那位，值得你用盡全力去追。</p>
+
+      <div class="card-divider"></div>
+
+      <p>得救以後，有一條路。那條路不是孤單走的，有聖靈同行。也不是在黑暗中走的，有話語照亮。更不是沒有終點的，有末日的大光等在那裡。</p>
+
+      <div class="big-quote">
+        你不需要從今天變成另一個人。你只需要今天，讓聖靈多一點空間。
+        <cite>— 以弗所書五章18節的邀請</cite>
+      </div>
+
+      <p>這是一份寫給所有在平原上行走的人的信。願你記得：平原不是失去了高峰，平原是真正的旅程開始的地方。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  得救以後的靈命進深路徑 · Sanctification Series · 六章完
+</footer>
+
+</body>
+</html>
