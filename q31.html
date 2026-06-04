@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>救恩確據 — 你真的可以知道自己得救了</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <div class="eyebrow">救贖論系列 · Soteriology Series</div>
+  <h1>你真的可以<span>確定</span>嗎？</h1>
+  <p class="subtitle">救恩確據的神學實證 · 六章完整論述</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個問題，你也問過嗎？</h2>
+      <p class="card-hook">「我真的得救了嗎？」——這個問題，幾乎每個信徒都在某個黑暗的夜晚問過自己。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種信仰的孤獨，不是不相信神，而是不確定神是否接納了「我」。禱告完之後，心裡還是空的。讀完聖經，懷疑自己有沒有資格。在教會裡唱詩，卻在想：如果今晚我就離世了，我真的確定嗎？</p>
+
+      <p>這種感受並不罕見。它甚至在初代教會就已經存在——約翰寫第一封書信的目的，正是為了回應那些被異端分裂傷害、陷入深沉靈性焦慮的信徒。他們的問題跟你我一樣真實：「我怎麼知道自己真的認識神？」</p>
+
+      <div class="highlight">
+        <strong>這封信的寫作初衷</strong>
+        「我將這些話寫給你們信奉神兒子之名的人，要叫你們知道自己有永生。」——約翰一書 5:13。注意：約翰不是要讓信徒更焦慮，而是要讓他們確知（eidēte）。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我將這些話寫給你們信奉神兒子之名的人，要叫你們知道自己有永生。」</p>
+        <p class="scripture-ref">約翰一書 5:13</p>
+      </div>
+
+      <p>這個系列，是為了每一個曾經問過那個問題的人而寫的。我們不會用「你要更努力相信」來敷衍你，也不會用「感覺到了就算了」來打發你。</p>
+
+      <p>我們要從聖經原文出發，從第一世紀的法庭、商業、奴隸制度的歷史現場出發，把那些古老的話語翻譯成你我今天可以緊緊抓住的確據。因為神給的保證，從來不是一種感覺——而是一份合約，一個印記，一位永不搬家的律師。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">確據不是驕傲，是應許</h2>
+      <p class="card-hook">很多人以為「確定自己得救」是一種屬靈傲慢。但聖經說的恰恰相反。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種誤解，把謙卑理解成永遠的不確定。好像說「我知道自己得救了」是在炫耀，是太自信了，是不夠敬畏神。於是，許多信徒活在一種慢性的屬靈焦慮中——一輩子努力，卻一輩子懷疑。</p>
+
+      <p>但我們需要先搞清楚一件事：救恩確據的根基，從來不在於「我有多好」，而在於「神的話有多可靠」。當你說「我知道自己得救了」，你不是在誇自己，而是在相信神說話算數。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        想像一位父親對孩子說：「你是我的孩子，我永遠愛你，這不會改變。」如果孩子回答：「爸，我不敢確定……」這不是謙卑，這是對父親話語的不信任。救恩確據，是對神的信任，不是對自己的自信。
+      </div>
+
+      <p>聖經所說的「信（pisteuō）」，在希臘原文中不是靜態的「我認為這個命題是真的」，而是一種動態的、把整個人生命的重量都押上去的「投靠」。第一世紀的羅馬世界裡，這個字常用於臣民向凱撒宣告政治效忠的場合——是一種徹底的主權移交，而不是搖搖擺擺的同意。</p>
+
+      <div class="highlight">
+        <strong>真實的信心是什麼樣子的</strong>
+        不是「我覺得神可能存在」，也不是「我大概信祂吧」。是像在寒冬中走到結冰的湖面，不只是稱讚冰層夠厚，而是敢於把整個人身體的重量完全踩上去——因為你相信那冰撐得住你。
+      </div>
+
+      <p>引導你進入救恩確據的第一步，不是更努力地審視自己，而是把目光從自己身上移開，轉向神所說的每一句話。那些話，就是你的根基。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你若口裡認耶穌為主，心裡信神叫他從死裡復活，就必得救。」</p>
+        <p class="scripture-ref">羅馬書 10:9</p>
+      </div>
+
+      <p>「就必得救」——這是盟約語言，不是條件式的許願。這是神的宣告，是祂立下的約，不因你今天心情好壞而改變。下一章，我們要深入看看這個約，在第一世紀的法庭語境裡，到底有多深的重量。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">罪債，被「遣送出境」了</h2>
+      <p class="card-hook">赦免（aphesis）不是神假裝沒看見——而是祂以審判官的身分，宣告追訴權永久終結。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>救恩確據的第一塊基石，是客觀的赦罪宣告。而要真正理解這個宣告有多徹底，必須追溯到一個希臘文單字的原始力量：<strong>aphesis（ἄφεσις）</strong>。</p>
+
+      <span class="depth-label deep-tag">📖 原典考據</span>
+
+      <div class="term-box">
+        <div class="term-original">aphesis<br>ἄφεσις</div>
+        <div class="term-desc">字面義是「釋放、免除、遣送出境」。在七十士譯本（LXX）中，這個字被用來翻譯利未記 25 章的「禧年」——那個一切債務被強制清零、奴隸無條件釋放、失去的產業全部歸還的神聖時刻。</div>
+      </div>
+
+      <p>當使徒行傳 10:43 宣告「凡信他的人，必藉著他的名得蒙罪赦（aphesis）」，保羅不是說神「原諒了」你的罪，像是一個好脾氣的人忍氣吞聲——</p>
+
+      <div class="highlight">
+        <strong>神的赦免是司法行動，不是情感妥協</strong>
+        神以宇宙最高審判官的身分，宣告將所有罪債「徹底遣送出境」。如同古代的禧年鐘聲響起，借條被撕毀，奴隸獲釋，追訴權永久終結。這是客觀的法律事件，不是每次禱告都要重新申請的恩典。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🏛️ 罪債被宣告終止</span>
+          不是暫時凍結，是永久「遣送出境」，法律上不可再追訴
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚖️ 稱義是法庭宣告</span>
+          神以審判官身分宣告信徒「無罪」，此宣告在宇宙法庭上永久有效
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">📜 效力來自基督的血</span>
+          赦免的根基是十字架上所成就的工作，不是信徒今天的心情或表現
+        </div>
+      </div>
+
+      <p>這就是救恩確據的第一層根基：它是客觀的，法律性的，不依附於主觀感受的。你今天覺得自己不夠好，不會撤銷這份宣告。你今天禱告不夠熱情，不會讓審判官收回成命。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「眾先知也為他作見證：凡信他的人，必藉著他的名得蒙罪赦。」</p>
+        <p class="scripture-ref">使徒行傳 10:43</p>
+      </div>
+
+      <p>但救恩確據不只是外在的法律文書——神還在你心裡做了一件更奇妙的事。這是下一章要說的故事：一個印記，一筆定金，還有一位永不離開的律師。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">三重神聖保障：印記、定金、律師</h2>
+      <p class="card-hook">聖靈不是一種感覺，而是神投入在你生命中的「所有權鋼印」、「不可退還的頭期款」與「永不搬家的法庭律師」。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>外在的法律宣告確保了罪債被清除，但神並不止步於此。祂還差遣了聖靈進入信徒的生命，透過三個驚人的法律與商業意象，為救恩確據提供了第二重、第三重、第四重的保障。</p>
+
+      <span class="depth-label deep-tag">📖 以弗所書 1:13-14 原典解析</span>
+
+      <p>以弗所書 1:13-14 同時使用了兩個關鍵字：<strong>sphragizō（蓋印）</strong>與 <strong>arrabōn（定金）</strong>。這兩個字在第一世紀的以弗所，對城裡的奴隸信徒而言，具有撼動靈魂的力量。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 第一重：所有權鋼印</span>
+
+      <div class="term-box">
+        <div class="term-original">sphragizō<br>σφραγίζω</div>
+        <div class="term-desc">古代用於官方法定文書認證、商品所有權標記，或給奴隸烙上專屬記號。一經印下，永久宣告產權歸屬與官方保護。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪵</span>
+        想像古代的伐木工人在木材上砍下專屬缺口——這根木頭已付清款項，已有主人，在運往目的地的過程中受官方保護，任何人嚴禁篡改或侵占。這就是聖靈印記的意涵：你已被宇宙最高君王蓋上官方鋼印，靈魂安全受到神聖保護。
+      </div>
+
+      <p>對以弗所城中那些在地上毫無人權的奴隸信徒而言，這個宣告極具震撼力：你的身體也許是別人的財產，但你的靈魂，已被宇宙之主標記為神聖產權，不可侵犯。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 第二重：不可退還的頭期款</span>
+
+      <div class="term-box">
+        <div class="term-original">arrabōn<br>ἀρραβών</div>
+        <div class="term-desc">腓尼基商業法律術語，指買方支付的第一筆具法律約束力的預付款。這筆錢一旦付出，在法律上約束買方必須完成整筆交易，不可反悔。</div>
+      </div>
+
+      <p>神把聖靈內住賜給信徒，是在你生命中預先支付了「天國的頭期款」。這筆款項一旦付出，法律上就保障了交易必定完成——神在末日必定前來收回這份「被買之產業」，使信徒獲得復活與榮耀的完整救贖。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 第三重：永不搬家的法庭律師</span>
+
+      <div class="term-box">
+        <div class="term-original">paraklētos<br>παράκλητος</div>
+        <div class="term-desc">被呼喚到被告身旁的法庭辯護律師。不是偶爾現身，而是以 menō（永久定居、不搬遷）的方式，常住在信徒的生命中。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>約翰福音 14:16-17 的精準用字</strong>
+        基督稱聖靈為「另外一位（allon）保惠師」——allon 是「同質的另一位」，意思是聖靈與耶穌同等的神性、威嚴與慈愛。這位神聖律師以「永久定居（menō）」的方式住在信徒裡面，不因信徒一時軟弱而搬走。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們信了基督，既然信了祂，就受了所應許的聖靈為印記。這聖靈是我們得基業的憑據。」</p>
+        <p class="scripture-ref">以弗所書 1:13-14</p>
+      </div>
+
+      <p>三重保障，環環相扣：外在的法律宣告（罪債被遣送出境）、身分的永久標記（聖靈的所有權印記）、終局的商業擔保（不可退還的頭期款）、以及內在的法律保護（永不搬家的律師）。這不是感覺，這是結構性的、多維度的救恩確據。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">當靈魂在法庭上作證</h2>
+      <p class="card-hook">羅馬書 8:16 的「協同作證」，是聖靈與你的靈魂在心裡深處的雙向共鳴——不是獨白，而是合唱。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>外在的法律文書與印記固然重要，但神還設計了一種更深的確據：一種在心裡深處響起的「我確實是神的兒女」的迴響。這是羅馬書 8:16 所描述的奇妙事件。</p>
+
+      <span class="depth-label deep-tag">📖 symmartyreō 的語法深度</span>
+
+      <div class="term-box">
+        <div class="term-original">symmartyreō<br>συμμαρτυρέω</div>
+        <div class="term-desc">由 syn（與、共同）+ martyreō（作證）組成。後接與格（Dative of Association）「我們的靈（tō pneumati hēmōn）」——明確表示是雙向協作，不是單向宣告。</div>
+      </div>
+
+      <p>關鍵在這個語法細節：如果保羅想說「聖靈單方面對我們宣告」，他只需用 martyreō 加間接受詞。但他選用了 symmartyreō——「協同作證」。這代表：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🎵 不是獨唱，是二重唱</span>
+          聖靈與已被重生、正向神呼求「阿爸、父」的信徒之靈，共同維持同一個見證
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⚖️ 符合兩個見證人的律法要求</span>
+          猶太法律規定，需要兩個以上的見證人方能確立事實。聖靈與信徒之靈，恰好構成合法的雙重見證
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔓 徹底驅逐奴役性的懼怕</span>
+          這種協同見證「使我們不再是恐懼的奴僕」，而是享有合法繼承權的神的兒女（羅 8:15-16）
+        </div>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「聖靈自己與我們的靈同證我們是神的兒女。」</p>
+        <p class="scripture-ref">羅馬書 8:16</p>
+      </div>
+
+      <p>這種確據，並非建立在「我感覺很平安所以我一定得救了」的主觀感受上。約翰一書中的三重生命試驗提供了更具體的路標：</p>
+
+      <div class="highlight">
+        <strong>約翰一書的三重生命試驗</strong>
+        真理試驗：我是否承認耶穌基督是道成肉身的神子？道德試驗：我是否在順服神的誡命、惡的衝動是否讓我感到不安？社會試驗：我是否願意愛弟兄姐妹，而不是只愛自己？這不是得救的條件，而是神聖生命在你裡面運行的果子。
+      </div>
+
+      <p>注意：約翰寫這些試驗，是為了讓陷入焦慮的信徒重獲確信，不是要製造更多焦慮。當你在這三方面看見生命的掙扎與改變——哪怕微小——那掙扎本身，就是神在你裡面動工的證明。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        一棵樹的根在地下，看不見。但你看見它春天發芽、夏天結果，你就知道根在。靈命的成長，就是你的根的證明。不是完美，是方向。不是無懈可擊，是因著愛神而掙扎的心。
+      </div>
+
+      <p>客觀的應許是合約，主觀的聖靈工作是印記與見證——兩者缺一不可，兩者共同構成了完整的救恩確據。沒有主觀，確據變成冷冰冰的法律條文；沒有客觀，確據變成起伏不定的感覺遊戲。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你是祂的，這不會改變</h2>
+      <p class="card-hook">救恩確據不是一種自我說服的技術，而是讓你在已然成立的事實上，重新站穩腳跟。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走過六章，讓我們把所有的線索整理成一幅清晰的圖像。救恩確據，建立在兩根柱子上：神客觀的應許，與聖靈主觀的工作。兩者都不是你賺來的，都不會因你的軟弱而消失。</p>
+
+      <div class="highlight">
+        <strong>四重不可動搖的確據</strong>
+        一、罪債被徹底遣送出境（aphesis）——法律宣告，永久有效。二、聖靈的所有權鋼印（sphragizō）——身分標記，不可磨滅。三、天國頭期款的法律保障（arrabōn）——神已投入，必定完成交易。四、神聖律師的永久常駐與協同見證（paraklētos + symmartyreō）——你不是一個人站在法庭上。
+      </div>
+
+      <p>如果今天你仍然感到懷疑，請記住：懷疑不等於不信，掙扎不等於失去。事實上，那個在黑暗中問「我真的得救了嗎」的心——那個還在乎神的心——本身就是聖靈工作的一個記號。因為一個與神毫無關係的人，不會在乎這個問題。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神愛世人，甚至將他的獨生子賜給他們，叫一切信他的，不至滅亡，反得永生。」</p>
+        <p class="scripture-ref">約翰福音 3:16</p>
+      </div>
+
+      <p>「一切信他的」——不是一切感覺得夠好的、一切表現足夠優秀的、一切不再犯罪的。是一切信他的。而你正在讀這篇文章、正在問這個問題、正在尋求神——這本身就是「信」的形狀之一。</p>
+
+      <div class="big-quote">
+        救恩確據不是叫你更努力地審視自己，而是叫你把目光從自己身上移開，轉向那位已經把一切都說清楚了的神。
+        <cite>— 源自約翰一書 5:13 的牧養呼召</cite>
+      </div>
+
+      <p>你不需要等到自己「完美到足以確定」。神的合約從不以你的表現為前提——它以基督的血為前提。那血，已經流了。那工作，已經成了。</p>
+
+      <div class="highlight">
+        <strong>帶走這一句話</strong>
+        你今天的焦慮，不能撤銷神已宣告的「aphesis」。你今天的軟弱，不能磨滅聖靈的「sphragizō」。你今天的眼淚，不能讓那位以「menō」方式住在你裡面的保惠師搬走。你是祂的。這，不會改變。
+      </div>
+
+      <p>讓這份確據，不是成為你驕傲的資本，而是成為你侍奉的根基、愛人的力量、與神同行的安全感。一個知道自己被愛、被保障的人，才能真正自由地去愛別人。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  救贖論系列 · Soteriology Threads · 共六章
+</footer>
+
+</body>
+</html>

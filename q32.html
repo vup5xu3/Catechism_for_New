@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖靈的印記 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SITE HEADER ══ -->
+<header class="site-header">
+  <div class="eyebrow">聖靈印記系列 · Signs of the Spirit</div>
+  <h1>你怎麼知道自己<span>真的得救了？</span></h1>
+  <p class="subtitle">聖靈在得救之人生命中的七大作工特徵 · 六章完整解析</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享／開場
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個讓我輾轉難眠的問題</h2>
+      <p class="card-hook">「我真的得救了嗎？」——這問題你有沒有問過自己？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我有個朋友，信主將近十年了，每次聽完佈道、做完禱告，還是會在夜裡反覆問自己：「我真的得救了嗎？我有沒有足夠虔誠？上帝到底喜不喜歡我？」</p>
+
+      <p>這個問題折磨著她，也折磨著無數基督徒。我們活在一種奇怪的信仰焦慮中——一方面說自己相信恩典，另一方面卻不斷試圖用行為來「確認」自己有沒有資格進天國。</p>
+
+      <div class="highlight">
+        <strong>這個系列要聊什麼</strong>
+        其實聖經從來沒有叫我們活在這種模糊的恐懼裡。《威斯敏斯特信條》第十八章明確告訴我們：真信徒在今生就可以獲得得救的確據。而這確據，是建立在聖靈在我們生命中留下的真實印記上的。
+      </div>
+
+      <p>接下來這六章，我想帶你深入看一件事：聖靈到底在一個「真正得救的人」身上做了什麼？這些改變不是我們表演出來的，也不是靠努力裝出來的。它們是生命真實轉化的有機印記。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「聖靈與我們的心同證我們是神的兒女。」</p>
+        <p class="scripture-ref">羅馬書 8:16</p>
+      </div>
+
+      <p>這一系列文章，是獻給那些曾在夜裡問過那個問題的人。不是要給你一份叫你打勾的checklist，而是要帶你重新認識聖靈那安靜而深刻的作工。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導／進入主題
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">聖靈的工作，不是你想的那樣</h2>
+      <p class="card-hook">在我們進入七大特徵之前，有一個根本的誤解必須先拆除</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>很多人以為，聖靈的工作就是讓你在敬拜時流眼淚、說方言、有超自然的異象和感動。情感越激烈，代表聖靈越多；越平靜，就代表屬靈生命越貧乏。</p>
+
+      <p>但這是一個危險的誤解。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        聖靈的工作更像是一株植物的根系，在土壤深處安靜地蔓延，你在地面上看不見它，但它正在撐起整棵樹的生命。真正的生命改變，往往不是以「爆炸性的情感」呈現，而是以「緩慢的、不可逆的靈魂重塑」體現出來。
+      </div>
+
+      <p>改革宗神學給了我們一個清晰的框架：聖靈在得救之人生命中，從事的是將基督在十字架上所成就的客觀救贖，主觀落實在選民生命中的「動態成聖過程」。這不是一時的情緒高潮，而是一輩子的方向性轉化。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">📌 得救確據的三大支柱</span>
+          神關於救贖的聖潔應許（客觀基礎）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🌿 聖靈結出的恩典果子</span>
+          內在生命的具體改變（主觀證據）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🕊️ 聖靈與信徒靈的同證</span>
+          祂在你心裡輕聲說：你是神的孩子（內在見證）
+        </div>
+      </div>
+
+      <p>這三根柱子缺一不可。而接下來的七大特徵，正是第二根柱子的具體面貌——聖靈在你生命中留下的真實印記，是你可以親眼看見、親身驗證的。</p>
+
+      <div class="highlight">
+        <strong>重要提醒</strong>
+        這七大特徵不是「賺取得救的條件」。它們是重生與聯合於基督之後，自然流露的必然結果。先有根，才有果。先有救恩，才有聖靈的印記。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題／核心一二三
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">認罪、飢渴、明白真理：前三大印記</h2>
+      <p class="card-hook">聖靈在你靈魂裡裝了一個新的「感測器」，讓你以全新的方式看見自己與神</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果說得救是一場靈魂手術，那麼聖靈就是在手術後繼續在你內心工作的醫生。前三大印記，是關於你「如何看見自己的罪」、「如何渴望神」、以及「如何理解聖經」——這三件事，在重生前後有著天壤之別。</p>
+
+      <span class="depth-label deep-tag">🔍 印記一：真誠認罪</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們若認自己的罪，神是信實的、公義的，必要赦免我們的罪，洗淨我們一切的不義。」</p>
+        <p class="scripture-ref">約翰一書 1:9</p>
+      </div>
+
+      <p>「認罪」的希臘原文是 <strong>homologeō</strong>，字面意思是「說相同的話」——就是與神站在同一立場，同意祂對罪的定罪，不再為自己辯護。這是持續性的生命姿態，不是一次性的儀式。</p>
+
+      <div class="term-box">
+        <div class="term-original">Homologeō<br>希臘原文</div>
+        <div class="term-desc">現在時態虛擬語氣，代表「持續、習慣性地承認」。真信徒不會死要面子，也不會把嫉妒說成「追求公平」，把情緒失控說成「心直口快」。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">🔍 印記二：靈裡飢渴</span>
+
+      <p>希伯來文的「切慕」（<strong>taʿărōg</strong>）描繪的不是一隻優雅的鹿在清澈溪邊悠閒喝水，而是一隻被野獸追趕、在烈日下氣喘吁吁、喉嚨乾裂到發出痛苦哀鳴的鹿——牠知道，再找不到水源，就會死。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🦌</span>
+        聖靈在一個得救的人身上做了一場奇妙的「胃口改造手術」：祂把我們對世界名譽、物質安全感的渴望，轉化成對神自己的渴慕。這種渴望不是溫和的宗教情感，而是關乎生死的靈性本能。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">🔍 印記三：明白真理</span>
+
+      <p>聖靈被稱為「真理的靈」，祂的工作是 <strong>hodēgēsei</strong>（引導路途），就像一位資深嚮導，親自拉著你的手，帶你穿越陌生危險的地形。在重生之前讀聖經，像看天書；重生之後，是寫這本書的作者親自陪你讀。</p>
+
+      <div class="highlight">
+        <strong>三大印記的共同本質</strong>
+        這三件事的核心，都是「聖靈重塑了你的內在感知系統」：你如何看待自己的罪（認罪）、你的靈魂飢渴指向誰（渴慕）、你如何理解永恆的真相（明白真理）。這些改變，不是你努力做到的，而是聖靈在你心裡主動施行的。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究／深度四五
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">管教與果子：神學最深的兩塊拼圖</h2>
+      <p class="card-hook">印記四五——從「天父的修剪」到「有機生長的生命」，這兩件事比你想的更奇妙</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 印記四：父神的管教</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「主所愛的，他必管教，他又鞭打凡接納為兒子的。」</p>
+        <p class="scripture-ref">希伯來書 12:6</p>
+      </div>
+
+      <p>在古羅馬帝國的法律體系中，<strong>paideia</strong>（管教）是父親對「法定繼承人」才捨得花重金進行的全面培育——包含知識、體魄與嚴格的道德約束。至於街頭的流浪兒，根本沒人管他們。</p>
+
+      <div class="term-box">
+        <div class="term-original">Paideia<br>希臘原文</div>
+        <div class="term-desc">不是懲罰，而是「合法繼承人的精英培育計畫」。信徒若生活中完全沒有神糾正的督責，在神學上非但不是得寵的明證，反而是靈性虛假的徵兆。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🦴</span>
+        手骨折之後，打完鋼釘，醫生會強迫你做極其痛苦的復健治療。在復健師幫你拉扯僵硬的肌肉時，你會疼到流淚。但如果你因為怕疼而放棄復健，你的手就會終身殘廢。上帝允許的管教，正是這種靈魂的復健——疼痛是恢復的代價，而非懲罰的結果。
+      </div>
+
+      <p>管教的本質不是神帶著憤怒的報復。信徒一切的罪咎與刑罰，已在基督的十字架上被完全承擔。管教是聖靈在信徒心中施行的「成聖雕琢」，其目的是結出「平安的公義果子」。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 印記五：聖靈的果子</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「但聖靈的果子是：愛心、喜樂、平安、忍耐、仁慈、良善、忠實、溫柔、節制。」</p>
+        <p class="scripture-ref">加拉太書 5:22-23</p>
+      </div>
+
+      <p>保羅在這裡有一個精心的語法選擇：「肉體的行為」是複數（erga），代表分裂混亂；「聖靈的果子」是單數（<strong>karpos</strong>），代表整全統一。九種美德不是九顆分開的果實，而是同一顆果子的九個瓣。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">❤️ 愛（Agapē）</span>
+          根本核心——其餘八種美德，都是「愛」在不同處境下折射出的多維度光譜
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">😊 喜樂、平安、忍耐</span>
+          愛在「內在狀態」的呈現——不因環境起伏的靈魂安定
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🤝 仁慈、良善、忠實</span>
+          愛在「人際關係」的流露——對他人散發的溫暖與可靠
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌿 溫柔、節制</span>
+          愛在「自我管理」的彰顯——對肉體情慾的屬天統治力
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>果子 vs. 人造花</strong>
+        靠自身意志遵守道德條規而行善的人，其行為是機械式、勉強的。真信徒因為聯合於基督這生命泉源，聖靈的果子是生命成熟的自然溢出。這是漫長、有機、無法靠人為催熟的生命特徵。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論／六七
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">厭惡罪惡與知足人生：最被低估的兩大印記</h2>
+      <p class="card-hook">印記六七——聖靈不只改變你的行為，祂改變的是你靈魂深處的「道德品味」與對人生的根本態度</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">🔬 印記六：厭惡罪惡，喜愛良善</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「你喜愛公義，恨惡不法，所以神，就是你的神，用喜樂的油膏抹你。」</p>
+        <p class="scripture-ref">希伯來書 1:9</p>
+      </div>
+
+      <p>這節經文原本是父神對彌賽亞基督的頌讚，但因為信徒透過信心與基督聯合，基督本有的道德情感取向，開始藉由內住的聖靈，印刻並重塑在信徒的心靈結構中。</p>
+
+      <p>關鍵在於兩個動詞的時態：<strong>ēgapēsas</strong>（你喜愛）與 <strong>emisesas</strong>（你恨惡），都是「不定過去時主動直陳語氣」——描述一種已經完成、穩定成形的人格傾向，而非一時的情緒波動。</p>
+
+      <div class="term-box">
+        <div class="term-original">Miseō<br>希臘原文</div>
+        <div class="term-desc">不是「勉強不去做壞事」，而是一種本能上對罪惡的極度排斥與loathing（強烈厭惡）。就像一個習慣居住在香氣四溢房間的人，走進垃圾堆旁本能地感到噁心——不是因為被威脅，而是品味已經改變了。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>律法性順服 vs. 福音性順服</strong>
+        未重生的人雖然在行為上避開罪惡，但內心深處其實依然「喜愛不法」，不敢犯罪只是出於對地獄的恐懼。被聖靈重生的信徒，不再需要靠恐懼來約束自己——因為聖靈已重塑了他的「道德品味」，使他對罪惡本能地感到排斥，對公義純粹地感到熱愛。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">🔬 印記七：知足的人生</span>
+
+      <div class="scripture">
+        <p class="scripture-text">「人若喝我所賜的水就永遠不渴。我所賜的水要在他裡頭成為泉源，直湧到永生。」</p>
+        <p class="scripture-ref">約翰福音 4:14</p>
+      </div>
+
+      <p>耶穌在對話中做了一個深刻的對比：婦人面對的是「雅各的深井」（phrear——需要人類不斷付出勞力、極易乾涸的死水），而耶穌所賜的是內在的「活水泉源」（pēgē——地底活水自發向外噴湧的源頭）。</p>
+
+      <div class="term-box">
+        <div class="term-original">Hallomenou<br>希臘原文</div>
+        <div class="term-desc">「歡樂地跳躍」——原指瘸腿的人得醫治後雀躍起跳。耶穌用這個詞描述聖靈在信徒靈魂深處的活水，說那活水不是死水一潭，而是充滿生命力、歡樂地向外奔湧的。</div>
+      </div>
+
+      <p>清教徒神學家耶利米·巴勒斯（Jeremiah Burroughs）將這種「知足」（autarkeia）定義為：一種甘心順服、並以天父在任何環境下的智慧安排為樂的內在安靜靈魂框架。這不是斯多亞哲學式的冷漠壓抑，而是因靈魂在基督聯合中找到了不隨環境起伏的屬天喜樂。</p>
+
+      <div class="big-quote">
+        現代人的不快樂，根本上是一個「泉源錯置」的問題——我們不斷從外面的深井打水，卻不知道活水的源頭早已安置在心裡。
+        <cite>— 約翰福音 4章的神學啟示</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章：結論與溫馨
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你不是孤單地對著天空喊叫的人</h2>
+      <p class="card-hook">這七大印記，不是讓你更焦慮的清單，而是讓你重新看見，聖靈一直都在</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們走完了這七大印記——真誠認罪、靈裡飢渴、明白真理、承受管教、結出果子、厭惡罪惡、知足人生。這一整個系列，說的其實只有一件事：</p>
+
+      <p>聖靈在你生命裡，從來不是一個你必須靠「足夠虔誠」才能請來的神秘客人。祂是在你重生的那一刻，就已經住進你裡面的同伴、老師、辯護律師、嚮導與安慰者。</p>
+
+      <div class="highlight">
+        <strong>七大印記的有機整體</strong>
+        從起初破除自傲、生發對罪惡敏感的真誠認罪，到靈魂胃口被徹底改變的聖潔飢渴，再到在理性黑暗中蒙受真理指路人引導的超自然啟迪，信徒在成長過程中必然經歷父神愛的修剪，在與基督聯合的根基上，聖靈那如同單數包裝（karpos）般綜合運作的九種美德，以及信徒內在對罪惡的本能厭惡與對公義的純粹珍視，最終化為在任何環境下皆能自發噴湧的屬天知足與喜樂。
+      </div>
+
+      <p>《威斯敏斯特信條》第十八章有一段話，我每次讀都很感動。它說：真信徒的得救確據，在今生的風浪中可能會因著自身的疏忽、偶爾落入的嚴重罪惡、撒旦猛烈的試探，或是上帝暫時隱藏祂笑臉的試煉，而出現動搖、減弱、甚至暫時中斷的光景。</p>
+
+      <p>但是——</p>
+
+      <p>「得救之人的靈魂深處，那由聖靈親自種下的恩典之錨與生命種子，絕不會徹底消亡。」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「那在你們心裡動了善工的，必成全這工，直到耶穌基督的日子。」</p>
+        <p class="scripture-ref">腓立比書 1:6</p>
+      </div>
+
+      <p>所以如果你今天問自己：「我真的得救了嗎？」——不要去翻你最近有沒有做得夠好。而是安靜下來，往靈魂深處看一看：</p>
+
+      <p>你會認罪嗎？你渴慕神嗎？你被聖經改變過嗎？你感受過神的管教嗎？你的生命有沒有哪個角落，比幾年前更溫柔、更知足、更厭惡謊言？</p>
+
+      <p>如果有，那不是你的功勞。那是聖靈的印記。那是祂對你說：我在這裡，我一直都在。</p>
+
+      <div class="big-quote">
+        你不需要完美，才能確定自己被愛。你只需要誠實地看見，聖靈在你生命裡留下的那些安靜而真實的印記。
+        <cite>— 這個系列的核心信念</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>帶走一個問題</strong>
+        今天，在你一天的繁忙結束之前，問自己一個問題：這七大印記中，哪一個你在自己生命裡看到了？哪一個你還在等待聖靈繼續深化？把你的答案輕輕地帶到禱告裡，交給那位親自動了這善工的神。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  聖靈印記系列 · Signs of the Spirit · 六章完整版
+</footer>
+
+</body>
+</html>
