@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>榮耀的塑造路徑 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '\201C';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+.section-gap { height: 8px; }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">成聖系列 · Sanctification Series</div>
+  <h1>榮耀的<span>塑造路徑</span></h1>
+  <p class="subtitle">神如何造就兒女與主同享榮耀的五重屬靈路徑</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Opening</div>
+      <h2 class="card-title">你有沒有想過，痛苦可以是禮物？</h2>
+      <p class="card-hook">不是那種讓人假裝感恩的「毒雞湯」——而是一份真實的、有設計圖紙的禮物。</p>
+    </div>
+    <div class="card-body">
+      <p>有一段時間，我每次禱告，都像是在對著空氣說話。工作陷入瓶頸，一段很重要的關係無聲無息地破裂，甚至連信仰本身，也開始在某些夜晚顯得搖搖欲墜。我開始問：「如果神真的愛我，為什麼讓我走這條路？」</p>
+
+      <p>我相信，這個問題你也問過。也許此刻你正在問。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✉️</span>
+        後來，我在一位老弟兄的書桌上看到一句被他用紅筆反覆圈起的話：「我們曉得萬事都互相效力，叫愛神的人得益處。」（羅馬書 8:28）他告訴我，他年輕時視這句話為陳腔濫調；到了七十歲，他說，這是他一生中讀過最沉重、最精確的一句話。
+      </div>
+
+      <p>這個系列，我想帶你走進聖經裡一張隱秘的「藍圖」——神造就祂兒女的五重塑造路徑。這不是一份安慰人的文字，而是一份有原文根據、有神學骨架、有生命溫度的地圖。</p>
+
+      <div class="highlight">
+        <strong>這個系列為你準備</strong>
+        如果你正在某種困難中；如果你對苦難充滿疑問；如果你渴望明白神到底在你的生命裡做什麼——這六篇文章，就是為你寫的。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Orientation</div>
+      <h2 class="card-title">先別急著找答案——讓我們先看清問題的形狀</h2>
+      <p class="card-hook">許多人對苦難的誤解，不是因為信仰不夠深，而是因為問的問題本身就問錯了方向。</p>
+    </div>
+    <div class="card-body">
+      <p>大多數人在苦難中的第一個問題是：「為什麼是我？」這個問題背後藏著一個預設：苦難是一種懲罰，或者是一種意外。</p>
+
+      <p>但聖經告訴我們，這個預設是根本性的誤判。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們曉得萬事都互相效力，叫愛神的人得益處，就是按他旨意被召的人。因為他預先所知道的人，就預先定下效法他兒子的模樣，使他兒子在許多弟兄中作長子。」</p>
+        <p class="scripture-ref">羅馬書 8:28–29</p>
+      </div>
+
+      <p>注意第 29 節的邏輯：神的目的不是讓你過得舒服，而是讓你「效法他兒子的模樣」。苦難的終點站，是榮耀——是與基督同享榮耀。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">❌ 錯誤的問題框架</span>
+          「神為什麼讓這件壞事發生？」——預設苦難是失控的懲罰
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">✅ 正確的問題框架</span>
+          「神正在這件事裡做什麼？」——預設苦難是主權的工具
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔭 更深的問題框架</span>
+          「神要把我塑造成什麼樣子？」——預設苦難是榮耀的路徑
+        </div>
+      </div>
+
+      <p>帶著這個框架，我們才能真正開始閱讀那五條塑造路徑。每一條，都是天父精心設計的恩典手段。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · The Five Paths</div>
+      <h2 class="card-title">五把刻刀：神塑造兒女的方法論</h2>
+      <p class="card-hook">修理、熬煉、管教、爭戰、磨難——每一把刻刀都有名字，每一刀都有目的。</p>
+    </div>
+    <div class="card-body">
+      <p>聖經不是一本抽象的哲學書，它用極其具體的動詞和隱喻，描述神在人生命中的工作方式。當你把這五條路徑並排放在一起，你會看見一幅令人震驚的、系統性的成聖藍圖。</p>
+
+      <span class="depth-label plain-tag">💡 五重路徑總覽</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">✂️ 一、修理（修剪）</span>
+          剪去生命中消耗能量卻無果效的枝條，重新定向屬靈潛能。（約翰福音 15:2）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🔥 二、熬煉（精煉）</span>
+          用高溫除去靈魂中罪的雜質，直至反映出基督的榮美形象。（詩篇 66:10；彼前 1:6-7）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🏛️ 三、管教（訓練）</span>
+          以合法兒子的身份接受頂級屬靈教育，操練聖潔的「體魄」。（希伯來書 12:5-11）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">⚔️ 四、爭戰（試煉）</span>
+          在每一個道德抉擇的交叉口上，選擇站立而非跌倒，增長愛主的心。（雅各書 1:12-15）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🌊 五、磨難（逼迫）</span>
+          因「逆行」於世界系統而承受的碰撞，是屬天身份的榮耀印記。（提摩太後書 3:12）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>重要前提</strong>
+        這五條路徑不是平行線，而是有機交織的。在你生命的同一個困難裡，可能同時有「熬煉」在除去驕傲、「管教」在矯正方向、「爭戰」在考驗意志。神是全能的匠人，祂從不浪費一次苦難。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Original Languages</div>
+      <h2 class="card-title">當我們把聖經翻譯回原文，看見了什麼？</h2>
+      <p class="card-hook">希伯來文和希臘文裡，藏著中文譯本無法完整傳達的震撼細節。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 原文考據層次</span>
+
+      <p>許多人讀聖經時感覺「道理都懂，但就是沒有力量」，很可能是因為翻譯版本必然會失去某些原文的精確衝擊力。讓我們回到源頭，看幾個讓學者們屏息的字。</p>
+
+      <div class="term-box">
+        <div class="term-original">kathairo<br>καθαίρω</div>
+        <div class="term-desc">約翰福音 15:2「修理」的希臘文字根直指 katharos（乾淨/無罪）。這個字不是「懲罰」，而是「潔淨」——園丁在修剪活枝時，是在進行一項「促進生命的必要工作」，而非傷害。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">tsaraph<br>צָרַף</div>
+        <div class="term-desc">詩篇 66:10「熬煉」的希伯來文，是古代冶金的專業術語。古代銀匠必須在熔爐旁寸步不離，因為多燒一秒，銀子就會瞬間氣化毀壞。神的同在不是詩意的比喻——而是冶金操作的必要條件。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">paideia<br>παιδεία</div>
+        <div class="term-desc">希伯來書 12 章「管教」的希臘文，在古羅馬世界是「貴族繼承人的頂級教育」。奴隸或私生子無資格接受。信徒承受神的管教，本身就是合法兒子身份的確認。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">peirasmos<br>πειρασμός</div>
+        <div class="term-desc">雅各書 1 章「試煉」這個詞同時包含「試驗（神主動）」與「試探（撒旦利用）」兩種維度。同一個困難，對神而言是升級機會，對仇敵而言是陷阱誘餌。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">dioko<br>διώκω</div>
+        <div class="term-desc">提後 3:12「受逼迫」的希臘文字意為「窮追不捨的追捕」，且使用被動語態——磨難是主動向信徒而來的，不是信徒自找麻煩。這種被追趕，是因為你選擇了逆行。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>原文的核心啟示</strong>
+        這五個字有一個共同點：它們全都不是「懲罰」的語言，而是「塑造」的語言——修剪、精煉、教育、試驗、追趕——每一個字都在描述一個主動的、有方向的、充滿目的的工作。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Theology</div>
+      <h2 class="card-title">苦難神學的系統建構：從成聖到榮耀化</h2>
+      <p class="card-hook">這五重路徑不是五個獨立的故事，而是一個有機的、漸進的屬靈上升通道，指向同一個終點。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 系統神學層次</span>
+
+      <p>在基督教神學裡，成聖（Sanctification）與榮耀化（Glorification）是救贖歷程中的兩個關鍵階段。苦難，就是連接這兩個階段的橋梁——而五重塑造路徑，就是這座橋的五根橋墩。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們曉得萬事都互相效力……預先定下效法他兒子的模樣……他所召來的人又稱他們為義；所稱為義的人，又叫他們得榮耀。」</p>
+        <p class="scripture-ref">羅馬書 8:28–30</p>
+      </div>
+
+      <p>神學家把這段話稱為「黃金鏈」（Golden Chain）——從預知到預定、從呼召到稱義、從稱義到榮耀，每一個環節都是神主動、不可撤回的工作。苦難不是鏈條的斷裂，而是鏈條被拉緊的聲音。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏺</span>
+        先知耶利米曾被帶到陶匠的家，看見陶匠把做壞的器皿重新揉製（耶利米書 18:4）。陶匠並非丟棄了那塊泥，他繼續工作。那個「做壞」的時刻，不是廢品的宣告，而是重塑的起點。神對祂兒女的工作，正是這樣——祂從不丟棄，祂重塑。
+      </div>
+
+      <p>這五重路徑呈現出一個神學上的完整邏輯：修理清空了虛假的依靠，熬煉暴露並除去了隱藏的罪性，管教塑造了聖潔的品格，爭戰鍛鍊了意志的忠誠，而磨難則最終確認了信徒不屬這世界的神聖身份。</p>
+
+      <div class="big-quote">
+        神使萬事互相效力——這裡的「萬事」，包含你最不願意發生的那一件事。
+        <cite>— 羅馬書 8:28 的神學詮釋</cite>
+      </div>
+
+      <p>神學家卡森（D.A. Carson）指出：約翰福音十五章中，結實纍纍是真門徒不可或缺且無可謬誤的記號。這意味著修剪的過程雖然帶來痛楚，卻是進入豐盛生命的必然入口。五重路徑的終點，不是更多的苦難，而是與基督同享的永恆榮耀。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第六章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Closing</div>
+      <h2 class="card-title">你正在被塑造，不是被遺棄</h2>
+      <p class="card-hook">在你最感到孤單、最難以理解的時刻，有一位匠人正守候在旁，凝視著你，精準地控制著溫度的極限。</p>
+    </div>
+    <div class="card-body">
+
+      <p>讀到這裡，我想對你說的，不是更多的神學——而是一句非常簡單的話：你正在被塑造，不是被遺棄。</p>
+
+      <p>你生命中那個讓你最困惑、最痛苦的處境，不是上帝的疏失，不是命運的惡意，不是你不夠好的懲罰。那是一位全能的天父，正在用祂最精準的手，塑造祂最愛的孩子。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們這至暫至輕的苦楚，要為我們成就極重無比、永遠的榮耀。」</p>
+        <p class="scripture-ref">哥林多後書 4:17</p>
+      </div>
+
+      <p>保羅寫下這句話的時候，他正在監獄裡。他說的「至暫至輕」，是在描述鞭打、石打、船破、流浪、冷餓的一生。如果連這樣的人生都能被稱為「輕微」，那是因為他已經看見了另一端那份「極重無比、永遠的榮耀」——而那份榮耀，是這五重路徑共同指向的終點。</p>
+
+      <div class="highlight">
+        <strong>帶走這五句話</strong>
+        修理時，神說：我要讓你結出更多果子。熬煉時，神說：我守在爐旁，從未離開。管教時，神說：這是我合法兒女才有的特權。爭戰時，神說：我在看你選擇。磨難時，神說：你不屬於這個世界——這是榮耀的記號。
+      </div>
+
+      <div class="big-quote">
+        你不是在受苦，你是在被塑造。而那位塑造你的，知道終點在哪裡。
+        <cite>— 羅馬書 8:29</cite>
+      </div>
+
+      <p>下一次當你在某種困難中，嘗試不再先問「為什麼」，而是先問「祢在這裡做什麼？」——那個問題的轉換，本身就是信心最真實的樣貌。</p>
+
+      <p>願你在被塑造的路上，感受到那雙守候的手。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+<footer class="site-footer">
+  榮耀的塑造路徑 · Glory Shaped Through Grace · 六章連貫系列
+</footer>
+
+</body>
+</html>
