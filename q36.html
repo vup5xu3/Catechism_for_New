@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>聖徒末世終局 — Threads 系列</title>
+<title>聖徒將來的景況——Threads 系列</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
+
 :root {
   --gold:            #C9A84C;
   --gold-light:      #E8D5A3;
@@ -18,7 +19,9 @@
   --smoke:           #6B6355;
   --cream:           #FAF6EE;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
   background: var(--ink);
   font-family: 'Noto Serif TC', serif;
@@ -26,6 +29,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
+
 body::before {
   content: '';
   position: fixed;
@@ -38,6 +42,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
 .site-header {
   position: relative;
   z-index: 10;
@@ -45,6 +50,7 @@ body::before {
   padding: 80px 24px 60px;
   border-bottom: 1px solid rgba(201,168,76,0.2);
 }
+
 .site-header .eyebrow {
   font-family: 'Cinzel', serif;
   font-size: 11px;
@@ -54,6 +60,7 @@ body::before {
   margin-bottom: 20px;
   opacity: 0.8;
 }
+
 .site-header h1 {
   font-size: clamp(32px, 6vw, 64px);
   font-weight: 900;
@@ -62,13 +69,16 @@ body::before {
   margin-bottom: 16px;
   text-shadow: 0 0 60px rgba(201,168,76,0.3);
 }
+
 .site-header h1 span { color: var(--gold); }
+
 .site-header .subtitle {
   font-size: 15px;
   color: rgba(247,240,227,0.5);
   font-weight: 300;
   letter-spacing: 1px;
 }
+
 .thread-line {
   display: flex;
   justify-content: center;
@@ -82,6 +92,7 @@ body::before {
   background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
   display: block;
 }
+
 .chapter {
   position: relative;
   z-index: 5;
@@ -89,6 +100,7 @@ body::before {
   margin: 0 auto;
   padding: 0 20px;
 }
+
 .card {
   background: var(--parchment);
   border-radius: 4px;
@@ -104,6 +116,7 @@ body::before {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
 }
+
 .card::before {
   content: '';
   position: absolute;
@@ -116,6 +129,7 @@ body::before {
 .card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
 .card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
 .card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
 .card.final {
   background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
 }
@@ -129,11 +143,13 @@ body::before {
 .card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
 .card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
 .card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
 .card-header {
   padding: 32px 36px 24px 44px;
   border-bottom: 1px solid rgba(26,18,8,0.08);
   position: relative;
 }
+
 .chapter-tag {
   display: inline-flex;
   align-items: center;
@@ -163,6 +179,7 @@ body::before {
 .card.blue   .chapter-tag .num { background: #2D4A7A; }
 .card.purple .chapter-tag .num { background: #4A2D7A; }
 .card.final  .chapter-tag .num { background: var(--ink); }
+
 .card-title {
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
@@ -170,6 +187,7 @@ body::before {
   color: var(--ink);
   margin-bottom: 8px;
 }
+
 .card-hook {
   font-size: 14px;
   color: var(--smoke);
@@ -177,6 +195,7 @@ body::before {
   font-style: italic;
   line-height: 1.6;
 }
+
 .card-body {
   padding: 28px 36px 32px 44px;
 }
@@ -188,6 +207,7 @@ body::before {
   font-weight: 400;
 }
 .card-body p:last-child { margin-bottom: 0; }
+
 .highlight {
   background: var(--parchment-dark);
   border-left: 3px solid;
@@ -204,6 +224,7 @@ body::before {
 .card.blue   .highlight { border-color: #4A6A9A; }
 .card.purple .highlight { border-color: #7A4A9A; }
 .card.final  .highlight { border-color: var(--gold); }
+
 .highlight strong {
   display: block;
   font-size: 12px;
@@ -213,6 +234,7 @@ body::before {
   margin-bottom: 6px;
   font-family: 'Noto Sans TC', sans-serif;
 }
+
 .scripture {
   text-align: center;
   padding: 20px 24px;
@@ -243,6 +265,7 @@ body::before {
   color: var(--smoke);
   text-transform: uppercase;
 }
+
 .analogy {
   background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
   border: 1px solid rgba(201,168,76,0.2);
@@ -259,6 +282,7 @@ body::before {
   margin-bottom: 8px;
   display: block;
 }
+
 .big-quote {
   text-align: center;
   padding: 28px 20px;
@@ -286,6 +310,7 @@ body::before {
   margin-top: 12px;
   font-family: 'Cinzel', serif;
 }
+
 .term-box {
   display: flex;
   gap: 12px;
@@ -305,6 +330,7 @@ body::before {
   line-height: 1.7;
   color: var(--smoke);
 }
+
 .depth-label {
   display: inline-block;
   font-family: 'Noto Sans TC', sans-serif;
@@ -318,6 +344,7 @@ body::before {
 }
 .depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
 .depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
 .concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
 .concentric-ring {
   padding: 12px 16px 12px 24px;
@@ -337,12 +364,15 @@ body::before {
 .r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
 .r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
 .r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
 .card-divider {
   height: 1px;
   background: rgba(26,18,8,0.08);
   margin: 20px 0;
 }
+
 .section-gap { height: 8px; }
+
 .site-footer {
   position: relative;
   z-index: 5;
@@ -353,17 +383,19 @@ body::before {
   letter-spacing: 2px;
   font-family: 'Cinzel', serif;
 }
+
 @media (max-width: 480px) {
   .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
 }
+
 </style>
 </head>
 <body>
 
 <header class="site-header">
   <div class="eyebrow">末世論系列 · Eschatology Series</div>
-  <h1>聖徒的<span>末世終局</span></h1>
-  <p class="subtitle">復活、被提、審判台——你我將要經歷的宇宙大事</p>
+  <h1>聖徒將來的<span>景況</span></h1>
+  <p class="subtitle">被提、賬目、婚宴、同作王——信耶穌之後，你的未來比你想像的更真實</p>
 </header>
 
 
@@ -372,29 +404,33 @@ body::before {
 
 <div class="chapter">
   <div class="card gold">
-    <div class="card-header">
-      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
-      <h2 class="card-title">有一件事，比死亡更確定</h2>
-      <p class="card-hook">每個人都知道自己會死。但很少人知道，死亡之後還有更壯觀的事在等著。</p>
-    </div>
-    <div class="card-body">
-      <p>我第一次讀到帖撒羅尼迦前書第四章，是在大學宿舍的深夜。窗外是嘈雜的城市，我卻突然覺得時間靜止了——保羅在那裡描述的，不是一首詩，不是一個比喻，而是一件他相信必然發生的宇宙級事件。</p>
 
-      <p>他說：主要親自從天降臨。死去的人先復活。活著的人眨眼間被改變，被奪取到空中，從此與主永遠同在。</p>
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Share</div>
+      <h2 class="card-title">有一天號角要響——那一刻你在哪裡？</h2>
+      <p class="card-hook">許多人信耶穌多年，卻從來沒有想過：主來的那一天，我準備好了嗎？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我第一次讀到帖撒羅尼迦前書第四章，心裡有一種說不出來的震動。不是恐懼，是那種「原來是這樣」的震驚——原來聖經講的「天堂」，不是一個人悄悄地閉眼睡去、靈魂飄走這麼簡單。</p>
+
+      <p>聖經說的是號角。是呼叫的聲音。是已過世的聖徒身體從死亡中復活，是還活著的我們身體在眨眼之間徹底改變，然後一起——一起——被接到空中，與主相遇。</p>
 
       <div class="scripture">
-        <p class="scripture-text">「因為主必親自從天降臨……那在基督裡死了的人必先復活。以後我們這活著還存留的人必和他們一同被提到雲裡，在空中與主相遇。這樣，我們就要和主永遠同在。」</p>
-        <p class="scripture-ref">帖撒羅尼迦前書 4:16-17</p>
+        <p class="scripture-text">「主必親自從天降臨，有呼叫的聲音和天使長的聲音，又有神的號吹響；那在基督裡死了的人必先復活。以後我們這活著還存留的人必和他們一同被提到雲裡，在空中與主相遇。這樣，我們就要和主永遠同在。」</p>
+        <p class="scripture-ref">帖撒羅尼迦前書 4:16–17</p>
       </div>
 
-      <p>在那個深夜，我意識到：如果這是真的，那麼我對生命的全部計算方式都需要重新校正。</p>
+      <p>這不是隱喻，不是詩意的說法。這是一個將要發生的事件——有聲音、有動作、有時間點。聖經用「一霎時，眨眼之間」來描述那個身體改變的速度（哥林多前書 15:52）。</p>
 
       <div class="highlight">
-        <strong>這個系列想陪你做的事</strong>
-        接下來六篇，我們不只是討論「末世」這個神學科目。我們要一起正視一個問題：如果主明天就回來，你今天的生活，會有什麼不一樣？
+        <strong>今天想帶你思考的問題</strong>
+        如果號角今天響起，你在哪裡？你準備好了嗎？這不是要嚇你，而是聖經邀請我們認真想的一件事。接下來六章，我們一起慢慢拆開這個問題。
       </div>
 
-      <p>這不是叫你恐懼，而是邀請你進入一種更清醒、更燃燒的活法。讓我們從最基本的問題開始——那件「比死亡更確定的事」，到底是什麼？</p>
+      <p>這個系列不是要給你焦慮，而是要給你方向。因為聖經從來不講「末世」只是要讓你害怕——它講末世，是要讓你今天就活得更有盼望、更有目的。</p>
+
     </div>
   </div>
 </div>
@@ -407,39 +443,40 @@ body::before {
 
 <div class="chapter">
   <div class="card red">
+
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">2</span> Guide · 引導</div>
-      <h2 class="card-title">你的身體，將被換掉</h2>
-      <p class="card-hook">聖經說的「復活」，不是靈魂飄上雲端——而是一場宇宙級的身體大革命。</p>
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Guide</div>
+      <h2 class="card-title">十個女孩在等新郎——你是哪一種？</h2>
+      <p class="card-hook">她們都信主、都有燈、燈都亮著。那為什麼有五個被關在門外？</p>
     </div>
+
     <div class="card-body">
-      <p>很多基督徒心裡有個模糊的圖像：死後靈魂升天，輕飄飄地在雲上彈琴，從此告別這個令人疲憊的肉身。但保羅的末世神學，根本不是這麼說的。</p>
 
-      <p>他在哥林多前書第十五章鄭重宣告：「血肉之體不能承受神的國」——但這不代表身體無關緊要。恰恰相反，正因為血肉之體有其局限，所以神要做一件更偉大的事：<strong>把它置換掉</strong>。</p>
+      <p>馬太福音第二十五章有一個比喻，我每次讀都不舒服——但我認為這種不舒服是神給的禮物。</p>
 
-      <div class="scripture">
-        <p class="scripture-text">「我們不是都要睡覺，乃是都要改變，就在一霎時，眨眼之間，號筒末次吹響的時候。因號筒要響，死人要復活成為不朽壞的，我們也要改變。」</p>
-        <p class="scripture-ref">哥林多前書 15:51-52</p>
-      </div>
-
-      <span class="depth-label deep-tag">📖 原文線索</span>
-      <p>保羅用的希臘字是 ἀλλάσσω（allássō）——「置換、以一物交換另一物」。這個字在羅馬書 1:23 出現過，描述人類的墮落：把神的榮耀「置換」為必朽壞的偶像形象。那是人類主動選擇的悲劇性降格。</p>
-
-      <div class="term-box">
-        <div class="term-original">ἀλλάσσω<br>allássō</div>
-        <div class="term-desc">「使之不同、以一物交換另一物」。在末世事件中，主動置換的那位不再是墮落的人，而是創造與復活的神——這是宇宙 devolution（退化史）的極致逆轉與昇華。</div>
-      </div>
-
-      <div class="card-divider"></div>
-
-      <span class="depth-label plain-tag">💡 白話說明</span>
+      <p>十個童女，都拿著燈出去迎接新郎。她們都是信主的人，燈都亮著，都在等候。唯一的差別，是五個有帶備用的油，五個沒有。</p>
 
       <div class="analogy">
-        <span class="analogy-icon">📱</span>
-        想像你的舊手機：打字慢、電池撐不住、鏡頭糊、隨時當機。現在，廠商說要直接給你換一支全新旗艦機——不是修舊的，是完全換新的。你的資料（你這個人）完整保留，但硬體（身體）從根本上升級了。這就是保羅說的「allássō」——一個眨眼之間完成的神聖置換。
+        <span class="analogy-icon">🪔</span>
+        想像你去參加一場重要的晚宴，知道可能等很久，你會只帶夠走到門口的油，還是會多帶一罐備用？「聰明的童女」不是比較虔誠，她們只是比較有預備心。
       </div>
 
-      <p>這件事不是我們修煉達成的，不是我們靈命夠高才能獲得的獎品。它是神主動施行的「身體救贖」——屬於所有在基督裡的人。下一章，我們要破解一個更大的問題：這場置換，具體怎麼發生？</p>
+      <p>新郎來到的時候，沒有備用油的五個去買油，但等她們回來，門關了。她們敲門說：「主啊，主啊，給我們開門！」主的回答讓人心驚：「我實在告訴你們，我不認識你們。」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「聰明的拿著燈，又預備油在器皿裡。」</p>
+        <p class="scripture-ref">馬太福音 25:4</p>
+      </div>
+
+      <p>這裡的「油」，在聖經的語境裡代表聖靈的充滿。燈是信仰本身，但讓燈持續燃燒的，是油——是聖靈持續的工作在我們生命裡。</p>
+
+      <div class="highlight">
+        <strong>值得停下來問自己</strong>
+        你上一次被聖靈充滿是什麼時候？信主不是一次的事件就結束，就像燈不是加一次油就永遠燃燒。這個比喻的核心不是「有沒有信主」，而是「有沒有持續預備」。
+      </div>
+
+      <p>這個比喻是耶穌對我們的提醒，不是定罪，是邀請。邀請我們今天就去預備那個「備用的油」——讓聖靈在你生命裡持續工作，不只是在你方便的時候。</p>
+
     </div>
   </div>
 </div>
@@ -452,48 +489,48 @@ body::before {
 
 <div class="chapter">
   <div class="card deep">
+
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">3</span> Thesis · 破題</div>
-      <h2 class="card-title">被「奪走」，是一種凱旋</h2>
-      <p class="card-hook">「被提」這兩個字，原文不是溫柔地被接走——而是被強力攫取、無法抗拒的奪回。</p>
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Thesis</div>
+      <h2 class="card-title">被提不是自動的——聖經說需要「資格」</h2>
+      <p class="card-hook">這是很多人聽了會不舒服的一句話，但這是聖經白紙黑字寫的。</p>
     </div>
+
     <div class="card-body">
-      <p>「Rapture」這個詞讓很多人想到逃難的畫面：趁黑夜偷偷撤退，留下一堆空衣服嚇壞旁人。但這完全誤讀了原文的力道。</p>
 
-      <span class="depth-label deep-tag">📖 原文破解</span>
+      <p>我在教會長大，從小聽到的版本是：「信耶穌就得救，主來的時候你就被提走了。」這句話沒有錯，但它不完整。聖經呈現的圖像，比「信了就安全」複雜得多，也豐富得多。</p>
 
-      <div class="term-box">
-        <div class="term-original">ἁρπάζω<br>harpázō</div>
-        <div class="term-desc">「強力奪取、突然攫取、從危險中搶救」。世俗希臘語中用於野狼抓住小羊、強盜搶奪，或從烈火中奮力搶出某人。原文時態為「神聖被動態」——動作的主動者是神，力量不可抗拒。</div>
-      </div>
-
-      <p>另一個常與末世連結的字，是 κλέπτω（kléptō，偷竊）——主的日子「像賊」一樣來到，強調的是隱密與突發。但描述聖徒被接去的動詞卻是完全不同的 harpázō——有力、公開、不可抗拒。</p>
-
-      <div class="highlight">
-        <strong>神學洞察</strong>
-        被提不是一場悄悄進行的撤退。它是元帥基督在眾靈界權勢面前，以不可抗拒的凱旋之姿，將祂在十字架上買贖回來的產業，從舊世界系統中強行、合法地「奪回」——接入空中的婚宴與同在之中。
-      </div>
+      <p>被提的資格，聖經給出了三條清晰的線索：</p>
 
       <div class="concentric">
         <div class="concentric-ring r1">
-          <span class="ring-label">🦁 強力攫取（harpázō）</span>
-          動作主詞是基督，不是信徒。這是神的主權行動，與人的靈命狀態無關的恩典基礎。
+          <span class="ring-label">🪔 常被聖靈充滿</span>
+          成為「聰明的童女」——不只是信主，而是持續讓聖靈充滿你的生命（太 25:1–12）
         </div>
         <div class="concentric-ring r2">
-          <span class="ring-label">⚡ 眨眼之間（allássō）</span>
-          身體的置換在一霎時完成——不是漸進的修煉，而是主動的神聖置換。
+          <span class="ring-label">💼 把才幹用出來</span>
+          把神交給你的恩賜和才能拿去服事、拿去賺取——而不是埋起來（太 25:14–30；路 19:12–26）
         </div>
-        <div class="concentric-ring r3">
-          <span class="ring-label">☁️ 空中相遇（ἀπάντησις）</span>
-          在古代文化中，城市居民出城「迎接」凱旋而歸的君王，然後陪同他入城——這是得勝者的隆重歡迎儀式。
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌿 結出聖靈的果子</span>
+          仁愛、喜樂、和平、忍耐、恩慈、良善、信實、溫柔、節制——這是婚宴的禮服（加 5:22–23；啟 19:7–8）
         </div>
       </div>
 
-      <div class="big-quote">
-        被提不是逃跑，而是凱旋歸隊——基督以元帥之姿奪回祂在十字架上買贖的一切。
+      <p>啟示錄 19 章描述羔羊的婚宴，新婦穿著「光明潔白的細麻衣」，然後聖經立刻解釋：「這細麻衣就是聖徒所行的義。」禮服不是從天上掉下來的，是在地上一針一線織成的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「新婦也自己預備好了，就蒙恩得穿光明潔白的細麻衣。這細麻衣就是聖徒所行的義。」</p>
+        <p class="scripture-ref">啟示錄 19:7–8</p>
       </div>
 
-      <p>理解了「被提」的力道，我們就不得不面對一個更深的神學張力：既然這是恩典，為什麼聖經又說要「預備好了」？下一章，進入最複雜的研究地帶。</p>
+      <div class="highlight">
+        <strong>破題的核心</strong>
+        被提不是懲罰與獎賞的問題，而是預備與結果的問題。就像考試不是「懲罰沒讀書的人」，而是「讀書的結果自然呈現」。聖徒的生命若在聖靈裡成長，被提是生命成熟的自然結果。
+      </div>
+
+      <p>這不是一個叫你害怕的神學，而是一個叫你今天就開始的邀請。神不是在找完美的人，祂在找願意持續預備的人。</p>
+
     </div>
   </div>
 </div>
@@ -506,48 +543,47 @@ body::before {
 
 <div class="chapter">
   <div class="card blue">
+
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
-      <h2 class="card-title">十個伴娘與兩種銀子：被提有資格限制嗎？</h2>
-      <p class="card-hook">神學史上最大的爭議之一，就藏在這兩個比喻裡。</p>
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Study</div>
+      <h2 class="card-title">兩種賬目、兩種服事——你交的是哪一種？</h2>
+      <p class="card-hook">馬太和路加各記了一個「銀子比喻」，看起來很像，其實在說兩件不同的事。</p>
     </div>
+
     <div class="card-body">
-      <p>馬太福音 25 章有十個童女（伴娘）。啟示錄 19 章有一位預備好了的新婦。這兩個圖像放在一起，引發了基督教末世論最激烈的辯論：被提，是所有信徒都能參與的恩典，還是只有靈命成熟者才配得的賞賜？</p>
 
-      <div class="scripture">
-        <p class="scripture-text">「那預備好了的，同他進去共赴婚宴，門就關了。其餘的童女隨後也來了，說：主啊，主啊，給我們開門！他卻回答說：我實在告訴你們，我不認識你們。」</p>
-        <p class="scripture-ref">馬太福音 25:10-12</p>
-      </div>
+      <span class="depth-label deep-tag">📖 原文與結構分析</span>
 
-      <span class="depth-label deep-tag">📖 兩派神學對比</span>
+      <p>新約有兩個「交賬」的比喻，常被混在一起讀，但仔細對比，它們其實有清晰的區別——而這個區別對我們的信仰生活意義重大。</p>
 
-      <div class="concentric">
-        <div class="concentric-ring r1">
-          <span class="ring-label">🏆 局部被提觀（倪柝聲、R. Govett）</span>
-          被提是生命成熟者的「賞賜」。十童女皆是得救者，但五個無額外的油（聖靈充滿），因此被關在婚宴之外，留下經歷大災難以補考成熟。
-        </div>
-        <div class="concentric-ring r3">
-          <span class="ring-label">🕊️ 全體被提觀（Walvoord 等主流福音派）</span>
-          被提是「身體得贖」，是神賜予所有在基督裡之人的恩典。愚拙童女代表無聖靈生命的假信徒，而非懈怠的真信徒。
-        </div>
-      </div>
-
-      <p>同樣的爭議出現在兩個被混淆的受託比喻裡——但它們其實有本質上的差異：</p>
-
-      <div class="highlight">
-        <strong>銀子（太 25）vs. 銀錠（路 19）——不一樣的功課</strong>
-        <strong style="display:block; margin-top: 10px; font-size: 13px; letter-spacing: 0; text-transform: none; opacity: 1;">泰倫特（Talent）：</strong>
-        按各人才幹分配——五千、二千、一千。起點不均等。考核的是「忠心度」：賺一倍者，不論本金大小，皆得同樣讚美。代表因人而異的屬靈恩賜與服事職分。
-        <strong style="display:block; margin-top: 10px; font-size: 13px; letter-spacing: 0; text-transform: none; opacity: 1;">彌那（Mina）：</strong>
-        每人各得一錠，起點完全均等。考核的是「發揮度」：相同資源下，賺取倍數越高，賞賜越大。代表所有信徒均等領受的基本救恩與福音責任。
+      <div class="term-box">
+        <div class="term-original">太 25<br>銀子</div>
+        <div class="term-desc">一個給五千、一個給二千、一個給一千——按「才幹」給的不同數量。對應哥林多前書 12 章的「聖靈九大恩賜」：智慧、知識、信心、醫病、異能、先知、辨別諸靈、方言、翻方言。這是聖靈主權分配的靈性恩賜。</div>
       </div>
 
       <div class="term-box">
-        <div class="term-original">βῆμα<br>bēma</div>
-        <div class="term-desc">「升高的平台、裁判席、頒獎台」。在古代奧林匹克，這是裁判授獎給得勝運動員之處，不是宣判罪犯的刑場。神學上，這是信徒在被提後面對基督的「工作品質審評」，而非決定永生死亡的審判。</div>
+        <div class="term-original">路 19<br>十錠</div>
+        <div class="term-desc">每人都領一錠，賺回多少全憑個人努力。對應日常的才幹服事：講道、探訪、司琴、行政、傳福音、關懷……人人起點相同，終點看你怎麼用。</div>
       </div>
 
-      <p>兩種神學都有其嚴肅的聖經根據。但無論你站哪一邊，有一件事兩派都同意——下一章要說的，才是真正的核心。</p>
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 白話版</span>
+
+      <p>這兩個比喻可以這樣理解：一個問的是「你用了神給你的屬靈恩賜嗎？」另一個問的是「你用了神給你的普通能力嗎？」神兩樣都要問。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎹</span>
+        假設你天生有音樂才華（路 19 的十錠），又被聖靈賜給先知的恩賜（太 25 的銀子）。主來的時候，兩件事都要交賬：你有沒有用音樂服事人？你有沒有運用先知的恩賜建立教會？把任何一樣包在手巾裡，都是交不出去的。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「好，你這又良善又忠心的僕人，你在不多的事上有忠心，我要把許多事派你管理；可以進來享受你主人的快樂。」</p>
+        <p class="scripture-ref">馬太福音 25:21</p>
+      </div>
+
+      <p>兩個比喻的結局都相同：忠心使用者得到更大的託付，埋藏不用者被剝奪、被丟在外面黑暗裡。神學上，這「外面黑暗」並非指永遠的地獄，而是指失去被提的資格、被留在患難中經歷煉淨——這是嚴肅的，但不是終結。</p>
+
     </div>
   </div>
 </div>
@@ -560,47 +596,50 @@ body::before {
 
 <div class="chapter">
   <div class="card purple">
+
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
-      <h2 class="card-title">婚紗不是白送的：油與細麻衣的末世倫理</h2>
-      <p class="card-hook">被提的恩典是免費的，但那件婚紗，是你這一生一針一線織出來的。</p>
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Deep Dive</div>
+      <h2 class="card-title">被提之後：號角響完，然後呢？</h2>
+      <p class="card-hook">被提不是終點，而是另一段旅程的開始。聖經給出了一條清晰的路線圖。</p>
     </div>
+
     <div class="card-body">
-      <p>啟示錄 19:8 描述末世婚宴中的新婦，身穿「光明潔白的細麻衣」。然後聖靈特別補充了一句，幾乎讓人停下來重讀：「這細麻衣就是聖徒所行的義。」</p>
+
+      <p>很多人對「被提之後」的想像是：飄在雲上，彈彈豎琴，永遠地休息。聖經的圖像要精彩得多，也具體得多。</p>
+
+      <span class="depth-label deep-tag">📖 被提後的四個階段</span>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 空中相遇與工程受試</span>
+          被提到空中與主相遇之後，哥林多前書 3 章描述聖徒的工程要受「火的試驗」——金銀寶石能存，草木禾稭被燒。這不是定罪，是評估：你在地上為主做的哪些事是真實的、能存到永恆的？
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 羔羊的婚宴</span>
+          啟示錄 19 章，穿著細麻衣的新婦赴羔羊的婚宴——那是聖徒與基督最親密的相聚時刻，是地上一切等候的完全成就。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 與主同作王一千年</span>
+          啟示錄 20 章，被提的聖徒與基督一同回到地上，管理千禧年國度。這不是象徵，是真實的治理——每個人按地上的忠心領受不同的管轄範圍（十座城、五座城……）。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">④ 進入永恆</span>
+          啟示錄 22 章，千禧年之後進入永恆新天新地，「他們要作王，直到永永遠遠」。這才是最後的「和主永遠同在」。
+        </div>
+      </div>
 
       <div class="scripture">
-        <p class="scripture-text">「新婦也自己預備好了，就蒙恩得穿光明潔白的細麻衣。這細麻衣就是聖徒所行的義。」</p>
-        <p class="scripture-ref">啟示錄 19:7-8</p>
+        <p class="scripture-text">「在頭一次復活有分的有福了，聖潔了！第二次的死在他們身上沒有權柄。他們必作神和基督的祭司，並要與基督一同作王一千年。」</p>
+        <p class="scripture-ref">啟示錄 20:6</p>
       </div>
-
-      <span class="depth-label deep-tag">📖 原文解析</span>
-
-      <div class="term-box">
-        <div class="term-original">δικαιώματα<br>dikaíōmata</div>
-        <div class="term-desc">複數名詞。不是「稱義的地位」（dikaiosýnē，單數），而是信徒在日常生活中具體的公義行為與順服——每一個選擇、每一次捨己、每一次在誘惑中站立。</div>
-      </div>
-
-      <p>兩個字，天差地別。你的救恩地位（dikaiosýnē）是神在十字架上白白賜給你的，是基督的義歸算在你身上，永不搖動。但那件婚紗（dikaíōmata）卻是你自己「自己預備好了」的——由你在世上無數次順服聖靈的選擇所編織而成。</p>
-
-      <div class="analogy">
-        <span class="analogy-icon">🧵</span>
-        想像你的一生是一台織布機。每一次在誘惑前選擇誠實，是一根金線；每一次在憤怒中選擇溫柔，是一根銀線；每一次默默服事卻不求名聲，是一根光線。這些線，日積月累，在你毫不自知的情況下，正在織成你將在天上穿戴的那件婚衣。而那些為肉體、為面子、為自我驕傲所做的宗教表演，在火的審判（bēma）中，會瞬間燒成灰——只剩煙熏的痕跡。
-      </div>
-
-      <div class="card-divider"></div>
-
-      <p>現在回到十童女的油。那五個愚拙的伴娘，問題不是「她們沒有燈」，而是「她們只有燈，沒有額外的油」——只有外在的宗教形式，卻沒有在私下、在平凡的日子裡，與主建立的真實內在深度。</p>
 
       <div class="highlight">
-        <strong>無法外借的東西</strong>
-        聰明的伴娘拒絕分油，不是因為她們自私。而是因為有些東西本來就借不來：你與神之間的關係、你生命成熟的代價、你私下付出的靈性深度——這些無法轉讓、無法臨陣磨槍、無法複製借用。每個人都必須在日常的平凡瑣事中，自己去儲備靈性的燃料。
+        <strong>被提的時序問題</strong>
+        根據但以理書 9 章「一七之半」及帖後 2 章「大罪人顯露」的預言，被提發生在大患難的中間——不是患難前，也不是患難後，而是災中。這意味著地上的聖徒有一段預備、等候、忠心的時間，然後才是被提。
       </div>
 
-      <div class="big-quote">
-        救恩是白送的禮物，但那件婚紗，你每天都在織，或者，都在拆。
-      </div>
+      <p>這個圖像是：神要的不是一群被動等待的人，而是在等候中仍然服事、仍然忠心、仍然結果子的人。那些人，在號角響起的那一刻，已經準備好了。</p>
 
-      <p>這是末世神學最深的倫理衝擊：等候被提，不是消極地望天歎息，而是在今天，把每一個平凡的選擇，當作婚紗上的一針。</p>
     </div>
   </div>
 </div>
@@ -613,42 +652,40 @@ body::before {
 
 <div class="chapter">
   <div class="card final">
-    <div class="card-header">
-      <div class="chapter-tag"><span class="num">6</span> Final · 結論與溫馨</div>
-      <h2 class="card-title">今天就開始，為那場婚宴預備</h2>
-      <p class="card-hook">你不需要先弄清楚所有神學爭議，才能開始預備。你只需要今天，做一個小小的選擇。</p>
-    </div>
-    <div class="card-body">
-      <p>走過這六章，我們一起看見了許多事——一個宇宙級的身體置換（allássō），一場不可抗拒的神聖奪取（harpázō），一個以賞賜而非刑罰為核心的審判台（bēma），兩種銀子的不同功課，以及那件只有你自己能織的細麻婚衣。</p>
 
-      <p>神學上的爭議，學者們還在繼續討論，這是好事。但有一件事，無論你站在哪個神學位置，都無從逃避：</p>
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Conclusion</div>
+      <h2 class="card-title">你不需要完美，你只需要今天就開始</h2>
+      <p class="card-hook">神不是在等一個表現完美的你，祂在等一個轉向祂、願意預備的你。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>讀完這五章，也許你心裡有一點沉。「我聖靈充滿夠嗎？我的才幹有用出來嗎？我的果子夠多嗎？」這些問題是好的，但如果它們讓你癱瘓而不是讓你行動，那就不是聖靈的感動，是仇敵的控告。</p>
+
+      <p>聖靈的感動永遠是向前的，永遠是給你力量的，永遠帶著盼望。</p>
 
       <div class="highlight">
-        <strong>兩派都同意的一件事</strong>
-        救恩是免費的恩典，但未來在天上的榮耀與掌權，需要你今天用生命去贏取。不管被提是全體還是局部，「預備好了」這四個字，是每一位等候主再來的信徒無法迴避的呼召。
+        <strong>今天你可以做的三件事</strong>
+        第一，求主今天再次用聖靈充滿你——就這樣禱告，不需要儀式。第二，想一件神給你的才幹或恩賜，今天就用一次。第三，讓加拉太書 5:22 的九個果子成為你這週對照的鏡子，挑一個你最缺的，求主幫助你在關係裡活出來。
       </div>
+
+      <p>被提這件事的核心不是一個神學考試，而是一段關係。就像婚禮的那一天，新郎不是在考核新娘的答卷，他是來迎接他愛的人。問題只是：新娘準備好了嗎？禮服織好了嗎？</p>
 
       <div class="scripture">
-        <p class="scripture-text">「我們要歡喜快樂，將榮耀歸給他。因為，羔羊婚娶的時候到了；新婦也自己預備好了。」</p>
-        <p class="scripture-ref">啟示錄 19:7</p>
+        <p class="scripture-text">「聖靈所結的果子，就是仁愛、喜樂、和平、忍耐、恩慈、良善、信實、溫柔、節制。這樣的事沒有律法禁止。」</p>
+        <p class="scripture-ref">加拉太書 5:22–23</p>
       </div>
 
-      <p>「預備好了」——原文是過去完成式，表示一個持續積累、在主回來之前已然完成的狀態。不是最後一分鐘的衝刺，而是每一天細水長流的忠心。</p>
+      <p>這九個果子，就是那件細麻衣。不是你努力表現出來的，而是聖靈在你裡面活著，自然結出來的。你的任務，是讓聖靈有空間、有土壤、有水分——每一天。</p>
 
       <div class="big-quote">
-        你不是在等一場逃難，你是在預備一場婚宴。新郎值得你最好的那件衣裳。
+        這樣，我們就要和主永遠同在。
+        <cite>— 帖撒羅尼迦前書 4:17</cite>
       </div>
 
-      <p>今天，從最小的地方開始：一句誠實的話，一個捨己的選擇，一次私下的禱告，一個不求回報的服事。這些微小的針腳，不會被遺忘。</p>
+      <p>永遠同在。不是暫時，不是「看情況」，而是永遠。這就是神要帶你去的地方。今天開始預備，不是因為你害怕被留下，而是因為你愛那位要來接你的主。</p>
 
-      <p>主親自說：「我必快來。」</p>
-
-      <div class="highlight">
-        <strong>帶走的問題</strong>
-        如果主明天就回來，你今天最想補上的那一針是什麼？讓那個答案，成為你今天第一件去做的事。
-      </div>
-
-      <p style="color: rgba(247,240,227,0.5); font-size: 13px; text-align: center; margin-top: 24px; font-style: italic;">願恩惠與平安，從那昔在、今在、以後永在的神，歸與你。</p>
     </div>
   </div>
 </div>
@@ -656,7 +693,7 @@ body::before {
 <div class="thread-line"></div>
 
 <footer class="site-footer">
-  聖徒末世終局系列 · Eschatology Series · 六章連貫
+  末世論系列 · 聖徒將來的景況 · Eschatology Threads
 </footer>
 
 </body>

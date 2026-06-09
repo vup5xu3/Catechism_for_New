@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>榮耀的塑造路徑 — Threads 系列</title>
+<title>神造就兒女——同享榮耀的五維路徑 · Threads 系列</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
 <style>
+
 :root {
   --gold:            #C9A84C;
   --gold-light:      #E8D5A3;
@@ -18,7 +19,9 @@
   --smoke:           #6B6355;
   --cream:           #FAF6EE;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
   background: var(--ink);
   font-family: 'Noto Serif TC', serif;
@@ -26,6 +29,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
+
 body::before {
   content: '';
   position: fixed;
@@ -38,6 +42,7 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
 .site-header {
   position: relative;
   z-index: 10;
@@ -45,6 +50,7 @@ body::before {
   padding: 80px 24px 60px;
   border-bottom: 1px solid rgba(201,168,76,0.2);
 }
+
 .site-header .eyebrow {
   font-family: 'Cinzel', serif;
   font-size: 11px;
@@ -54,6 +60,7 @@ body::before {
   margin-bottom: 20px;
   opacity: 0.8;
 }
+
 .site-header h1 {
   font-size: clamp(32px, 6vw, 64px);
   font-weight: 900;
@@ -62,13 +69,16 @@ body::before {
   margin-bottom: 16px;
   text-shadow: 0 0 60px rgba(201,168,76,0.3);
 }
+
 .site-header h1 span { color: var(--gold); }
+
 .site-header .subtitle {
   font-size: 15px;
   color: rgba(247,240,227,0.5);
   font-weight: 300;
   letter-spacing: 1px;
 }
+
 .thread-line {
   display: flex;
   justify-content: center;
@@ -82,6 +92,7 @@ body::before {
   background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
   display: block;
 }
+
 .chapter {
   position: relative;
   z-index: 5;
@@ -89,6 +100,7 @@ body::before {
   margin: 0 auto;
   padding: 0 20px;
 }
+
 .card {
   background: var(--parchment);
   border-radius: 4px;
@@ -104,6 +116,7 @@ body::before {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
 }
+
 .card::before {
   content: '';
   position: absolute;
@@ -116,6 +129,7 @@ body::before {
 .card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
 .card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
 .card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
 .card.final {
   background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
 }
@@ -129,11 +143,14 @@ body::before {
 .card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
 .card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
 .card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+.card.final .concentric-ring      { color: rgba(247,240,227,0.85); }
+
 .card-header {
   padding: 32px 36px 24px 44px;
   border-bottom: 1px solid rgba(26,18,8,0.08);
   position: relative;
 }
+
 .chapter-tag {
   display: inline-flex;
   align-items: center;
@@ -163,6 +180,7 @@ body::before {
 .card.blue   .chapter-tag .num { background: #2D4A7A; }
 .card.purple .chapter-tag .num { background: #4A2D7A; }
 .card.final  .chapter-tag .num { background: var(--ink); }
+
 .card-title {
   font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
@@ -170,6 +188,7 @@ body::before {
   color: var(--ink);
   margin-bottom: 8px;
 }
+
 .card-hook {
   font-size: 14px;
   color: var(--smoke);
@@ -177,6 +196,7 @@ body::before {
   font-style: italic;
   line-height: 1.6;
 }
+
 .card-body {
   padding: 28px 36px 32px 44px;
 }
@@ -188,6 +208,7 @@ body::before {
   font-weight: 400;
 }
 .card-body p:last-child { margin-bottom: 0; }
+
 .highlight {
   background: var(--parchment-dark);
   border-left: 3px solid;
@@ -204,6 +225,7 @@ body::before {
 .card.blue   .highlight { border-color: #4A6A9A; }
 .card.purple .highlight { border-color: #7A4A9A; }
 .card.final  .highlight { border-color: var(--gold); }
+
 .highlight strong {
   display: block;
   font-size: 12px;
@@ -213,6 +235,7 @@ body::before {
   margin-bottom: 6px;
   font-family: 'Noto Sans TC', sans-serif;
 }
+
 .scripture {
   text-align: center;
   padding: 20px 24px;
@@ -243,6 +266,7 @@ body::before {
   color: var(--smoke);
   text-transform: uppercase;
 }
+
 .analogy {
   background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
   border: 1px solid rgba(201,168,76,0.2);
@@ -259,6 +283,7 @@ body::before {
   margin-bottom: 8px;
   display: block;
 }
+
 .big-quote {
   text-align: center;
   padding: 28px 20px;
@@ -286,6 +311,7 @@ body::before {
   margin-top: 12px;
   font-family: 'Cinzel', serif;
 }
+
 .term-box {
   display: flex;
   gap: 12px;
@@ -305,6 +331,7 @@ body::before {
   line-height: 1.7;
   color: var(--smoke);
 }
+
 .depth-label {
   display: inline-block;
   font-family: 'Noto Sans TC', sans-serif;
@@ -318,6 +345,7 @@ body::before {
 }
 .depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
 .depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
 .concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
 .concentric-ring {
   padding: 12px 16px 12px 24px;
@@ -337,12 +365,15 @@ body::before {
 .r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
 .r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
 .r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
 .card-divider {
   height: 1px;
   background: rgba(26,18,8,0.08);
   margin: 20px 0;
 }
+
 .section-gap { height: 8px; }
+
 .site-footer {
   position: relative;
   z-index: 5;
@@ -353,52 +384,58 @@ body::before {
   letter-spacing: 2px;
   font-family: 'Cinzel', serif;
 }
+
 @media (max-width: 480px) {
   .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
 }
+
 </style>
 </head>
 <body>
 
 <header class="site-header">
-  <div class="eyebrow">成聖系列 · Sanctification Series</div>
-  <h1>榮耀的<span>塑造路徑</span></h1>
-  <p class="subtitle">神如何造就兒女與主同享榮耀的五重屬靈路徑</p>
+  <div class="eyebrow">救贖歷史 · Sanctification Series</div>
+  <h1>神造就兒女<span>同享榮耀</span></h1>
+  <p class="subtitle">修理、熬煉、管教、爭戰、磨難——五維路徑的原文釋經之旅</p>
 </header>
 
 
-<!-- 第一章：分享 -->
+<!-- ══ 第一章：分享 ══ -->
 <div class="thread-line"></div>
 
 <div class="chapter">
   <div class="card gold">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">1</span> 分享 · Opening</div>
-      <h2 class="card-title">你有沒有想過，痛苦可以是禮物？</h2>
-      <p class="card-hook">不是那種讓人假裝感恩的「毒雞湯」——而是一份真實的、有設計圖紙的禮物。</p>
+      <div class="chapter-tag"><span class="num">1</span> Opening · 分享</div>
+      <h2 class="card-title">痛苦，到底算什麼？</h2>
+      <p class="card-hook">我們都經歷過那種感覺——明明努力活得正直，卻好像哪裡都過不去。</p>
     </div>
     <div class="card-body">
-      <p>有一段時間，我每次禱告，都像是在對著空氣說話。工作陷入瓶頸，一段很重要的關係無聲無息地破裂，甚至連信仰本身，也開始在某些夜晚顯得搖搖欲墜。我開始問：「如果神真的愛我，為什麼讓我走這條路？」</p>
 
-      <p>我相信，這個問題你也問過。也許此刻你正在問。</p>
+      <p>有個朋友跟我說，他信主三年了，但這三年反而是他人生最艱難的時期。工作碰壁、感情受挫、家庭出現衝突，有時候他會在深夜問自己：「我到底做錯了什麼？神是不是不管我了？」</p>
 
-      <div class="analogy">
-        <span class="analogy-icon">✉️</span>
-        後來，我在一位老弟兄的書桌上看到一句被他用紅筆反覆圈起的話：「我們曉得萬事都互相效力，叫愛神的人得益處。」（羅馬書 8:28）他告訴我，他年輕時視這句話為陳腔濫調；到了七十歲，他說，這是他一生中讀過最沉重、最精確的一句話。
-      </div>
-
-      <p>這個系列，我想帶你走進聖經裡一張隱秘的「藍圖」——神造就祂兒女的五重塑造路徑。這不是一份安慰人的文字，而是一份有原文根據、有神學骨架、有生命溫度的地圖。</p>
+      <p>我相信這種感受並不陌生。不論你信主多久，生命中總有幾個時刻，你會覺得那條叫做「信仰」的路，比你想像中更崎嶇、更孤單。</p>
 
       <div class="highlight">
-        <strong>這個系列為你準備</strong>
-        如果你正在某種困難中；如果你對苦難充滿疑問；如果你渴望明白神到底在你的生命裡做什麼——這六篇文章，就是為你寫的。
+        <strong>這個系列想問的問題</strong>
+        如果神是愛，為什麼祂允許我們被剪、被煉、被管、被打、被追？這六章，我們不逃避這個問題。我們正面走進去。
       </div>
+
+      <p>這個系列文章，是我花了很長時間研讀聖經原文、神學文獻之後，想跟你分享的一份地圖。不是給你一個「凡事都有意義」的廉價安慰，而是想帶你看見：神塑造生命的方式，有其精密的邏輯、有其深厚的愛意，甚至有其令人歎為觀止的榮耀計畫。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我深信那在你們心裡動了善工的，必成全這工，直到耶穌基督的日子。」</p>
+        <p class="scripture-ref">腓立比書 1:6</p>
+      </div>
+
+      <p>神不是一個被動的旁觀者。祂是主動的雕刻師。而你的生命，正是祂手中那塊尚未完工的作品。接下來，讓我們一起看見，祂究竟用哪五種方式，在塑造我們走向榮耀。</p>
+
     </div>
   </div>
 </div>
 
 
-<!-- 第二章：引導 -->
+<!-- ══ 第二章：引導 ══ -->
 <div class="thread-line"></div>
 <div class="section-gap"></div>
 <div class="thread-line"></div>
@@ -406,44 +443,46 @@ body::before {
 <div class="chapter">
   <div class="card red">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">2</span> 引導 · Orientation</div>
-      <h2 class="card-title">先別急著找答案——讓我們先看清問題的形狀</h2>
-      <p class="card-hook">許多人對苦難的誤解，不是因為信仰不夠深，而是因為問的問題本身就問錯了方向。</p>
+      <div class="chapter-tag"><span class="num">2</span> Context · 引導</div>
+      <h2 class="card-title">榮耀化，是神的終極目標</h2>
+      <p class="card-hook">在進入五條路徑之前，我們需要先看見整張地圖——神救贖計畫的最終目的地。</p>
     </div>
     <div class="card-body">
-      <p>大多數人在苦難中的第一個問題是：「為什麼是我？」這個問題背後藏著一個預設：苦難是一種懲罰，或者是一種意外。</p>
 
-      <p>但聖經告訴我們，這個預設是根本性的誤判。</p>
+      <p>基督教正統神學有一條核心的生命律：神救我們，不只是為了讓我們「上天堂」，而是要讓我們成為真正配得榮耀的人。這個過程叫做「聖化」（Sanctification），它的終點叫做「榮耀化」（Glorification）。</p>
 
-      <div class="scripture">
-        <p class="scripture-text">「我們曉得萬事都互相效力，叫愛神的人得益處，就是按他旨意被召的人。因為他預先所知道的人，就預先定下效法他兒子的模樣，使他兒子在許多弟兄中作長子。」</p>
-        <p class="scripture-ref">羅馬書 8:28–29</p>
-      </div>
-
-      <p>注意第 29 節的邏輯：神的目的不是讓你過得舒服，而是讓你「效法他兒子的模樣」。苦難的終點站，是榮耀——是與基督同享榮耀。</p>
+      <p>許多人對「得救」的理解停在稱義——就是法庭上的宣判，神宣告我們無罪。這是真實且珍貴的。但神的計畫不僅止於此。祂要讓我們在生命的本質上，也逐漸彰顯出基督的聖潔形象。</p>
 
       <div class="concentric">
         <div class="concentric-ring r1">
-          <span class="ring-label">❌ 錯誤的問題框架</span>
-          「神為什麼讓這件壞事發生？」——預設苦難是失控的懲罰
+          <span class="ring-label">⚖️ 稱義（Justification）</span>
+          法庭宣告：藉著基督的死，我的罪被赦免，我被宣判為義。這是一次性的、完整的行動。
         </div>
         <div class="concentric-ring r2">
-          <span class="ring-label">✅ 正確的問題框架</span>
-          「神正在這件事裡做什麼？」——預設苦難是主權的工具
+          <span class="ring-label">🌱 聖化（Sanctification）</span>
+          生命成長：在歷史時空中，藉著各樣的塑造，我的品格逐漸變得像基督。這是一生持續的過程。
         </div>
         <div class="concentric-ring r3">
-          <span class="ring-label">🔭 更深的問題框架</span>
-          「神要把我塑造成什麼樣子？」——預設苦難是榮耀的路徑
+          <span class="ring-label">✨ 榮耀化（Glorification）</span>
+          終極完成：在基督再來時，信徒將得著復活的身體，完全分享神聖的榮耀。這是救贖歷史的終點。
         </div>
       </div>
 
-      <p>帶著這個框架，我們才能真正開始閱讀那五條塑造路徑。每一條，都是天父精心設計的恩典手段。</p>
+      <p>聖化的過程，從來不是偶然發生的。神在主權引導下，使用了五種系統性的生命路徑：修理、熬煉、管教、爭戰、磨難。它們不是孤立的苦難碎片，而是彼此交響、精密配合的生命塑造機制。</p>
+
+      <div class="highlight">
+        <strong>本系列的釋經立場</strong>
+        接下來的四章，我們將透過聖經希伯來文與希臘文的原文字義，結合古代近東與希臘羅馬的文化背景，深入理解神造就兒女的每一條路徑。神學不只是頭腦的操練——它是讓苦難變得可理解、可承受的地圖。
+      </div>
+
+      <p>準備好了嗎？我們從第一條路徑開始——那把天父親手握著的修剪刀。</p>
+
     </div>
   </div>
 </div>
 
 
-<!-- 第三章：破題 -->
+<!-- ══ 第三章：破題 ══ -->
 <div class="thread-line"></div>
 <div class="section-gap"></div>
 <div class="thread-line"></div>
@@ -451,48 +490,53 @@ body::before {
 <div class="chapter">
   <div class="card deep">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">3</span> 破題 · The Five Paths</div>
-      <h2 class="card-title">五把刻刀：神塑造兒女的方法論</h2>
-      <p class="card-hook">修理、熬煉、管教、爭戰、磨難——每一把刻刀都有名字，每一刀都有目的。</p>
+      <div class="chapter-tag"><span class="num">3</span> Thesis · 破題</div>
+      <h2 class="card-title">修剪與熬煉——天父的兩把工具</h2>
+      <p class="card-hook">失去不是懲罰，烈火不是遺棄。在葡萄園與熔爐裡，神藏著最深的愛意。</p>
     </div>
     <div class="card-body">
-      <p>聖經不是一本抽象的哲學書，它用極其具體的動詞和隱喻，描述神在人生命中的工作方式。當你把這五條路徑並排放在一起，你會看見一幅令人震驚的、系統性的成聖藍圖。</p>
 
-      <span class="depth-label plain-tag">💡 五重路徑總覽</span>
+      <p>耶穌說：「凡屬我卻不結果子的枝子，我父就剪去；凡結果子的，祂就修理乾淨，使枝子結果子更多。」（約翰福音 15:2）這句話在希臘文原文中，隱藏著一個令人動容的雙關語。</p>
 
-      <div class="concentric">
-        <div class="concentric-ring r1">
-          <span class="ring-label">✂️ 一、修理（修剪）</span>
-          剪去生命中消耗能量卻無果效的枝條，重新定向屬靈潛能。（約翰福音 15:2）
-        </div>
-        <div class="concentric-ring r2">
-          <span class="ring-label">🔥 二、熬煉（精煉）</span>
-          用高溫除去靈魂中罪的雜質，直至反映出基督的榮美形象。（詩篇 66:10；彼前 1:6-7）
-        </div>
-        <div class="concentric-ring r3">
-          <span class="ring-label">🏛️ 三、管教（訓練）</span>
-          以合法兒子的身份接受頂級屬靈教育，操練聖潔的「體魄」。（希伯來書 12:5-11）
-        </div>
-        <div class="concentric-ring r4">
-          <span class="ring-label">⚔️ 四、爭戰（試煉）</span>
-          在每一個道德抉擇的交叉口上，選擇站立而非跌倒，增長愛主的心。（雅各書 1:12-15）
-        </div>
-        <div class="concentric-ring r5">
-          <span class="ring-label">🌊 五、磨難（逼迫）</span>
-          因「逆行」於世界系統而承受的碰撞，是屬天身份的榮耀印記。（提摩太後書 3:12）
-        </div>
+      <span class="depth-label deep-tag">📖 原文釋經</span>
+
+      <div class="term-box">
+        <div class="term-original">Airo<br>αἴρω</div>
+        <div class="term-desc">「提起、移去」——在第一世紀的葡萄園中，園丁會將沾染泥沙、垂落地面的枝子「提起」並清洗，重新搭在格架上，使其恢復生機。不是剪斷，是托舉。</div>
       </div>
+
+      <div class="term-box">
+        <div class="term-original">Kathairo<br>καθαίρω</div>
+        <div class="term-desc">「修剪、潔淨」——對於結果子的枝子，園丁精確剪除奪取養分卻不結果的副梢。這個字與「純淨」（katharos）同一字根，修剪的目的是純淨化。</div>
+      </div>
+
+      <p>兩個動作，一個對象：葡萄樹上真實的枝子。天父不是在懲罰你，祂是在優化你。一棵任意蔓延的葡萄樹，養分被分散，果實反而稀少。那些你失去的東西——那些讓你驕傲的成就、讓你安心卻偏離神的依靠——正是天父精準剪除的副梢。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「神啊，你曾試驗我們，熬煉我們，如熬煉銀子一樣。」</p>
+        <p class="scripture-ref">詩篇 66:10</p>
+      </div>
+
+      <p>與此同時，詩篇六十六篇給我們第二幅圖像：熔爐中的銀匠。古代冶煉師將銀礦石置於高溫中，使銀與鉛等賤金屬在熱度中分離。銀匠親自看守熔爐，精確掌控溫度，不為毀滅金屬，只為分離雜質。</p>
 
       <div class="highlight">
-        <strong>重要前提</strong>
-        這五條路徑不是平行線，而是有機交織的。在你生命的同一個困難裡，可能同時有「熬煉」在除去驕傲、「管教」在矯正方向、「爭戰」在考驗意志。神是全能的匠人，祂從不浪費一次苦難。
+        <strong>熬煉的神學本質</strong>
+        苦難不是神的失控，而是神精密的「生命過濾法」。藉著環境的烈火，隱藏在人格深處的雜質——對世俗的秘密依賴、隱而未現的自私——被高溫逼出表面，讓那位冶煉大師可以將其去除，直到生命折射出純淨的光芒。
       </div>
+
+      <span class="depth-label plain-tag">💡 生活語言</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍇</span>
+        想像一棵葡萄樹任意生長，枝葉茂盛卻幾乎不結果。園丁不是為了讓它難看才修剪，而是因為它太珍貴了，不能讓養分白白流失。天父對你做的每一次剪除，都是因為祂看見了更多你還沒看見的潛力。
+      </div>
+
     </div>
   </div>
 </div>
 
 
-<!-- 第四章：研究 -->
+<!-- ══ 第四章：研究 ══ -->
 <div class="thread-line"></div>
 <div class="section-gap"></div>
 <div class="thread-line"></div>
@@ -500,59 +544,60 @@ body::before {
 <div class="chapter">
   <div class="card blue">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">4</span> 研究 · Original Languages</div>
-      <h2 class="card-title">當我們把聖經翻譯回原文，看見了什麼？</h2>
-      <p class="card-hook">希伯來文和希臘文裡，藏著中文譯本無法完整傳達的震撼細節。</p>
+      <div class="chapter-tag"><span class="num">4</span> Research · 研究</div>
+      <h2 class="card-title">管教與爭戰——屬靈健身房的兩種訓練</h2>
+      <p class="card-hook">神不是憤怒的審判官在懲罰你，而是一位盡職的教練在預備你。</p>
     </div>
     <div class="card-body">
 
-      <span class="depth-label deep-tag">📖 原文考據層次</span>
+      <p>希伯來書第十二章說：「主所愛的，祂必管教；又鞭打凡所收納的兒子。」（希伯來書 12:6）這句話在教會裡引發了許多誤解，因為我們常把「管教」與憤怒的懲罰聯想在一起。但原文告訴我們的，是截然不同的圖像。</p>
 
-      <p>許多人讀聖經時感覺「道理都懂，但就是沒有力量」，很可能是因為翻譯版本必然會失去某些原文的精確衝擊力。讓我們回到源頭，看幾個讓學者們屏息的字。</p>
+      <span class="depth-label deep-tag">📖 原文釋經</span>
 
       <div class="term-box">
-        <div class="term-original">kathairo<br>καθαίρω</div>
-        <div class="term-desc">約翰福音 15:2「修理」的希臘文字根直指 katharos（乾淨/無罪）。這個字不是「懲罰」，而是「潔淨」——園丁在修剪活枝時，是在進行一項「促進生命的必要工作」，而非傷害。</div>
+        <div class="term-original">Paideia<br>παιδεία</div>
+        <div class="term-desc">「孩童的全人教養」——在希臘羅馬世界，這個字代表父親對合法親生兒子進行的公民、道德與靈性全方位培訓。這是嗣子的特權，不是奴隸的刑罰。</div>
       </div>
+
+      <div class="term-box">
+        <div class="term-original">Gymnazo<br>γυμνάζω</div>
+        <div class="term-desc">「裸身鍛鍊」——衍生自古希臘體育館（Gymnasium）。指頂級運動員脫去一切重擔，在教練嚴格督導下，接受日復一日的極限體能重塑。這是競技的訓練，不是刑場的折磨。</div>
+      </div>
+
+      <p>如果你正在經歷的限制、管束或聖靈在心中的責備，讓你感到不舒服——那正是天父把你帶進了「屬靈健身房」的信號。教練施加阻力，是因為他看重你的潛力。</p>
 
       <div class="card-divider"></div>
 
-      <div class="term-box">
-        <div class="term-original">tsaraph<br>צָרַף</div>
-        <div class="term-desc">詩篇 66:10「熬煉」的希伯來文，是古代冶金的專業術語。古代銀匠必須在熔爐旁寸步不離，因為多燒一秒，銀子就會瞬間氣化毀壞。神的同在不是詩意的比喻——而是冶金操作的必要條件。</div>
+      <p>而在爭戰的層面，雅各書第一章給出了一個精準的靈性分水嶺。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「忍受試探的人是有福的，因為他經過試驗以後，必得生命的冠冕。」</p>
+        <p class="scripture-ref">雅各書 1:12</p>
       </div>
 
-      <div class="card-divider"></div>
-
       <div class="term-box">
-        <div class="term-original">paideia<br>παιδεία</div>
-        <div class="term-desc">希伯來書 12 章「管教」的希臘文，在古羅馬世界是「貴族繼承人的頂級教育」。奴隸或私生子無資格接受。信徒承受神的管教，本身就是合法兒子身份的確認。</div>
-      </div>
-
-      <div class="card-divider"></div>
-
-      <div class="term-box">
-        <div class="term-original">peirasmos<br>πειρασμός</div>
-        <div class="term-desc">雅各書 1 章「試煉」這個詞同時包含「試驗（神主動）」與「試探（撒旦利用）」兩種維度。同一個困難，對神而言是升級機會，對仇敵而言是陷阱誘餌。</div>
-      </div>
-
-      <div class="card-divider"></div>
-
-      <div class="term-box">
-        <div class="term-original">dioko<br>διώκω</div>
-        <div class="term-desc">提後 3:12「受逼迫」的希臘文字意為「窮追不捨的追捕」，且使用被動語態——磨難是主動向信徒而來的，不是信徒自找麻煩。這種被追趕，是因為你選擇了逆行。</div>
+        <div class="term-original">Peirasmos<br>πειρασμός</div>
+        <div class="term-desc">「試煉 / 試探」——同一個字，兩種方向。面對外在考驗時，它是「信心測試」，顯明你對神的真誠；若與內心私慾結合，它便蛻變為「罪惡引誘」，把人拉向墮落。</div>
       </div>
 
       <div class="highlight">
-        <strong>原文的核心啟示</strong>
-        這五個字有一個共同點：它們全都不是「懲罰」的語言，而是「塑造」的語言——修剪、精煉、教育、試驗、追趕——每一個字都在描述一個主動的、有方向的、充滿目的的工作。
+        <strong>屬靈爭戰的神學意圖</strong>
+        神絕對不誘惑人犯罪。但祂容許考驗，是為了在抉擇的關頭，讓信心從抽象的表態，變成實戰的成色。每一次在誘惑前選擇順服，那顆心就多了一分被神認可的純金成分。
       </div>
+
+      <span class="depth-label plain-tag">💡 生活語言</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏋️</span>
+        沒有阻力的訓練，不會長出肌肉。屬靈的爭戰也是一樣——每一次在誘惑前拒絕走捷徑，你的信心纖維就被拉伸了一次。那些讓你覺得痛苦的掙扎，正是你在成長的證據。
+      </div>
+
     </div>
   </div>
 </div>
 
 
-<!-- 第五章：深論 -->
+<!-- ══ 第五章：深論 ══ -->
 <div class="thread-line"></div>
 <div class="section-gap"></div>
 <div class="thread-line"></div>
@@ -560,42 +605,60 @@ body::before {
 <div class="chapter">
   <div class="card purple">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">5</span> 深論 · Theology</div>
-      <h2 class="card-title">苦難神學的系統建構：從成聖到榮耀化</h2>
-      <p class="card-hook">這五重路徑不是五個獨立的故事，而是一個有機的、漸進的屬靈上升通道，指向同一個終點。</p>
+      <div class="chapter-tag"><span class="num">5</span> Deep Dive · 深論</div>
+      <h2 class="card-title">磨難——敬虔生命的必然摩擦</h2>
+      <p class="card-hook">如果你的信仰從未遭遇阻力，那值得認真思考的，是你的信仰究竟長什麼樣子。</p>
     </div>
     <div class="card-body">
 
-      <span class="depth-label deep-tag">📖 系統神學層次</span>
+      <p>保羅寫給提摩太的話，是新約最震撼的神學命題之一，沒有任何條件句，沒有任何但書：「凡立志在基督耶穌裡敬虔度日的，也都要受逼迫。」（提摩太後書 3:12）</p>
 
-      <p>在基督教神學裡，成聖（Sanctification）與榮耀化（Glorification）是救贖歷程中的兩個關鍵階段。苦難，就是連接這兩個階段的橋梁——而五重塑造路徑，就是這座橋的五根橋墩。</p>
+      <span class="depth-label deep-tag">📖 原文釋經</span>
 
-      <div class="scripture">
-        <p class="scripture-text">「我們曉得萬事都互相效力……預先定下效法他兒子的模樣……他所召來的人又稱他們為義；所稱為義的人，又叫他們得榮耀。」</p>
-        <p class="scripture-ref">羅馬書 8:28–30</p>
+      <div class="term-box">
+        <div class="term-original">Dioko<br>διώκω</div>
+        <div class="term-desc">「逼迫、追獵」——原意指獵人攜犬在荒野中對獵物展開全速、不留餘地的圍捕。這個字描述的，是一種持續性的、侵略性的外部壓力，不是偶發的誤解或小摩擦。</div>
       </div>
 
-      <p>神學家把這段話稱為「黃金鏈」（Golden Chain）——從預知到預定、從呼召到稱義、從稱義到榮耀，每一個環節都是神主動、不可撤回的工作。苦難不是鏈條的斷裂，而是鏈條被拉緊的聲音。</p>
-
-      <div class="analogy">
-        <span class="analogy-icon">🏺</span>
-        先知耶利米曾被帶到陶匠的家，看見陶匠把做壞的器皿重新揉製（耶利米書 18:4）。陶匠並非丟棄了那塊泥，他繼續工作。那個「做壞」的時刻，不是廢品的宣告，而是重塑的起點。神對祂兒女的工作，正是這樣——祂從不丟棄，祂重塑。
+      <div class="term-box">
+        <div class="term-original">Eusebos<br>εὐσεβῶς</div>
+        <div class="term-desc">「敬虔地」——專指與世俗不道德潮流相對立，全然以屬天原則支配生活的敬虔態度。正是這種生命方式，必然在黑暗的世界系統中產生摩擦。</div>
       </div>
 
-      <p>這五重路徑呈現出一個神學上的完整邏輯：修理清空了虛假的依靠，熬煉暴露並除去了隱藏的罪性，管教塑造了聖潔的品格，爭戰鍛鍊了意志的忠誠，而磨難則最終確認了信徒不屬這世界的神聖身份。</p>
+      <p>原文中「遭受逼迫」是未來式被動語態——被動的使用，意義深遠。它告訴我們：這不是信徒主動招惹來的社交失敗，也不是性格缺陷帶來的結果。這是一種必然的物理反作用力：一個定意發光的燈，必然會讓習慣黑暗的眼睛感到刺眼。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🕯️ 摩擦是敬虔的證明</span>
+          若一個基督徒在世俗中從未感受到任何對立，往往意味著其生命軌跡已與世界同流。磨難是生命與黑暗產生差異的必然結果。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🔥 磨難粉碎地上的幻想</span>
+          神容許外部的敵意臨到，是為了在信徒心中粉碎對地上安樂的虛假幻想，使信徒脫離苟安的世俗泥潭，將眼目提升至永恆。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">👑 磨難是命運共體的邀請</span>
+          彼得前書四章告訴我們：在被追趕的絕境中，神的榮耀之靈便常住在信徒身上。磨難是基督邀請我們共擔祂十字架命運的時刻。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🌅 磨難預備承受榮耀</span>
+          保羅說，現在的苦楚，與將來要顯於我們的榮耀，是不能相比的。磨難不是路的終點，而是通往終點的路本身。
+        </div>
+      </div>
 
       <div class="big-quote">
-        神使萬事互相效力——這裡的「萬事」，包含你最不願意發生的那一件事。
-        <cite>— 羅馬書 8:28 的神學詮釋</cite>
+        苦難不是信仰失敗的標誌，而是敬虔生命在黑暗中燃燒的必然代價。
+        <cite>— 提摩太後書神學省思</cite>
       </div>
 
-      <p>神學家卡森（D.A. Carson）指出：約翰福音十五章中，結實纍纍是真門徒不可或缺且無可謬誤的記號。這意味著修剪的過程雖然帶來痛楚，卻是進入豐盛生命的必然入口。五重路徑的終點，不是更多的苦難，而是與基督同享的永恆榮耀。</p>
+      <p>保羅寫這封信時，羅馬帝國正處於屠殺基督徒的前夜。他沒有給提摩太一個逃脫的計畫，而是給了他一個理解的框架：磨難不是例外，而是敬虔生命的標準配備。</p>
+
     </div>
   </div>
 </div>
 
 
-<!-- 第六章：結論與溫馨 -->
+<!-- ══ 第六章：結論與溫馨 ══ -->
 <div class="thread-line"></div>
 <div class="section-gap"></div>
 <div class="thread-line"></div>
@@ -603,36 +666,43 @@ body::before {
 <div class="chapter">
   <div class="card final">
     <div class="card-header">
-      <div class="chapter-tag"><span class="num">6</span> 結論與溫馨 · Closing</div>
-      <h2 class="card-title">你正在被塑造，不是被遺棄</h2>
-      <p class="card-hook">在你最感到孤單、最難以理解的時刻，有一位匠人正守候在旁，凝視著你，精準地控制著溫度的極限。</p>
+      <div class="chapter-tag"><span class="num">6</span> Finale · 結論與溫馨</div>
+      <h2 class="card-title">五個維度，一個目的地</h2>
+      <p class="card-hook">每一次修剪、每一爐烈火、每一場訓練、每一個戰場、每一次摩擦——都在說同一句話：你被愛，你被看見，你正在走向榮耀。</p>
     </div>
     <div class="card-body">
 
-      <p>讀到這裡，我想對你說的，不是更多的神學——而是一句非常簡單的話：你正在被塑造，不是被遺棄。</p>
-
-      <p>你生命中那個讓你最困惑、最痛苦的處境，不是上帝的疏失，不是命運的惡意，不是你不夠好的懲罰。那是一位全能的天父，正在用祂最精準的手，塑造祂最愛的孩子。</p>
-
-      <div class="scripture">
-        <p class="scripture-text">「我們這至暫至輕的苦楚，要為我們成就極重無比、永遠的榮耀。」</p>
-        <p class="scripture-ref">哥林多後書 4:17</p>
-      </div>
-
-      <p>保羅寫下這句話的時候，他正在監獄裡。他說的「至暫至輕」，是在描述鞭打、石打、船破、流浪、冷餓的一生。如果連這樣的人生都能被稱為「輕微」，那是因為他已經看見了另一端那份「極重無比、永遠的榮耀」——而那份榮耀，是這五重路徑共同指向的終點。</p>
+      <p>我們走過了五條路徑。讓我們把它們放在一起，看見那幅完整的圖畫。</p>
 
       <div class="highlight">
-        <strong>帶走這五句話</strong>
-        修理時，神說：我要讓你結出更多果子。熬煉時，神說：我守在爐旁，從未離開。管教時，神說：這是我合法兒女才有的特權。爭戰時，神說：我在看你選擇。磨難時，神說：你不屬於這個世界——這是榮耀的記號。
+        <strong>五維路徑的整合</strong>
+        天父藉著「修理」調整外部枝葉，促成生命精準繁衍；藉著「熬煉」熔鑄內在純淨，分離靈魂深處的雜質；藉著「管教」確立嗣子身分，在神聖健身房中鍛鍊信心；藉著允許「爭戰」考驗誠實，使愛主之心具有實戰的成色；最終藉著「磨難」完成命運共體，使聖潔的子民預備好承接那極重無比、永遠的榮耀。
       </div>
+
+      <p>這五條路徑絕非孤立的苦難碎片，而是出自三一神精密設計、彼此效力的漸進式生命交響樂。它們從不同角度，完成同一件事：把一個「稱義的罪人」塑造成「榮耀化的兒女」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們曉得萬事都互相效力，叫愛神的人得益處，就是按祂旨意被召的人。」</p>
+        <p class="scripture-ref">羅馬書 8:28</p>
+      </div>
+
+      <p>最後，我想回到那個朋友——那個在深夜裡問神「你還在嗎」的人。如果你也曾在某個夜晚問過同樣的問題，我希望這個系列給你的，不是一個過於簡單的答案，而是一個更真實的視角。</p>
+
+      <p>你生命中的修剪，是因為天父太珍視你結出的果子，捨不得讓養分白白流失。你生命中的熔爐，是因為那位銀匠親自坐在爐旁看守，祂絕不讓烈火摧毀你，只是要把那些看不見的雜質分離出去。你生命中的管教，不是憤怒的父親在懲罰你，而是一位教練看見了你的潛力，決定把你帶進更嚴格的訓練計畫。</p>
 
       <div class="big-quote">
-        你不是在受苦，你是在被塑造。而那位塑造你的，知道終點在哪裡。
-        <cite>— 羅馬書 8:29</cite>
+        信仰的道路從來不是避開風雨的避難所，而是一所蒙恩被重塑的榮耀學院。
+        <cite>— 希伯來書 12:11</cite>
       </div>
 
-      <p>下一次當你在某種困難中，嘗試不再先問「為什麼」，而是先問「祢在這裡做什麼？」——那個問題的轉換，本身就是信心最真實的樣貌。</p>
+      <p>每一次生命的剪枝、每一次烈火的淬鍊、每一次戰場的堅守、以及每一次因敬虔而承受的摩擦，都在宣告著同一個真理：那位慈愛與公義並存的立約之神，正在對祂的兒女進行最深切的靈魂雕琢。</p>
 
-      <p>願你在被塑造的路上，感受到那雙守候的手。</p>
+      <p>這一切痛苦的盡頭，不是毀滅。是榮耀。</p>
+
+      <div class="highlight">
+        <strong>帶走這個問題</strong>
+        你現在正在經歷哪一條路徑？修理、熬煉、管教、爭戰，還是磨難？當你能夠為自己的苦難命名，它就不再只是無意義的疼痛——它成為了你與神之間，那段最真實的對話。
+      </div>
 
     </div>
   </div>
@@ -641,7 +711,7 @@ body::before {
 <div class="thread-line"></div>
 
 <footer class="site-footer">
-  榮耀的塑造路徑 · Glory Shaped Through Grace · 六章連貫系列
+  神造就兒女同享榮耀 · Glorification Series · 原文釋經研究
 </footer>
 
 </body>
