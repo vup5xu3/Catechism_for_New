@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白色大寶座 — 末世審判 Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">末世神學系列 · Eschatology Series</div>
+  <h1>站在<span>白色大寶座</span>前</h1>
+  <p class="subtitle">不信主者的終極景況 · 六章連貫深論</p>
+</header>
+
+
+<!-- 第一章：分享 -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> 分享 · Opening</div>
+      <h2 class="card-title">那天，我第一次認真問自己：死後到底去哪裡？</h2>
+      <p class="card-hook">不是因為恐懼，而是因為開始在乎真相</p>
+    </div>
+    <div class="card-body">
+      <p>我記得那是一個很普通的午後。一個朋友突然問了我一句話：「你有沒有想過，如果末日審判是真的，站在那個法庭上的你，會是什麼感覺？」</p>
+      <p>我楞了很久。不是因為我沒想過，而是因為我從沒把這件事當作一件我真的需要面對的現實——它一直是某種遙遠的宗教概念，是教堂玻璃窗上的圖案，是別人的故事。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        你有沒有試過想像，法庭的大門緩緩打開，走進去的人是你——不是別人，不是歷史上的惡人，就是每天刷手機、喝咖啡、擔心帳單的你？
+      </div>
+
+      <p>聖經裡有一段話，我後來反覆讀了很多遍。它說的不是抽象的末世預言，而是一個真實的場景，一個真實的審判，一個沒有人可以缺席的法庭。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「時候要到，凡在墳墓裡的，都要聽見他的聲音，就出來：行善的，復活得生；作惡的，復活定罪。」</p>
+        <p class="scripture-ref">約翰福音 5:28-29 · 和合本</p>
+      </div>
+
+      <p>「凡在墳墓裡的」——這不是選擇性邀請，不是某個特定宗教群體的內部集會。這是一場所有人都必須出席的最終清算。這一章，我想分享的不是一個道理，而是一個讓我久久無法平靜的問題：如果這是真的，我準備好了嗎？</p>
+
+      <div class="highlight">
+        <strong>本章核心問題</strong>
+        末世審判不是恐嚇工具，而是一個關乎真相的嚴肅問題。當我們開始認真對待它，就已經走在了智慧的起點上。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第二章：引導 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> 引導 · Bridge</div>
+      <h2 class="card-title">很多人以為死亡是終點，但聖經說它只是門</h2>
+      <p class="card-hook">走進這扇門之後，才是真正的開始</p>
+    </div>
+    <div class="card-body">
+      <p>我們的文化喜歡把死亡包裝成「解脫」、「回歸自然」或「另一個維度的旅行」。這些說法很溫柔，聽起來也很美，但聖經給出的是一個截然不同、也更難以迴避的框架。</p>
+
+      <div class="big-quote">
+        死亡不是審判的終止，而是審判的傳票
+        <cite>— 末世論核心命題</cite>
+      </div>
+
+      <p>啟示錄第二十章描述了一個讓人屏息的場景：一個白色的大寶座，從它面前，連天地都逃避了，沒有可見之處。想想看，連「天地」都無處可逃——那麼，我們憑什麼以為自己可以躲過？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我又看見死了的人，無論大小，都站在寶座前。案卷展開了，並且另有一卷展開，就是生命冊。死了的人都憑著這些案卷所記載的，照他們所行的受審判。」</p>
+        <p class="scripture-ref">啟示錄 20:12 · 和合本</p>
+      </div>
+
+      <p>這段描述有幾個細節值得我們先在心裡停下來感受：「無論大小」——這意味著沒有特權階層，古今中外所有人，帝王與乞丐，名人與無名之輩，全都站在同一個法庭裡。</p>
+
+      <div class="highlight">
+        <strong>引導入題</strong>
+        「案卷展開了」這個動作，代表的是透明性與完整性。沒有任何東西會被遺漏，也沒有任何東西可以被遮蓋。接下來的幾章，我們會一起把這個場景的每一層意義慢慢打開。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌟 死後不是終結</span>
+          聖經的世界觀：死亡打開了一扇門，門裡有審判，有清算，有最終的裁決
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">❤️ 審判是普世性的</span>
+          不分種族、宗教背景、社會地位——每一個曾存在過的人都在受審名單上
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">📋 有兩份決定命運的文件</span>
+          行為「案卷」記錄一切，「生命冊」決定最終去向——這是這個系列最核心的張力
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第三章：破題 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> 破題 · Revelation</div>
+      <h2 class="card-title">這個法庭沒有律師，沒有陪審團，只有一位審判長</h2>
+      <p class="card-hook">而祂，偏偏是那個最懂人間苦難的人</p>
+    </div>
+    <div class="card-body">
+      <p>我們常常把「審判」與「冷酷」畫上等號。但聖經的安排裡有一個讓人意想不到的轉折：坐在白色大寶座上的審判長，正是耶穌基督——那個在地上被誣告、被屈打、被釘十字架的拿撒勒人。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「父不審判什麼人，乃將審判的事全交與子。並且因為他是人子，就賜給他行審判的權柄。」</p>
+        <p class="scripture-ref">約翰福音 5:22, 27 · 和合本</p>
+      </div>
+
+      <p>「因為他是人子」——這個理由意味深長。上帝之所以把審判權交給耶穌，部分原因正在於祂真實地活過了人的生命：祂知道飢餓是什麼感覺，知道被朋友出賣是什麼滋味，知道在不公義面前無處申訴的絕望。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        這就像一位曾親身受過極大冤屈的法官，坐上了審判席。祂不需要任何人向祂解釋什麼是不公義——因為祂自己就曾是不公義最直接的受害者。這樣的審判，才是真正最公平的審判。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>然而，破題的核心張力在這裡出現了：這位最懂恩典、也曾在十字架上伸出救贖之手的審判長，在白色大寶座前，同時也是最不能妥協於罪惡的公義之主。恩典的時代在死亡的瞬間關閉，白色大寶座所展開的，是純粹的公義法庭，不再有求情的空間。</p>
+
+      <div class="highlight">
+        <strong>破題核心</strong>
+        審判長是耶穌，這個事實既令人安慰，又令人警醒。祂最懂恩典，但祂也最了解我們拒絕恩典的代價。這就是白色大寶座最深的弔詭之處。
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 第四章：研究 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> 研究 · Deep Study</div>
+      <h2 class="card-title">聖經原文告訴我們的，比翻譯版本更震撼</h2>
+      <p class="card-hook">三個關鍵字詞，拆解末日法庭的每一個細節</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 原文字源考據</span>
+
+      <p>當我們把末世審判相關的希臘文原文攤開來看，會發現聖經的用字有多麼精確——每一個詞都不是隨意選擇的，每一個詞背後都藏著一個完整的神學世界。</p>
+
+      <div class="term-box">
+        <div class="term-original">κρίσις<br>krisis</div>
+        <div class="term-desc">Strong's G2920。源自動詞「分離、辨析、裁決」，在希臘法庭中指法官作出的司法判決。在約翰神學中，它同時具有「當下性」與「未來性」——拒絕基督的人此刻就已處於 krisis 的陰影下，而歷史終結時的宣告不過是使這個現實公開顯明。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀνάστασις<br>anastasis</div>
+        <div class="term-desc">Strong's G386。由「向上」（ἀνά）與「站立」（ἵστημι）組合而成，字面義是「從平躺中重新站起來」。這不是隱喻，而是身體的真實復活。海、死亡和陰間要交出其中的死人——沒有人能因葬禮形式逃避這一刻。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">βιβλίον τῆς ζωῆς<br>生命冊</div>
+        <div class="term-desc">Strong's G975/G2222。希伯來文 ספר החיים（Sefer HaChayyim）。古代城邦的公民戶籍冊決定了誰享有繼承權，被劃名等同放逐。生命冊是天國的公民名冊，名字在上面代表罪債已被羔羊塗抹；名字不在上面，則要以行為案卷中未償還的罪帳受審。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <p>用現代語言翻譯：復活（anastasis）確保沒有人能因肉體的消滅而「缺席」法庭；審判（krisis）從我們拒絕福音的那一刻就已悄悄啟動；而生命冊則是那張決定你是「自費」還是「有人已代付」的最終帳單。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📱</span>
+        想像上帝為每個人安裝了一台「全自動、無死角的生命行車紀錄器」。它不只記錄外在言行，連大腦深處最私密的動機、從未說出口的念頭，全都一字不漏。案卷，就是這台紀錄器一生的完整輸出。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 第五章：深論 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> 深論 · Theology</div>
+      <h2 class="card-title">火湖到底是什麼？神學史上最大的論辯之一</h2>
+      <p class="card-hook">永恆刑罰還是徹底消滅——兩種觀點，一個共同的嚴肅結論</p>
+    </div>
+    <div class="card-body">
+
+      <p>「火湖」（λίμνη τοῦ πυρός）是末世論中最引發爭議、也最無法輕描淡寫的意象。正統神學在這個問題上存在兩個歷史悠久的詮釋向度，但無論採取哪一個，結論的嚴肅性是完全一致的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「死亡和陰間也被扔在火湖裡；這火湖就是第二次的死。若有人名字沒記在生命冊上，他就被扔在火湖裡。」</p>
+        <p class="scripture-ref">啟示錄 20:14-15 · 和合本</p>
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🔥 永恆意識刑罰說（傳統主流）</span>
+          火湖是罪人靈魂與身體永遠承受痛苦之所。與上帝——一切良善、愛與生命的源頭——徹底隔絕，造成永無止境的哀哭與切齒。早期教父希坡律陀即持此論，強調這是對罪惡「不可逆轉的懲罰性判決」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💨 消滅說（條件不朽說）</span>
+          火湖是上帝對罪惡、死亡與魔鬼勢力的終極銷毀。「死亡和陰間」本身也被扔進去——這意味著火湖是消滅一切抗拒神之物的宇宙焚化爐，而非監獄。「第二次死」字面意即生命的徹底終結。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚗️ 歷史背景：地理與冶金意象</span>
+          死海在古代常被稱「火湖」，其噴發硫磺與瀝青的地貌使人聯想到死寂與咒詛之地。冶金中硫磺燃燒是為去除雜質；猶太律法規定將偶像污物投入死海徹底銷毀遺忘——這些意象都指向「徹底清除」的概念。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">📖 兩種觀點的共同結論</span>
+          無論哪種詮釋，不信主者都將永遠失去：永恆生命、天國的繼承權、與上帝同在的榮耀。這是受造物所能面臨最悲慘、最不可逆的結局。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>深論核心洞察</strong>
+        值得注意的是，啟示錄說連「死亡」本身也被扔進火湖。這意味著火湖不是上帝的殘忍癖好，而是祂建立「死亡不再有」的新世界之前，必須進行的一次徹底的宇宙大掃除。上帝設立火湖，是為了對整個受造世界最深沉的保護與愛——確保新天新地永遠不再受罪惡染指。
+      </div>
+
+      <div class="big-quote">
+        地獄最大的悲劇，不是烈火，而是永遠失去那份本可擁有的榮耀
+        <cite>— 末世論神學反思</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- 終章：結論與溫馨 -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> 結論 · Closing</div>
+      <h2 class="card-title">審判的另一面，是上帝為你留著的那扇門</h2>
+      <p class="card-hook">談了這麼多末日，我最想說的其實是這個</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們花了五章的篇幅，認真地凝視末日審判的真實面貌——法庭的莊嚴、案卷的完整、火湖的終極性。這些都是聖經誠實告訴我們的事，不能迴避，也不應該美化。</p>
+
+      <p>但是，如果這整個系列只是為了讓你害怕，那我寫錯了。聖經講末日審判的最終目的，從來不是恐嚇，而是邀請——邀請每一個還活著的人，在那道門關閉之前，做出一個改變一切的選擇。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「若有人名字沒記在生命冊上，他就被扔在火湖裡。」</p>
+        <p class="scripture-ref">啟示錄 20:15 · 和合本</p>
+      </div>
+
+      <p>注意這句話的結構：它說的是「若有人名字沒記在生命冊上」——這意味著有人的名字是記在上面的。生命冊存在，意味著救恩存在。這個嚴峻的末日場景，背後站著一個不願任何人滅亡的上帝。</p>
+
+      <div class="highlight">
+        <strong>最終的溫柔</strong>
+        那個在白色大寶座上坐著的審判長，曾經在同一個手掌裡，同時承載了全人類的罪惡與上帝的憤怒——為的就是讓你的名字有機會出現在那本生命冊上。這不是宗教規條，這是一個人為另一個人所做的最大的事。
+      </div>
+
+      <div class="analogy" style="background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.05)); border-color: rgba(201,168,76,0.3); color: rgba(247,240,227,0.85); font-style: normal;">
+        <span class="analogy-icon">✉️</span>
+        如果有人替你預先繳清了一筆你永遠無力償還的鉅額債務，把收據交到你手上說「這筆已經結清了，你自由了」——你會把那張收據扔掉嗎？還是你會緊緊握住它，充滿感激地走出去？福音，就是那張收據。
+      </div>
+
+      <p>我不知道你讀到這裡是什麼感受。也許你對這些神學內容早已熟悉；也許你第一次認真地把它當作真實的事來思考；也許你心裡有一個問題還沒被解答。不管是哪一種，我想說的是：這個問題值得你認真對待，因為它比任何其他問題都更關乎你真實的永恆。</p>
+
+      <div class="big-quote">
+        末日審判的存在，是上帝對公義最嚴肅的承諾；而十字架的存在，是上帝對你最深情的邀請
+        <cite>— 白色大寶座系列 · 結語</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  末世神學 · Eschatology Series · 白色大寶座審判
+</footer>
+
+</body>
+</html>

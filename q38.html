@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>【綿羊與山羊】被撇下的基督徒，將來往哪裡去？— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════
+   COLOR TOKENS — 不要隨意更動
+══════════════════════════════════ */
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SITE HEADER
+══════════════════════════════════ -->
+<header class="site-header">
+  <div class="eyebrow">Kingdom Series · 國度真理系列</div>
+  <h1>綿羊與<span>山羊</span></h1>
+  <p class="subtitle">被撇下的基督徒，將來往哪裡去？ · 馬太福音廿五31～46 探討</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那一夜，我重讀馬太福音廿五章</h2>
+      <p class="card-hook">「我已經得救了」——這句話，會不會成了我們安睡的枕頭？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>想跟大家分享一段我反覆思想很久的經文。馬太福音廿五章的結尾，主耶穌講了一幅震撼的圖畫：祂在榮耀裡降臨，坐在寶座上，把萬民分別出來——綿羊在右邊，山羊在左邊。</p>
+
+      <p>從前我讀這段，總以為這是在講「信的人」和「不信的人」。直到有一天我注意到一個細節：<b>山羊也稱耶穌為「主啊」</b>（太25:44），而且口氣裡帶著委屈——「我們甚麼時候見你餓了……不伺候你呢？」一個從來不認識主的人，會這樣對主說話嗎？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「主啊，我們甚麼時候見你餓了，或渴了……不伺候你呢？」</p>
+        <p class="scripture-ref">馬太福音 25:44</p>
+      </div>
+
+      <p>這個發現讓我不能再輕鬆地讀下去。如果山羊也是主的人，那這場審判處理的，就不是「信與不信」的問題，而是<b>信了主之後，有沒有活出生命</b>的問題。</p>
+
+      <div class="highlight">
+        <strong>這個系列要回答三個問題</strong>
+        一、「得救」和「得勝」是同一件事嗎？<br>
+        二、若教會被提時有信徒被撇下，他們的結局是什麼？<br>
+        三、綿羊與山羊的審判，到底審的是誰？
+      </div>
+
+      <p>這不是神學上的好奇心，而是關乎你我每一天怎麼活的警醒。接下來六篇，我們一章一章地走進這段經文。願我們都存著庇哩亞人的心，「天天考查聖經，要曉得這道是與不是」（徒十七11）。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">得救是白白的，得勝卻要付代價</h2>
+      <p class="card-hook">弄混這兩件事，是廉價恩典的開始。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>要讀懂綿羊與山羊，必須先分清兩個常被混為一談的觀念：<b>得救</b>與<b>得勝</b>。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「你們得救是本乎恩，也因著信……不是出於行為，免得有人自誇。」</p>
+        <p class="scripture-ref">以弗所書 2:8–9</p>
+      </div>
+
+      <p>得救，是神白白的恩典，不靠行為、不能自誇。這是穩固的根基。然而聖經同時一再顯示：<b>進入國度、與主一同作王</b>，卻與信徒得救之後的行為、忠心與預備息息相關。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎓</span>
+        好比考上一所大學是「錄取」，但四年後能不能站上領獎台、領到榮譽，要看入學之後怎麼讀。錄取是恩典給的入場券；獎賞卻是對忠心的回應。得救與得勝的分別，正是如此。
+      </div>
+
+      <p>主在橄欖山上的整篇講論（太廿四～廿五章），聽眾從頭到尾都是<b>門徒</b>（太24:3）。祂一連講了三個比喻，層層遞進，全是對自己人的警告：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🕯️ 十個童女（25:1–13）</span>
+          都是童女、都有燈、都迎接新郎——分別在於器皿裡<b>有油沒油</b>。結局：進去坐席，或被關在門外。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">💰 按才幹受託（25:14–30）</span>
+          都是主人的僕人、都領了銀子——分別在於<b>忠心經營或懶惰埋藏</b>。結局：進入主人的快樂，或被丟在外面黑暗裡。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🐑 綿羊與山羊（25:31–46）</span>
+          都是羊、都稱耶穌為「主」——分別在於<b>有無愛心的好行為</b>。結局：承受國，或進入永刑。
+        </div>
+      </div>
+
+      <p>注意這三個比喻的共同點：受審的童女是童女、僕人是僕人——身分都是主自己的人。按文脈的一致性，第三段受審的「羊」，也當是信徒。忽略國度賞罰的真理，信徒便失去儆醒度日的動力——下一章，我們正式破題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">綿羊與山羊，都是基督徒</h2>
+      <p class="card-hook">主從未把不信的人比作羊——不信的人，聖經另有稱呼。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>現在把本系列的論點正式陳明：<b>當主從天際降臨、設立榮耀寶座的時候，受分別的綿羊與山羊，都是基督徒。</b>不信主的人不在這場審判之列；他們的審判另有時間與場合。</p>
+
+      <div class="highlight">
+        <strong>論點三句話</strong>
+        綿羊＝有好行為的信徒，承受那創世以來所預備的國，進入千禧年國。<br>
+        山羊＝沒有好行為、未得勝的信徒，被處永遠的刑罰（太25:46）。<br>
+        猶太人與未信者＝另有審判的場合，不可與此處混為一談。
+      </div>
+
+      <p>憑什麼說山羊也是主的人？第一個理由前面已提過：山羊稱耶穌為「主啊」，且自認一生都在服事的範圍裡。第二個理由更關鍵——<b>聖經的用詞是有分別的</b>。</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>牧人所牧養的，無論綿羊或山羊，都在祂的羊圈、吃同一片草場。「羊」在聖經裡始終指主的人。那不信的人呢？聖經稱他們為「畜類」：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「但這些人好像沒有靈性，生來就是畜類，以備捉拿宰殺的。」</p>
+        <p class="scripture-ref">彼得後書 2:12</p>
+      </div>
+
+      <p>猶大書10節說他們「像那沒有靈性的畜類」；詩篇四十九篇20節說「人在尊貴中而不醒悟，就如死亡的畜類一樣」。<b>羊指主的人，畜類指不信的人</b>——因此榮耀寶座前受審的，不可能是未信者。未信者的審判在白色大寶座（啟二十11–15），那是千禧年之後的事。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏡</span>
+        想像一個大家庭的年終家庭會議。會議桌前坐的全是這家的孩子——表現好的、表現差的都有，但都是孩子。鄰居家的人根本不會出現在這張桌子上，因為他們另有自己的場合。綿羊與山羊的審判，就是這樣一場「家裡的事」。
+      </div>
+
+      <p>兩者的分別不在「信與不信」，而在<b>有無活出愛心的行為</b>——這正是得勝與未得勝信徒的分別。那麼，主用什麼標準分辨？經文與原文怎麼說？下一章進入研究。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">從原文看：那「刑罰」原是修剪</h2>
+      <p class="card-hook">四個希臘字，撐起整段經文的重量。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這一章我們把放大鏡對準經文本身，看四個關鍵的希臘原文字。</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <div class="term-box">
+        <div class="term-original">Kolasis<br>κόλασις</div>
+        <div class="term-desc">太25:46「永刑」的「刑」。原為園藝用語，「修剪」之意。山羊所受的是主對<b>自己人</b>的公義懲治——「修剪」一詞本身，即帶有對付主人自己園中枝子的含義（參約十五2、6：凡屬祂不結果子的枝子，祂就剪去）。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Aionios<br>αἰώνιος</div>
+        <div class="term-desc">「永遠的、屬於那世代的」。界定此刑罰的嚴重性與長度——這絕非可以輕忽的小事，乃是主嚴肅的判決。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Achreios<br>ἀχρεῖος</div>
+        <div class="term-desc">太25:30「無用的僕人」。注意：無用的「僕人」仍是僕人——身分是主的人，卻因不忠心而被丟在外面黑暗裡哀哭切齒，與山羊的結局互相呼應。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Adelphoi<br>ἀδελφοί</div>
+        <div class="term-desc">太25:40「我這弟兄中一個最小的」。審判的標準，是如何對待主的<b>弟兄</b>——這是信徒群體內部彼此相愛的考驗（約十三35）。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <p>把這四個字串起來，圖畫就清楚了：受審的是僕人、是弟兄、是園中的枝子——全是「家裡人」的詞彙。而審判的標準，竟不是恩賜大小、知識多寡，而是最樸實的事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「這些事你們既作在我這弟兄中一個最小的身上，就是作在我身上了。」</p>
+        <p class="scripture-ref">馬太福音 25:40</p>
+      </div>
+
+      <p>給飢餓的吃、給赤身的穿、看顧病的、探望被囚的。約翰壹書三章14節說：「我們因為愛弟兄，就曉得是已經出死入生了；沒有愛心的，仍住在死中。」愛弟兄的實際行動，正是生命是否得勝的試金石。</p>
+
+      <div class="highlight">
+        <strong>忽略之罪 · Sin of Omission</strong>
+        留意：山羊的罪不是「作了什麼惡」，而是<b>該作的沒有作</b>。「人若知道行善，卻不去行，這就是他的罪了」（雅四17）。主在這場審判中，以「沒有去行」為定罪的依據——這比我們想像的嚴肅得多。
+      </div>
+
+      <p>那麼，這場審判在整個終末的時間表裡，位置在哪？猶太人和未信者又在哪裡受審？下一章，我們把三大審判的架構一次攤開。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">三大審判：別把三張桌子併成一張</h2>
+      <p class="card-hook">許多混亂，來自把不同對象的審判讀成同一場。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>聖經中關乎終末的審判，至少有三場，對象、時間、依據、結果各不相同：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 基督台前的審判（林後五10；羅十四10）</span>
+          時間：信徒被提到空中之時。對象：<b>已被提的信徒</b>。依據：一生的生活、工作與事奉。結果：得賞賜（冠冕、與主作王）或受虧損。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">👑 榮耀寶座的審判（太廿五31–46）</span>
+          時間：主降臨地上、千禧年國開始之前。對象：<b>被撇下、活到主來的基督徒</b>——就是綿羊與山羊。依據：有無愛心的好行為。結果：綿羊進千禧年國；山羊往永刑。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🤍 白色大寶座的審判（啟二十11–15）</span>
+          時間：千禧年結束之後。對象：歷代所有<b>不信的死人</b>（畜類）。依據：案卷所記的行為，並核對生命冊。結果：名字不在生命冊上的，被扔在火湖——第二次的死。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那猶太人（以色列）呢？主對他們另有特定的對付。以西結書二十章33–38節預言，主要將以色列人帶到「外邦人的曠野」，在那裡當面刑罰、將叛逆的從中間除掉，使煉淨的餘民進入國度；撒迦利亞書十二～十三章也預言以色列全家在主顯現時的哀哭與潔淨。因此，<b>猶太人的審判不在綿羊山羊之列</b>。</p>
+
+      <div class="card-divider"></div>
+
+      <p>把架構釐清之後，未得勝信徒的將來景況，就可以按次序整理出來了：被提時因不儆醒、無油、無好行為而<b>被撇下</b>（太廿四40–42），經過地上最後一段時期的熬煉；主帶著眾天使降臨、坐在榮耀寶座上時，在祂面前<b>受分別</b>；在這段期間活出愛心的，蒙主稱許承受國；至終仍無好行為的，則聽見那句沉重的話——</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「離開我！進入那為魔鬼和他的使者所預備的永火裡去……這些人要往永刑裡去。」</p>
+        <p class="scripture-ref">馬太福音 25:41、46</p>
+      </div>
+
+      <div class="highlight">
+        <strong>詮釋立場的說明</strong>
+        讀者宜知，教會歷史上對太廿五31–46另有兩種主要讀法：其一視綿羊山羊為教會中的真假信徒（傳統改革宗與多數福音派）；其二視之為大災難後存活的外邦萬民（古典時代論）。本系列不採此二說，理由已陳明於前幾章的上下文與用詞分析；惟誠實列出於此，供讀者按聖經自行考查（徒十七11）。
+      </div>
+
+      <p>真理攤開了，然而真理從來不是為了叫人懼怕而存在。最後一章，我們要問：這一切，對今天的你我究竟意味著什麼？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">綿羊行善，行到連自己都忘了</h2>
+      <p class="card-hook">這真理的終點不是恐懼，而是一杯水的溫柔。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>走完五章，把結論收攏成四句話送給你，也送給我自己。</p>
+
+      <p><b>一、儆醒度日。</b>既然得救的人仍要按行為在主面前受分別，我們就不能以「我已得救」為安睡的枕頭。十童女的呼聲至今迴響：「你們要儆醒，因為那日子、那時辰，你們不知道」（太25:13）。</p>
+
+      <p><b>二、愛弟兄是得勝的記號。</b>審判的標準不是講台上的恩賜、不是腦中的知識，而是一杯水、一件衣、一次探望。得勝，是在最小的事上操練出來的。</p>
+
+      <p><b>三、行為是生命的明證，不是救恩的交換。</b>請留意一個動人的細節——綿羊聽見稱讚時竟然驚訝：「主啊，我們甚麼時候見你餓了，給你吃？」（太25:37）他們行善行到一個地步，連自己都忘了。愛已成為生命自然的流露。我們追求好行為，不是為換取救恩，而是讓裡面的生命得勝、顯大。</p>
+
+      <p><b>四、敬拜與關懷合一。</b>君王與最卑微的受苦者認同——「就是作在我身上」。這句話打破了「愛神」與「愛人」的二分：對上帝的敬虔，必須通過鄰舍實際需要的考驗。</p>
+
+      <div class="highlight">
+        <strong>給此刻讀到這裡的你</strong>
+        如果這個系列讓你心裡發沉，請記得：警告是給還來得及的人聽的。主說這番話的對象是門徒——是祂愛、祂牧養、祂不願失去一個的人。今天身邊那位軟弱的弟兄、孤單的姊妹、需要一頓飯一通電話的人，就是你進入這真理的門。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們因為愛弟兄，就曉得是已經出死入生了。」</p>
+        <p class="scripture-ref">約翰壹書 3:14</p>
+      </div>
+
+      <div class="big-quote">
+        審判的標準如此深奧，又如此簡單：<br>你怎樣待了我最小的弟兄。
+        <cite>— 馬太福音 25:40 釋義</cite>
+      </div>
+
+      <p>願我們都不是那把銀子埋在地裡的僕人，而是燈裡有油、手裡有糧、心裡有愛的人——好在那日，聽見祂說：「你們這蒙我父賜福的，可來承受那創世以來為你們所預備的國。」</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer class="site-footer">
+  綿羊與山羊 · Kingdom Series · 經文引自《聖經和合本》
+</footer>
+
+</body>
+</html>
