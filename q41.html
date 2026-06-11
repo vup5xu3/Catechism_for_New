@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>【信了主，審判還關我的事嗎？】— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SITE HEADER
+══════════════════════════════════ -->
+<header class="site-header">
+  <div class="eyebrow">案卷與生命冊 · The Great White Throne</div>
+  <h1>信了主，<span>審判</span>還關我的事嗎？</h1>
+  <p class="subtitle">六章連貫長文 · 從啓示錄二十章與約翰福音五章，認真回答一個不能迴避的問題</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一個許多信徒心裡偷偷想過、卻不敢問出口的問題</h2>
+      <p class="card-hook">「我都已經信耶穌了，將來那個大審判……應該跟我沒關係了吧？」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這個問題，我聽過很多次。有時是慕道朋友好奇地問，有時是信主多年的弟兄姊妹半開玩笑地說：「反正我受洗了，名字應該記上去了啦。」說完笑一笑，話題就帶過去了。</p>
+
+      <p>但笑過之後，心裡那個小小的不安，其實沒有消失。因為我們都隱約知道——自己的日子，過得跟「信主的人」這個稱呼，常常對不太起來。禱告愛做不做、聖經愛讀不讀、待人處事和沒信的人差不多，有時甚至更差。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎫</span>
+        很多人把「信主」想成一張演唱會門票：買了票，入場就保證了，之後我在場內睡覺、滑手機、亂丟垃圾，都不影響我「在場」的事實。——但聖經描述的審判，真的是這樣運作的嗎？
+      </div>
+
+      <p>這一個系列，我想陪你認真面對一個具體的問題：<strong>已經信主、卻沒有好行為的人，將來要不要站在白色大寶座前受審判？</strong></p>
+
+      <div class="highlight">
+        <strong>本系列的路線圖</strong>
+        我們會先把問題問清楚（第二、三章），然後進入兩段關鍵經文的原文研究（第四章），再把神學論證串起來（第五章），最後回到一個溫柔但嚴肅的提醒（第六章）。
+      </div>
+
+      <p>先說在前面：這個系列的答案不是安慰劑，而是一記警鐘。但警鐘響起，正是因為還來得及。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">白色大寶座，到底是什麼場景？</h2>
+      <p class="card-hook">在回答「關不關我的事」之前，先看清楚那個場面長什麼樣子。</p>
+    </div>
+    <div class="card-body">
+
+      <p>啓示錄第二十章的末尾，描繪了聖經中最莊嚴、也最令人屏息的一幕。約翰寫道：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我又看見一個白色的大寶座……我又看見死了的人，無論大小，都站在寶座前。案卷展開了，並且另有一卷展開，就是生命冊。死了的人都憑著這些案卷所記載的，照他們所行的受審判……若有人名字沒記在生命冊上，他就被扔在火湖裡。」</p>
+        <p class="scripture-ref">啓示錄 二十章 11～15 節</p>
+      </div>
+
+      <p>請留意這個場景裡的三個關鍵畫面：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">👥 第一個畫面：站著的人</span>
+          「死了的人，無論大小」都站在寶座前——經文沒有列出任何豁免名單。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">📜 第二個畫面：展開的冊子</span>
+          有兩種冊子同時打開：複數的「案卷」記錄行為，單數的「生命冊」記錄名字。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">⚖️ 第三個畫面：審判的尺</span>
+          審判的標準寫得清清楚楚——「照他們所行的」，而且這句話在 12、13 節連續出現兩次。
+        </div>
+      </div>
+
+      <p>這裡浮現一個值得我們停下來想的事：經文描述受審範圍時用的詞是「無論大小」——不是「無論信或不信」，也不是「凡沒受洗的」。它劃界的方式，跟我們習慣的想像不太一樣。</p>
+
+      <div class="highlight">
+        <strong>留一個問題給下一章</strong>
+        如果審判的尺是「所行的」，那麼一個「信了主、卻沒有好行為」的人，站在這把尺面前——他的處境，到底是什麼？
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">直球回答：要。</h2>
+      <p class="card-hook">已經信主、若沒有好行為——要不要到白色寶座前受審判？答案只有一個字。</p>
+    </div>
+    <div class="card-body">
+
+      <p>不繞圈子。本系列所依據的問答資料，給出的答案非常乾脆：<strong>要。</strong></p>
+
+      <p>為什麼能答得這麼直接？因為這不是哪個人的私見，而是把兩段經文並排放在一起之後，自然浮出來的結論。第二段經文，是主耶穌親口說的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「時候要到，凡在墳墓裡的，都要聽見祂的聲音，就出來：行善的，復活得生；作惡的，復活定罪。」</p>
+        <p class="scripture-ref">約翰福音 五章 28～29 節</p>
+      </div>
+
+      <p>請注意主耶穌在這裡劃分兩種結局的方式。祂說的是「行善的」與「作惡的」——標準落在<strong>「做了什麼」</strong>，而不是「掛了什麼名」。而且，主沒有在這兩節後面加上一句「信了的人不在此限」的但書。</p>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">📏</span>
+        想像考試放榜：榜單的分發標準是「分數」。一個學生說「我有報名啊」——報名讓你有了考生身分，但榜單量的還是你的答題。同樣，那場審判的尺量的是「行為」；「我信了」這句話本身，並不會讓那把尺轉彎。
+      </div>
+
+      <div class="highlight">
+        <strong>本章核心一句話</strong>
+        審判的標準既然明文是「照所行的」，那麼「沒有好行為」的信徒，正好就落在這個標準之下——所以，要受審判。
+      </div>
+
+      <p>當然，這樣直接的答案需要扎實的根據。下一章，我們進入原文，逐字看這兩段經文究竟怎麼說。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">回到原文：每一個字，都把重量壓在「做」上面</h2>
+      <p class="card-hook">希臘原文的考據，比中文翻譯更不留情面。</p>
+    </div>
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 深度層次 · 啓示錄二十章</span>
+
+      <div class="term-box">
+        <div class="term-original">τοὺς μεγάλους<br>καὶ τοὺς μικρούς</div>
+        <div class="term-desc">「無論大小」——這個片語表明受審範圍的全面性，不以身分、地位作為豁免條件。出席與否的分界不是「信主與否」，行為才是審判的內容。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">κατὰ τὰ ἔργα<br>αὐτῶν</div>
+        <div class="term-desc">「照他們所行的」——κατὰ 加直接受格，意思是「按照……為標準」；ἔργα 就是行為、工作。這個片語在 12、13 節重複出現兩次，審判的標準明文就是「所行的」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">βιβλία /<br>βίβλος τῆς ζωῆς</div>
+        <div class="term-desc">「案卷」（複數）與「生命冊」（單數）並列展開：案卷記錄行為，生命冊記錄名字。審判程序同時核對兩者——而行為紀錄，是每一個受審者都要面對的。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἐκρίθησαν</div>
+        <div class="term-desc">「受審判」（13 節）——κρίνω 的不定過去被動式：被裁決、被判定。「站在寶座前 → 案卷展開 → 照所行的被判定」，是一套完整的程序。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次 · 約翰福音五章</span>
+
+      <div class="term-box">
+        <div class="term-original">πάντες οἱ ἐν<br>τοῖς μνημείοις</div>
+        <div class="term-desc">「凡在墳墓裡的」——πάντες 就是所有人，無一例外。復活受審的範圍是「凡」，同樣不設身分豁免。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ποιήσαντες</div>
+        <div class="term-desc">「行善的」用的是不定過去式主動分詞：「實際做出了善行的人」。重點在「做」（ποιέω），不在口頭。復活得生的條件描述，落在「行出來的善」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">πράξαντες</div>
+        <div class="term-desc">「作惡的」——φαῦλα 指卑劣、無價值之事；πράσσω 則帶有習慣性、持續性實行的意味。一生「實行」的定性，決定復活的方向。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀνάστασιν ζωῆς /<br>ἀνάστασιν κρίσεως</div>
+        <div class="term-desc">「復活得生／復活定罪」——兩種復活，以所屬格界定性質：「屬生命的復活」與「屬審判的復活」。主耶穌把復活的結局，與「行善／作惡」直接掛鉤。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>原文研究小結</strong>
+        約五 29 用 ποιήσαντες（做出來的善）與 πράξαντες（持續實行的惡）；啓廿 12～13 兩次重複 κατὰ τὰ ἔργα（照所行的）。兩段經文的原文，不約而同地把全部重量壓在「做」上面。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">兩段經文串起來：堵住一個屬靈漏洞</h2>
+      <p class="card-hook">「我信了，所以怎麼活都沒關係。」——這個漏洞，聖經親手堵上了。</p>
+    </div>
+    <div class="card-body">
+
+      <p>把第四章的原文證據組裝起來，論證的結構其實非常工整：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 約五 28～29：主親口的標準</span>
+          劃分「得生」與「定罪」的明文標準，是行善與作惡——主沒有加上「信了就免」的但書。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 啓廿 12～13：寶座前的同一把尺</span>
+          白色寶座的審判標準同樣是「照他們所行的」，而且重複強調兩次。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 標準一致、範圍一致</span>
+          兩處的標準一致（行為），範圍一致（「凡」／「無論大小」）——彼此互相印證。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 結論</span>
+          已經信主、卻沒有好行為的人，正好落在「按所行的受審」這個標準之下——所以，要接受白色寶座的審判。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <p>這份問答的核心關切，是堵住一個屬靈漏洞：「我信了，所以怎麼活都沒關係。」聖經呈現的審判場景裡，案卷上記的不是你的口號、頭銜、受洗證書，而是行為紀錄。「無論大小」「凡在墳墓裡的」這種全稱用語，正是要拆掉人心裡那道「我有身分、應該可以豁免」的僥倖。</p>
+
+      <p>而且這條線索前後一貫。資料前文的〔註〕指出，哀哭切齒之處沒有第三個地方（參路加福音十六章 19～31 節財主與拉撒路的記載）——而在那裡哀哭切齒的，竟包括牧師、長執、信徒：就是那些「信了主、卻是惡僕、又惡又懶、不穿禮服」的人。本題接續同一條線：</p>
+
+      <div class="highlight">
+        <strong>深論的結晶</strong>
+        信主的身分不能取代好行為。信心若沒有行為托底，就不能在審判的標準（行為）面前免責。行為的帳，要在白色寶座前按案卷所記面對——這是對一切掛名信徒最嚴肅的警鐘。
+      </div>
+
+      <div class="big-quote">
+        案卷展開時，「照他們所行的」這把尺，是對著所行的量下去的。
+        <cite>— 啓示錄二十章的審判邏輯</cite>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">嘴上信、手上空，審判台前照樣要對帳</h2>
+      <p class="card-hook">警鐘是嚴厲的，但敲響警鐘的心，是溫柔的。</p>
+    </div>
+    <div class="card-body">
+
+      <p>走完五章，我們把答案再說一次，這次用最白話的方式：</p>
+
+      <p>問：我信耶穌了，但日子過得隨隨便便、沒什麼好行為——將來那個白色大寶座的大審判，關我的事嗎？</p>
+
+      <div class="highlight">
+        <strong>答案</strong>
+        關。只有一個字：要。那場審判的尺，量的是「行為」。你說你信了，但沒有好行為——那把尺量下來，你拿什麼擋？「信主」這個身分，從來不是免死金牌；案卷上記的，是你怎麼活的。
+      </div>
+
+      <p>但請聽清楚：這篇文章不是要把人嚇進絕望，而是要把人喚醒過來。警鐘之所以現在響，正因為現在還來得及。今天還能讀到這段話的你，案卷還在書寫中——今天的悔改、今天的順服、今天伸出去幫助人的那雙手，都還來得及寫進去。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「行善的，復活得生；作惡的，復活定罪。」</p>
+        <p class="scripture-ref">約翰福音 五章 29 節</p>
+      </div>
+
+      <p>所以，親愛的弟兄姊妹，不要再讓「我信了」成為懶惰的枕頭。讓它成為起點——從今天起，把信心活出來：認真禱告、誠實待人、憐憫軟弱的、饒恕得罪你的。不是靠這些「賺」什麼，而是因為真實的信心，本來就會長出真實的行為。</p>
+
+      <div class="big-quote">
+        信心要用行為寫，<br>因為案卷記的是「所行的」。
+        <cite>— 本系列總結</cite>
+      </div>
+
+      <p>願我們每一個人，在那日案卷展開的時候，翻出來的是一頁一頁活出來的信心。共勉。🤍</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  案卷與生命冊 · The Great White Throne Series
+</footer>
+
+</body>
+</html>
