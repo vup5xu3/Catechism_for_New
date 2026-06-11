@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>【煉獄教義：聖經怎麼說？】— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════
+   COLOR TOKENS — 不要隨意更動
+══════════════════════════════════ */
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SITE HEADER
+══════════════════════════════════ -->
+<header class="site-header">
+  <div class="eyebrow">Threads 信仰系列 · Sola Scriptura</div>
+  <h1>煉獄教義<span>聖經怎麼說？</span></h1>
+  <p class="subtitle">六章連貫長文 · 從一個朋友的提問，走進原文與恩典的深處</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「人死後，是不是要先去煉獄受苦？」</h2>
+      <p class="card-hook">這個問題，是在一場喪禮之後被問出來的。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>前陣子，一位朋友參加完親人的告別式，回來後問了我一個問題：「我聽說人死後不會馬上去天堂，要先到一個地方把罪『燒乾淨』，才有資格進去。是真的嗎？」</p>
+
+      <p>他說這話的時候，眼神裡不是好奇，是<strong>害怕</strong>。他害怕他所愛的人現在正在某個地方受苦；他也害怕，有一天自己也要去那裡。</p>
+
+      <p>我相信很多人都聽過這個說法——它叫做「煉獄」（Purgatory）。在電影裡、在小說裡、在但丁的《神曲》裡，它被描繪成一座介於天堂與地獄之間的山，靈魂在那裡被火焰煉淨，一層一層往上爬。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        想像一個畫面：你愛的人過世了，有人告訴你——他現在被關在一個火裡，要受苦很久，除非你為他多做點什麼，他才能早點出來。這個說法在歷史上，曾經讓無數人活在恐懼與虧欠之中。
+      </div>
+
+      <p>但今天我想邀請你，跟我一起做一件最重要的事——<strong>不問傳統怎麼說、不問電影怎麼演，只問一個問題：聖經本身，到底怎麼說？</strong></p>
+
+      <div class="highlight">
+        <strong>本系列的旅程</strong>
+        接下來六章，我們會從這個提問出發：先理解煉獄教義在說什麼、它引用了哪些經文，然後打開希臘文原文逐字查驗，最後回到十字架前，看見一個比「補罪」更震撼的答案。
+      </div>
+
+      <p>如果你也曾為「死後會去哪裡」而不安，這個系列是為你寫的。我們下一章見。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">為什麼「煉獄」這麼有說服力？因為它說中了一件真實的事</h2>
+      <p class="card-hook">在反駁一個教義之前，先誠實面對它為什麼動人。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>先別急著下結論。煉獄教義之所以流傳千年，是因為它回應了人心深處兩個非常真實的直覺：</p>
+
+      <p><strong>第一個直覺：「我不夠乾淨。」</strong>每個誠實面對自己的人都知道——我們臨終的那一刻，絕不會是完美的。還有沒戒掉的脾氣、沒放下的怨恨、沒說出口的道歉。一個聖潔的神，怎麼可能直接接納這樣的我？</p>
+
+      <p><strong>第二個直覺：「聖潔的天堂，容不下污穢。」</strong>這個直覺其實是對的，聖經也這樣說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「非聖潔沒有人能見主。」</p>
+        <p class="scripture-ref">希伯來書 12:14</p>
+      </div>
+
+      <p>所以煉獄的邏輯是這樣推的：人死時不完全 → 天堂要求完全 → 中間必須有一個「補完」的地方 → 那就是煉獄。</p>
+
+      <div class="highlight">
+        <strong>關鍵的岔路口</strong>
+        注意：問題的「診斷」是對的——我們確實不夠聖潔。但「處方」呢？讓人「靠受苦把自己煉乾淨」，和「靠基督已完成的工作被算為完全」，是兩條完全不同的路。整個爭論，就在這個岔路口。
+      </div>
+
+      <p>而且，聖經裡確實出現很多「火」與「煉淨」的圖像：詩篇 66 篇說「祢使我們進入網羅……我們經過水火」；彼得前書 1 章說信心「被火試驗」；瑪拉基書 3 章說祂要「煉淨利未人，如煉金銀」。</p>
+
+      <p>這些經文是不是在講「死後的煉獄」？還是在講另一件完全不同的事？</p>
+
+      <p>要回答這個問題，我們必須把那節<strong>最常被引用來支持煉獄的經文</strong>攤開來——哥林多前書第三章。下一章，我們正式破題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">把證據攤在桌上：煉獄教義引用了哪些經文？</h2>
+      <p class="card-hook">逐一檢視四段最常被引用的經文——它們的原意是什麼？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>煉獄教義主張：人死後若仍帶著未清的罪債，靈魂要先在一個受苦的狀態中被煉淨，之後才能進入天堂。支持者常引用以下經文，我們一段一段看。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🔥 馬太福音 3:11「祂要用聖靈與火給你們施洗」</span>
+          上下文指的是五旬節聖靈的降臨，以及末日的審判之火。「火」在這裡是<strong>聖靈的能力</strong>或<strong>終末審判</strong>——經文中完全沒有「死後中間狀態」的概念。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⚒️ 瑪拉基書 3:3「煉淨利未人，如煉金銀」</span>
+          講的是彌賽亞來到時，對祭司群體<strong>今世的屬靈更新與道德潔淨</strong>，使他們「憑公義獻供物」。場景在今生的事奉，不在死後。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🪨 以賽亞書 6:7「炭沾了你的嘴唇，你的罪孽便除掉」</span>
+          注意這個細節：以賽亞的罪是<strong>瞬間被赦免的</strong>——一個恩典的動作，立即完成。這段經文恰恰反駁了「赦罪需要長時間受苦」的想法。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🚒 猶大書 22–23「從火中搶救他們出來」</span>
+          上下文是勸勉信徒<strong>今世的佈道與挽回</strong>——趁還來得及，把迷失的人從審判的危險中救回來。講的是傳福音的急迫，不是死後的狀態。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>一個共同的模式</strong>
+        你發現了嗎？這四段經文裡的「火」，要麼是<strong>今生的試煉與更新</strong>，要麼是<strong>末日的審判</strong>。沒有任何一段，描述了「死後、進天堂前、暫時受苦補罪」的中間地帶。煉獄的圖像，是被「讀進」經文裡的，不是從經文裡「讀出來」的。
+      </div>
+
+      <p>但還有一段最關鍵的經文我們還沒處理——哥林多前書 3:11–15，那段提到「火要試驗各人的工程」「雖然得救，乃像從火裡經過」的經文。這是煉獄論述的核心地基。</p>
+
+      <p>下一章，我們打開希臘文原文，一個字一個字地查。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原文考據：林前 3 章的「火」，到底在燒什麼？</h2>
+      <p class="card-hook">四個希臘文單字，決定了整場辯論的勝負。</p>
+    </div>
+
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">「人在那根基上所建造的工程若被燒了，他就要受虧損，自己卻要得救；雖然得救，乃像從火裡經過的一樣。」</p>
+        <p class="scripture-ref">哥林多前書 3:15</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次 · 希臘文逐字拆解</span>
+
+      <div class="term-box">
+        <div class="term-original">πῦρ<br><span style="font-size:11px;">pyr · 火</span></div>
+        <div class="term-desc">這裡的火是「試驗之火」，不是「刑罰之火」。它的功能是<strong>鑑定品質</strong>——像金匠把金屬放進爐裡，看哪些是真金、哪些是草木禾稭。燒的對象自始至終是「工程」，不是「靈魂」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">δοκιμάζω<br><span style="font-size:11px;">dokimazō · 試驗</span></div>
+        <div class="term-desc">意思是「鑑定、檢驗真偽」。這個字在古代用於檢驗金屬與錢幣的成色——目的是<strong>鑑別</strong>，不是<strong>懲罰</strong>。如果保羅要表達「煉苦補罪」，希臘文有別的字可以用，但他選了這個。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">σωθήσεται<br><span style="font-size:11px;">sōthēsetai · 他將得救</span></div>
+        <div class="term-desc">這是整段的關鍵字。保羅明確地說：即使工程全被燒光，這人<strong>得救本身毫無疑問</strong>。救恩已經確定，不因煉淨過程而懸置或取消。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ζημιωθήσεται<br><span style="font-size:11px;">zēmiōthēsetai · 受虧損</span></div>
+        <div class="term-desc">指的是<strong>損失</strong>——失去的是「工程的賞賜」（一生事奉的果效），不是靈魂被施加的痛苦。是「沒拿到獎賞」，不是「被關起來受刑」。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">📝</span>
+        想像你交了一份人生的「作業」——你為神做過的一切事。神閱卷的時候：寫得好的部分，有賞賜；寫得爛的部分，那部分沒有分數。但你「能不能畢業」（得救），早就決定了，跟作業分數無關。
+      </div>
+
+      <div class="highlight">
+        <strong>這個審判有名字</strong>
+        神學上稱為「基督台前的審判」（Bema Seat Judgment）。它審的是<strong>信徒事奉的工程</strong>，結果是<strong>賞賜或損失</strong>——不是懲罰，不是煉淨靈魂，更不影響救恩。煉獄教義把「審工程」誤讀成「煉靈魂」，是概念層次的根本偏移。
+      </div>
+
+      <p>注意那個無法迴避的邏輯矛盾：保羅說這人「得救了」（σωθήσεται），煉獄教義卻說這靈魂「尚未完全蒙赦、還不能進天堂」。<strong>同一節經文，不可能同時支持這兩種說法。</strong></p>
+
+      <p>那麼，聖經中那些「煉淨」「試煉」的語言，正確的位置在哪裡？下一章，我們進入整個系列最深的神學核心。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">一節終結煉獄空間的經文：基督獻祭的「完全性」</h2>
+      <p class="card-hook">煉獄真正的問題，不是某節經文讀錯，而是把十字架看小了。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>煉獄教義最根本的神學問題，不在於它引用哪節經文，而在於它的前提：<strong>基督的救贖還不夠完全，需要人死後再「補」一段。</strong>而希伯來書 10:14 用一句話，終結了這個前提：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為他一次獻祭，便叫那得以成聖的人永遠完全。」</p>
+        <p class="scripture-ref">希伯來書 10:14</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次 · 三個希臘文要點</span>
+
+      <div class="term-box">
+        <div class="term-original">μιᾷ προσφορᾷ<br><span style="font-size:11px;">一次獻祭</span></div>
+        <div class="term-desc">「一次」意味著<strong>不可重複、不可補充</strong>。若煉獄的苦難真有補罪的功能，邏輯上等於宣告：基督那一次的獻祭，不夠用。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">τετελείωκεν<br><span style="font-size:11px;">已使之完全</span></div>
+        <div class="term-desc">完成式時態——動作<strong>已經完成</strong>，效力持續到永遠，不需要任何附加條件、附加程序、附加痛苦。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">εἰς τὸ διηνεκές<br><span style="font-size:11px;">直到永遠</span></div>
+        <div class="term-desc">完全的果效是<strong>永遠的、不間斷的</strong>——中間沒有留下任何「先進煉獄、再算完全」的空隙。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>那聖經裡的「火煉」語言該放在哪裡？關鍵是分清三個常被煉獄教義混為一談的概念：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⚖️ 稱義（Justification · dikaiosynē）</span>
+          信的那一刻，<strong>一次性、立即完成</strong>。「如今那些在基督耶穌裡的，就不定罪了」（羅 8:1）。地位問題，已經解決。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🌱 成聖（Sanctification · hagiasmos）</span>
+          <strong>在今生持續進行</strong>的生命更新——「那在你們心裡動了善工的，必成全這工」（腓 1:6）。範圍是今生，不延伸到死後受苦。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🔥 試煉（Refinement · dokimē / 希伯來文 tsaraph）</span>
+          <strong>今生信仰的熬煉</strong>——「祢使我們經過水火」（詩 66）、「信心被火試驗，比金子更寶貴」（彼前 1:7）。火爐在今天的生活裡，不在死後的某個房間。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>煉獄教義的三重錯置</strong>
+        它把「今生的試煉」搬到了死後；把「持續的成聖」延長到了陰間；又把「已完成的稱義」變回未完成。三個概念，三次錯置——而每一次錯置，都在無形中縮小了十字架的尺寸。
+      </div>
+
+      <div class="big-quote">
+        問題從來不是「我的苦受得夠不夠」，<br>而是「祂的祭獻得夠不夠」。<br>而聖經的答案是：夠了，且直到永遠。
+      </div>
+
+      <p>講到這裡，神學的部分已經完整。但這個系列不想停在「辯贏」——最後一章，我想帶你回到十字架下，聽耶穌親口說的最後一個字。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">Tetelestai——債，還清了</h2>
+      <p class="card-hook">寫給每一個怕自己「不夠乾淨」的人。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>耶穌在十字架上嚥氣之前，說的最後一句話是什麼？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「成了。」</p>
+        <p class="scripture-ref">約翰福音 19:30</p>
+      </div>
+
+      <p>希臘文原文是 <strong>τετέλεσται（Tetelestai）</strong>。這個字在古代是商業用語——商人在收清欠款後，會在帳單上寫下這個字，意思是：</p>
+
+      <div class="big-quote">
+        「債，還清了。」
+        <cite>— Tetelestai · 約翰福音 19:30</cite>
+      </div>
+
+      <p>沒有尾款。沒有分期付款。沒有死後補繳。<strong>全部，一次，付清。</strong></p>
+
+      <div class="highlight">
+        <strong>整個系列的結論</strong>
+        我們查驗了天主教引用的每一段經文：太 3:11 的火是聖靈與末日審判，瑪 3:3 是今世的潔淨，賽 6:7 的赦免是瞬間的恩典，猶 22–23 講的是今世佈道；林前 3 章審的是工程不是靈魂，而來 10:14 宣告救贖已永遠完全。煉獄，在聖經裡找不到立足之地。
+      </div>
+
+      <p>所以，回到第一章那位朋友的問題——也回到也許正在讀這段文字、心裡同樣不安的你：</p>
+
+      <p>凡是信靠耶穌的人，<strong>你不需要死後再「受苦補罪」。</strong>你今天就已經是乾淨的、完全的、被接納的。今生的火煉，是天父在塑造你，不是在懲罰你；而死亡的另一端，不是一座要慢慢爬的山，是一位早已敞開雙臂的父親。</p>
+
+      <p>有人會說：「這也太便宜了吧？」不——這對你是白白的，因為對祂是傾盡一切的。<strong>這不是「太便宜」，這是「恩典」。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">「如今，那些在基督耶穌裡的人，就不定罪了。」</p>
+        <p class="scripture-ref">羅馬書 8:1</p>
+      </div>
+
+      <p>願這六章的旅程，把恐懼換成安息。如果這個系列曾陪你走過某段不安，歡迎分享給那位也需要聽見「Tetelestai」的朋友。我們下個系列見。🕯️</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer class="site-footer">
+  煉獄教義：聖經怎麼說？ · Tetelestai Series
+</footer>
+
+</body>
+</html>
