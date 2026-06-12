@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>【主再來之時的四種結局】— Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════
+   COLOR TOKENS — 不要隨意更動
+══════════════════════════════════ */
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════════
+   BACKGROUND TEXTURE（固定，不用改）
+══════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ══════════════════════════════════
+   SITE HEADER
+══════════════════════════════════ */
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+
+.site-header h1 span { color: var(--gold); }
+
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+/* ══════════════════════════════════
+   THREAD LINE — 章節間的連接線
+══════════════════════════════════ */
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+/* ══════════════════════════════════
+   CHAPTER WRAPPER
+══════════════════════════════════ */
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ══════════════════════════════════
+   CARD — 每篇文章的卡片容器
+══════════════════════════════════ */
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* 左側色條 */
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+/* ── FINAL CARD 深色版 ── */
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+/* ══════════════════════════════════
+   CARD HEADER
+══════════════════════════════════ */
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════
+   CARD BODY
+══════════════════════════════════ */
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+/* ══════════════════════════════════
+   元件一：HIGHLIGHT BOX 強調框
+══════════════════════════════════ */
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+/* ══════════════════════════════════
+   元件二：SCRIPTURE 經文引用
+══════════════════════════════════ */
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+/* ══════════════════════════════════
+   元件三：ANALOGY BOX 比喻框
+══════════════════════════════════ */
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* ══════════════════════════════════
+   元件四：BIG QUOTE 大引言
+══════════════════════════════════ */
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+/* ══════════════════════════════════
+   元件五：TERM BOX 原文詞彙
+══════════════════════════════════ */
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+/* ══════════════════════════════════
+   元件六：DEPTH LABELS 深度 / 淺白 標籤
+══════════════════════════════════ */
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+/* ══════════════════════════════════
+   元件七：CONCENTRIC RINGS 同心圓列表
+══════════════════════════════════ */
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+/* ══════════════════════════════════
+   CARD DIVIDER 卡片內分隔線
+══════════════════════════════════ */
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+/* ══════════════════════════════════
+   SECTION GAP 章節間額外間距
+══════════════════════════════════ */
+.section-gap { height: 8px; }
+
+/* ══════════════════════════════════
+   SITE FOOTER
+══════════════════════════════════ */
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     SITE HEADER
+══════════════════════════════════ -->
+<header class="site-header">
+  <div class="eyebrow">末世預備系列 · When He Returns</div>
+  <h1>主再來之時的<span>四種結局</span></h1>
+  <p class="subtitle">那一日沒有旁觀者 · 每個人都會站在其中一個位置</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">如果耶穌今晚回來，你會在哪一群？</h2>
+      <p class="card-hook">這個問題曾讓我整夜睡不著——後來我發現，睡不著是對的，但怕錯了方向。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>跟你分享一句老實話。信主這麼多年，「耶穌會再來」這句話我聽過幾百次，但大部分時候，它在我心裡只是一個模糊的概念——反正信了就上天堂，對吧？直到有一天我認真把經文攤開來讀，才發現事情遠比「上天堂」三個字精細得多。</p>
+
+      <p>聖經描述主再來的那一刻，不是所有人排成一列、領同一張票。而是——同一批人類，因著與基督關係的深淺、預備程度的不同，走向<strong>四個完全不同的位置</strong>。</p>
+
+      <div class="highlight">
+        <strong>這個系列想陪你做一件事</strong>
+        把「主再來」從一個遙遠的名詞，變成你今天就能預備的動詞。六篇文章，從分享走到結論，我們一層一層把這幅圖攤開：祂來的時候會發生什麼、人會怎麼分、原文怎麼說、而你現在可以怎麼預備。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「所以，你們也要預備，因為你們想不到的時候，人子就來了。」</p>
+        <p class="scripture-ref">馬太福音 24:44</p>
+      </div>
+
+      <p>「想不到的時候」——這五個字是整件事的核心。祂來的方式，原文用的是一個很猛的字（第四章我們會細講），意思是「猛然奪取」。沒有倒數計時，沒有臨時抱佛腳的空間。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌙</span>
+        就像半夜的地震。沒有人會在天搖地動的那一刻才開始想「家具要固定」——能保護你的，永遠是平時就做好的那些預備。主的再來也是：那一刻不是預備的開始，是預備的驗收。
+      </div>
+
+      <p>所以先說清楚：這個系列不是要嚇你。恐懼留不住人，但盼望可以。接下來五章，我想帶你看清楚那四個位置分別是什麼、聖經原文怎麼說、以及——最重要的——今天的你可以怎麼預備。</p>
+
+      <div class="big-quote">
+        主再來是確定的，唯一的變數是：那一天的你，預備到哪裡。
+        <cite>— 寫給每一個還來得及的人</cite>
+      </div>
+
+      <p>如果你也曾經在某個夜裡想過「祂回來那天我會在哪裡」，那麼這個系列就是為你寫的。我們下一章見。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">一場世紀婚禮，賓客卻分成四群</h2>
+      <p class="card-hook">先用一個畫面，把整幅圖看懂——細節我們後面慢慢拆。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>在進入經文細節之前，先借一個聖經自己最愛用的畫面：<strong>婚禮</strong>。耶穌多次把自己比作新郎，把祂的再來比作迎娶。現在，想像那場世紀婚禮的當天——</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💒</span>
+        新郎進場的那一刻，現場的人瞬間分成了四群：有人從安息之處起身、走在新郎身邊一同進場；有人在號角聲中一瞬間換上榮耀的禮服、被接到空中與新郎相會；有人雖然錯過了迎親的隊伍、卻因著忠心被留在筵席之中；也有人——被請出了會場，再也不得進來。
+      </div>
+
+      <p>這四群人，對應的正是聖經描述主再來時的四種結局：<strong>已經安息的聖徒、還活著且預備好的聖徒、被撇下卻沒有背叛主的人、以及拒絕主到底的人。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">「因為主必親自從天降臨，有呼叫的聲音和天使長的聲音，又有神的號吹響；那在基督裡死了的人必先復活。」</p>
+        <p class="scripture-ref">帖撒羅尼迦前書 4:16</p>
+      </div>
+
+      <p>請注意這節經文裡的順序感：「必<strong>先</strong>復活」。先離世的人不但沒有吃虧，反而排在隊伍的最前面。這推翻了許多人「死了就錯過主再來」的擔心——在基督裡睡了的人，是第一批迎見新郎的。</p>
+
+      <p>但也請注意另一件事：四群人裡，有兩群是「進入國度的」——一群同作王、一群作百姓；而最後一群，是「被分出去的」。差別不在運氣，不在出身，在<strong>預備</strong>。</p>
+
+      <div class="highlight">
+        <strong>下一章預告</strong>
+        我們會把四種結局一次攤開——每一種的身分、去向、經文根據，外加一幅常被混淆的「靈界四境」地圖。你會發現，「信就上天堂」這句話沒有錯，但它省略了太多重要的細節。
+      </div>
+
+      <p>在往下讀之前，先把這個問題放在心裡：如果婚禮就是今晚——你的禮服，預備好了嗎？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四種結局，一次攤開</h2>
+      <p class="card-hook">同一個日子，四個位置——這一章，是整個系列的地圖。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>好，現在把地圖完整攤開。主再來之時，聖經描述了四種結局——同一批人類，因著與基督關係的不同、預備程度的不同，走向不同的位置：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🤍 第一種 · 已死的聖徒——復活、與主一同降臨</span>
+          生前愛主行善、已經安息的人。主再來時他們先復活、得著榮耀的身體，然後「與主一同」降臨，跟隨主參與對世人的審判。（帖前四:14-16；啟十九:14；猶14）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">👑 第二種 · 聰明的童女——改變被提、作王千年</span>
+          那日還活著、且預備好油的人。在末次號筒吹響時「一霎時、眨眼之間」身體改變、被提到空中與主相遇，進入「頭一次復活」，與基督同作王一千年。（林前十五:51-52；帖前四:17；啟二十:4-6）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">🌿 第三種 · 被分為綿羊——以百姓進入千禧年</span>
+          被撇下、卻未蓋獸印的人：大災難中守神誡命的聖徒、善待主弟兄的人、以及蒙應許「全家得救」的以色列。經過萬民審判被分為綿羊，以「百姓」的身分進入千禧年國。（太二十五:31-40；提後二:11-12；羅十一:26）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">🔥 第四種 · 被分為山羊——受審定罪、進入永刑</span>
+          拒絕主、敵對神到底、或在大災難中受了獸印的人。在審判中被分為山羊，進入「為魔鬼和他的使者所預備的永火」。（太二十五:41-46；啟十四:9-11；啟二十:15）
+        </div>
+      </div>
+
+      <p>看出層次了嗎？<strong>作王的是一群，作百姓的是另一群——但都進去了；而被分出去的，是一個完全不同的終局。</strong></p>
+
+      <div class="highlight">
+        <strong>破題的關鍵</strong>
+        這四種結局的核心邏輯只有一句話：不是抽籤，不是運氣，是「與基督的關係」加上「預備的程度」，決定那日你站的位置。整本聖經所有「要警醒、要預備油」的提醒，都是為了讓人進入前兩種結局。
+      </div>
+
+      <p>地圖上還有一幅背景圖要先放著——<strong>靈界四境</strong>。很多人把「天堂、樂園、陰間、地獄」當成同義詞，但聖經裡它們是四個不同的地方：義人離世後在「樂園」與主同在——主對十架旁的強盜說「今日你要同我在樂園裡了」（路二十三:43）；不信者暫居「陰間」等候審判（路十六:22-26）；而「地獄（火湖）」是最後審判之後的終局。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「死了的人都憑著這些案卷所記載的，照他們所行的受審判。……死亡和陰間也被扔在火湖裡。」</p>
+        <p class="scripture-ref">啟示錄 20:12, 14</p>
+      </div>
+
+      <p>注意到了嗎？連「陰間」最後都要被扔進火湖——這證明陰間是中途的拘留所，地獄是終審後的監獄，<strong>兩者並不相同</strong>。</p>
+
+      <p>地圖攤開了。接下來兩章，我們要往深處走：第四章回到希臘原文，看每個關鍵字到底在說什麼；第五章深入那群最常被忽略的人，以及一個文法上「不能打折」的字。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">回到原文：每一個字都在說話</h2>
+      <p class="card-hook">翻譯會圓潤，原文不會。五個希臘字，五個重磅訊息。</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <p>這一章我們做點功課。新約是用希臘文寫的，有些關鍵字翻成中文後力道變柔了——回到原文，你會聽見作者原本的音量。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我如今把一件奧祕的事告訴你們：我們不是都要睡覺，乃是都要改變，就在一霎時，眨眼之間，號筒末次吹響的時候。」</p>
+        <p class="scripture-ref">哥林多前書 15:51-52</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἁρπάζω<br>「被提」</div>
+        <div class="term-desc">帖前四:17。字根的意思是「猛然奪取、搶走」——這是神主動的、突然的行動。人無從在當下臨時預備，只能「平時」就預備好。這個字本身，就在解釋耶穌為什麼不斷說「要警醒」。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀλλάσσω<br>「改變」</div>
+        <div class="term-desc">林前十五:52。不是修補、不是升級，是「徹底更換、變形」——整個身體被換成不朽壞的榮耀形體，並且與「被提」是同一瞬間發生的事。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">σὺν αὐτῷ<br>「一同」</div>
+        <div class="term-desc">帖前四:14「神也必將那已經睡了的人與耶穌一同帶來」。已死的聖徒「與祂一起」降臨——他們不是被動等候的旁觀者，而是啟十九:14 裡穿細麻衣、跟隨主的天上眾軍，是參與審判的行動者。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">βασιλεύω<br>「作王」</div>
+        <div class="term-desc">啟二十:4。意思是「執掌王權」。千年國裡，這批復活與被提的人是「同作王者」，身分高於進入國度的「百姓」——這個差別，下一章會細講。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">ἀφορίζω<br>「分別」</div>
+        <div class="term-desc">太二十五:32。原是牧人晚間「把綿羊山羊隔開」的動作。這是君王主權的判定，而判定的標準出人意外地具體：「你們待我這弟兄中最小的一個，就是待我了。」</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚡</span>
+        把這五個字串起來，就是一部完整的劇本：祂會「猛然」地來（所以要平時預備）、預備好的人會「徹底換新」（不是打補丁，是新造）、先走的人會「一同回來」（沒有人吃虧）、忠心到底的人要「執掌王權」（不只是得救而已）、而所有人都會被「分別」出來（標準是你怎麼對待最小的弟兄）。
+      </div>
+
+      <p>原文讀完，有沒有發現一件事？每一個字都指向同一個方向——<strong>預備，是現在進行式。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">被忽略的第三群人，與不能打折的「永」</h2>
+      <p class="card-hook">作王與作百姓的差別、撇下之後仍存的忠心，以及文法上最沉重的一個字。</p>
+    </div>
+
+    <div class="card-body">
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+
+      <p>這一章談兩件深水區的事。第一件：那群最常被講道略過的人——<strong>被撇下、卻未蓋獸印的</strong>。</p>
+
+      <p>很多人以為教會被提之後，地上就只剩走向滅亡的人。但啟示錄十三:7、十四:12 清楚提到，大災難中地上仍有「聖徒的忍耐」——有人在最黑暗的時刻持守神的誡命、拒拜獸像、不受印記。再加上善待基督徒的外邦人，以及羅馬書十一:26 所應許「以色列全家都要得救」的猶太人。他們經過馬太福音二十五章的萬民審判，被分為綿羊，以「百姓」的身分進入千禧年。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「我們若與祂同死，也必與祂同活；我們若能忍耐，也必和祂一同作王。」</p>
+        <p class="scripture-ref">提摩太後書 2:11-12</p>
+      </div>
+
+      <p>提後二章這個階梯講得極準：「同死→同活」是得救的門檻；「忍耐→作王」是更高的呼召。能忍耐到底、預備好的，作王；得救卻沒到作王資格的，作國民。這就是被提聖徒（作王者）與綿羊（百姓）的身分差別——<strong>都在國度裡，位分卻不同。</strong></p>
+
+      <div class="highlight">
+        <strong>深論重點一</strong>
+        得救是起點，不是終點。聖經的末世觀裡存在「位分」的差別——這不是要製造階級焦慮，而是在說明一件溫柔又嚴肅的事：你今日的忠心與預備，在永恆裡是被認真對待、認真記念的。
+      </div>
+
+      <p>第二件事，更沉重，但必須誠實面對。馬太福音二十五:46——</p>
+
+      <div class="scripture">
+        <p class="scripture-text">「這些人要往永刑裡去；那些義人要往永生裡去。」</p>
+        <p class="scripture-ref">馬太福音 25:46</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">αἰώνιον<br>「永遠的」</div>
+        <div class="term-desc">同一節經文裡，這個字同時修飾「刑罰」與「生命」。文法上，刑罰的「永」與生命的「永」是同一個字、同等長度——不能把一個說成永遠、把另一個說成暫時。</div>
+      </div>
+
+      <p>這就是為什麼這個議題沒有模糊空間。如果永生是真的永遠，永刑也是。聖經沒有留給我們把第四種結局淡化成「暫時管教」的文法餘地。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        想像一份合約，同一個「永久」出現在權利與義務兩欄。你不能主張權利欄的「永久」是真的、義務欄的「永久」只是參考——同一個字，同一個重量。神的應許有多確定，祂的警告就有多認真。
+      </div>
+
+      <p>深水區走完了。最後一章，我們回到岸上——談談這一切對「今天的你」到底意味著什麼。先劇透一下：答案不是恐懼。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     終章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">不是抽籤，是你今天怎麼活</h2>
+      <p class="card-hook">寫到最後，我最想留給你的不是資訊，是盼望。</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>六章走到這裡，把所有經文、原文、神學收攏起來，其實只剩一句話：主的再來是 ἁρπάζω——猛然的奪取，沒有臨時抱佛腳的空間。你現在是哪一種人、預備到哪個程度，決定你那日站在哪個位置。</p>
+
+      <p>但請聽清楚——這整個系列要傳遞的，從來不是恐懼，而是「預備」的迫切。恐懼讓人僵住，盼望讓人動起來。</p>
+
+      <div class="highlight">
+        <strong>那麼，怎麼預備？</strong>
+        像那位預備好油的聰明童女：讓聖靈天天充滿你——愛神、愛人、結出聖靈的果子；待最小的弟兄，如同待主自己；犯了錯，不是逃離神，而是馬上回到祂面前承認。記住：油是天天添的，不是那一夜才買的。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">「所以，你們要警醒，因為那日子、那時辰，你們不知道。」</p>
+        <p class="scripture-ref">馬太福音 25:13</p>
+      </div>
+
+      <p>也別忘了那個排序帶來的安慰：在基督裡睡了的人，必<strong>先</strong>復活。你所掛念、已經安息的家人，若在主裡，他們不但沒有錯過，還會走在迎接隊伍的最前面。那一天不只是審判的日子，也是重逢的日子。</p>
+
+      <p>而你——還活著、還在讀這篇文章的你——正站在最有盼望的位置上。因為四種結局裡，唯一還能改變的變數，就是「現在」。</p>
+
+      <div class="big-quote">
+        耶穌一定會回來，而且很突然。重點不是怕，是現在就把自己預備好。
+        <cite>— 末世預備系列 · 終章</cite>
+      </div>
+
+      <p>願我們在那一日，都站在被迎接的那一群裡——一個都不少。如果這個系列對你有幫助，把它分享給一個你掛念的人；也許那一天，你們會一起站在隊伍的最前面。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer class="site-footer">
+  末世預備系列 · When He Returns
+</footer>
+
+</body>
+</html>
