@@ -1818,7 +1818,6 @@
         globalSubIdx = newIdx;
         const sub = globalSubs[globalSubIdx];
 
-        // 若切換到不同章節，先切換章節 UI（不重置 globalSubIdx）
         if (sub.chapterId !== currentChapter) {
             currentChapter = sub.chapterId;
             document.querySelectorAll('.nav-tab').forEach(t => {
@@ -1827,7 +1826,6 @@
             _setupChapterUI(currentChapter);
         }
 
-        // 同步下拉選單
         const midSel = document.getElementById('mid-select');
         midSel.value = sub.gIdx;
         fillSubSelect(currentChapter, sub.gIdx);
@@ -1835,6 +1833,7 @@
 
         loadPosts(sub.key, sub.label, sub.range);
         updateNavButtons();
+        setHash(currentChapter + '/' + sub.key);
     }
 
     // ── 更新底部按鈕 ──
@@ -1866,6 +1865,19 @@
         fillSubSelect(chapterId, 0);
     }
 
+    // ── Hash 工具 ──
+    function setHash(hash) {
+        history.replaceState(null, '', hash ? '#' + hash : '#');
+    }
+
+    function readHash() {
+        const h = location.hash.slice(1); // 去掉 #
+        if (!h || h === 'home') return { type: 'home' };
+        if (h.startsWith('q/')) return { type: 'reader', href: h.slice(2) };
+        const parts = h.split('/');
+        return { type: 'chapter', chapterId: parts[0], subKey: parts[1] || null };
+    }
+
     // ── 初始化 ──
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', () => switchChapter(tab.dataset.chapter));
@@ -1877,13 +1889,11 @@
 
     function switchChapter(chapterId) {
         currentChapter = chapterId;
-
-        // Tab 高亮
         document.querySelectorAll('.nav-tab').forEach(t => {
             t.classList.toggle('active', t.dataset.chapter === chapterId);
         });
-
         if (chapterId === 'home') {
+            setHash('home');
             showHome();
         } else {
             showChapter(chapterId);
@@ -1893,22 +1903,29 @@
     function showHome() {
         document.getElementById('sub-nav').classList.add('hidden');
         document.getElementById('bottom-nav').classList.add('hidden');
+        document.getElementById('reader-screen').classList.remove('active');
+        document.getElementById('main-nav-bar').style.display = '';
         document.getElementById('welcome-screen').style.display = 'block';
         document.getElementById('list-screen').style.display = 'none';
+        document.getElementById('content-area').style.display = '';
         document.getElementById('content-area').scrollTop = 0;
+        setHash('home');
     }
 
-    function showChapter(chapterId) {
+    function showChapter(chapterId, subKey) {
         _setupChapterUI(chapterId);
-        // 當從 tab / 首頁卡片點進來，跳到該章第一節
-        globalSubIdx = globalSubs.findIndex(s => s.chapterId === chapterId);
+        globalSubIdx = subKey
+            ? globalSubs.findIndex(s => s.key === subKey)
+            : globalSubs.findIndex(s => s.chapterId === chapterId);
+        if (globalSubIdx === -1) globalSubIdx = globalSubs.findIndex(s => s.chapterId === chapterId);
         const sub = globalSubs[globalSubIdx];
-        document.getElementById('mid-select').value = 0;
-        fillSubSelect(chapterId, 0);
+        document.getElementById('mid-select').value = sub.gIdx;
+        fillSubSelect(chapterId, sub.gIdx);
         document.getElementById('sub-select').value = sub.key;
         loadPosts(sub.key, sub.label, sub.range);
         updateNavButtons();
         document.getElementById('content-area').scrollTop = 0;
+        setHash(chapterId + '/' + sub.key);
     }
 
     function fillSubSelect(chapterId, midIdx) {
@@ -1927,10 +1944,10 @@
         const midIdx = parseInt(document.getElementById('mid-select').value);
         fillSubSelect(currentChapter, midIdx);
         const firstSub = structure[currentChapter].groups[midIdx].subs[0];
-        // 同步 globalSubIdx
         globalSubIdx = globalSubs.findIndex(s => s.key === firstSub.key);
         loadPosts(firstSub.key, firstSub.label, firstSub.range);
         updateNavButtons();
+        setHash(currentChapter + '/' + firstSub.key);
     }
 
     function onSubChange() {
@@ -1941,11 +1958,11 @@
         const parts = optText.split('　');
         const label = parts[0] || key;
         const range = parts[1] || '';
-        // 同步 globalSubIdx
         const idx = globalSubs.findIndex(s => s.key === key);
         if (idx !== -1) globalSubIdx = idx;
         loadPosts(key, label, range);
         updateNavButtons();
+        setHash(currentChapter + '/' + key);
     }
 
     function loadPosts(key, title, range) {
@@ -2010,12 +2027,12 @@
         document.getElementById('reader-btn-prev').disabled = currentQIdx <= 0;
         document.getElementById('reader-btn-next').disabled = currentQIdx >= allQuestions.length - 1;
 
-        // 顯示閱讀模式，隱藏其他
         document.getElementById('reader-screen').classList.add('active');
         document.getElementById('content-area').style.display = 'none';
         document.getElementById('bottom-nav').classList.add('hidden');
         document.getElementById('sub-nav').classList.add('hidden');
         document.getElementById('main-nav-bar').style.display = 'none';
+        setHash('q/' + q.href);
     }
 
     function navigateQ(delta) {
@@ -2029,12 +2046,51 @@
         document.getElementById('reader-screen').classList.remove('active');
         document.getElementById('content-area').style.display = '';
         document.getElementById('main-nav-bar').style.display = '';
-        // 若目前是章節頁，恢復 sub-nav 和 bottom-nav
         if (currentChapter !== 'home') {
             document.getElementById('sub-nav').classList.remove('hidden');
             document.getElementById('bottom-nav').classList.remove('hidden');
+            const sub = globalSubs[globalSubIdx];
+            setHash(currentChapter + '/' + sub.key);
+        } else {
+            setHash('home');
         }
     }
+
+    // ── 頁面載入時從 hash 還原狀態 ──
+    (function restoreFromHash() {
+        const state = readHash();
+        if (state.type === 'reader') {
+            // 先初始化所有資料再開閱讀模式
+            const idx = allQuestions.findIndex(q => q.href === state.href);
+            if (idx !== -1) {
+                currentQIdx = idx;
+                // 找到這題屬於哪個章節/小主題，讓 closeReader 能正確回去
+                outer: for (const chId of chapterOrder) {
+                    for (const g of structure[chId].groups) {
+                        for (const s of g.subs) {
+                            if (posts[s.key] && posts[s.key].some(p => p.href === state.href)) {
+                                currentChapter = chId;
+                                globalSubIdx = globalSubs.findIndex(gs => gs.key === s.key);
+                                break outer;
+                            }
+                        }
+                    }
+                }
+                _showReader();
+                return;
+            }
+        }
+        if (state.type === 'chapter' && structure[state.chapterId]) {
+            currentChapter = state.chapterId;
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.chapter === state.chapterId);
+            });
+            showChapter(state.chapterId, state.subKey);
+            return;
+        }
+        // 預設首頁
+        showHome();
+    })();
 
     </script>
 </body>
