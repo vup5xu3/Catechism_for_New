@@ -201,6 +201,59 @@
             letter-spacing: 1px;
         }
 
+        /* ── 單題閱讀模式 ── */
+        .reader-screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .reader-screen.active {
+            display: flex;
+        }
+        .reader-header {
+            background: white;
+            border-bottom: 1px solid rgba(26,18,8,0.15);
+            padding: 8px 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+        .reader-header .q-num {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            color: var(--gold);
+            letter-spacing: 2px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .reader-header .q-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.4;
+        }
+        .reader-iframe {
+            flex: 1;
+            border: none;
+            background: var(--parchment);
+        }
+        .reader-bottom-nav {
+            background: rgba(26, 18, 8, 0.97);
+            border-top: 1px solid rgba(201,168,76,0.25);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 24px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 600px) {
+            .reader-header { padding: 14px 16px 10px; }
+            .reader-header .q-title { font-size: 14px; }
+        }
+
         /* ── 底部導航按鈕 ── */
         .bottom-nav {
             background: rgba(26, 18, 8, 0.97);
@@ -267,7 +320,7 @@
 <body>
 
     <!-- 大主題 Tab -->
-    <nav class="main-nav">
+    <nav class="main-nav" id="main-nav-bar">
         <div class="nav-tab active" data-chapter="home">初信造就</div>
         <div class="nav-tab" data-chapter="ch1">Chapter 1 從罪人到聖徒</div>
         <div class="nav-tab" data-chapter="ch2">Chapter 2 三合一的神</div>
@@ -285,7 +338,25 @@
     </div>
 
     <!-- 內容 -->
-    <main class="content-area" id="content-area">
+    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+        <!-- 閱讀模式（單題 iframe） -->
+        <div class="reader-screen" id="reader-screen">
+            <div class="reader-header">
+                <div class="q-num" id="reader-num"></div>
+                <div class="q-title" id="reader-title"></div>
+            </div>
+            <iframe class="reader-iframe" id="reader-iframe" src="about:blank"></iframe>
+            <div class="reader-bottom-nav">
+                <button class="nav-btn" id="reader-btn-prev" onclick="navigateQ(-1)" disabled>← 上一題</button>
+                <button class="nav-btn home-btn" onclick="closeReader()">⌂ 回列表</button>
+                <span class="nav-pos" id="reader-pos"></span>
+                <button class="nav-btn" id="reader-btn-next" onclick="navigateQ(1)" disabled>下一題 →</button>
+            </div>
+        </div>
+
+        <!-- 一般內容區 -->
+        <main class="content-area" id="content-area">
 
         <!-- 首頁 -->
         <div class="welcome-screen" id="welcome-screen">
@@ -325,6 +396,8 @@
         </div>
 
     </main>
+
+    </div><!-- end flex wrapper -->
 
     <!-- 底部導航 -->
     <div class="bottom-nav hidden" id="bottom-nav">
@@ -1720,27 +1793,41 @@
 
     // ── 狀態 ──
     let currentChapter = 'home';
-    let allSubs = [];      // 目前 chapter 的所有小主題（扁平化陣列）
-    let currentSubIdx = 0; // 目前在 allSubs 中的 index
 
-    // ── 建立扁平化小主題清單 ──
-    function buildAllSubs(chapterId) {
-        allSubs = [];
-        structure[chapterId].groups.forEach((g, gIdx) => {
-            g.subs.forEach((s, sIdx) => {
-                allSubs.push({ key: s.key, label: s.label, range: s.range, gIdx, sIdx });
+    // ── 全書扁平化（跨章節）小主題清單 ──
+    const chapterOrder = ['ch1', 'ch2', 'ch3', 'app'];
+    let globalSubs = []; // { key, label, range, chapterId, gIdx }
+    let globalSubIdx = 0;
+
+    function buildGlobalSubs() {
+        globalSubs = [];
+        chapterOrder.forEach(chId => {
+            structure[chId].groups.forEach((g, gIdx) => {
+                g.subs.forEach(s => {
+                    globalSubs.push({ key: s.key, label: s.label, range: s.range, chapterId: chId, gIdx });
+                });
             });
         });
     }
+    buildGlobalSubs(); // 頁面載入時立即建立
 
-    // ── 按 index 切換小主題 ──
+    // ── 按 index 切換（可跨章節）──
     function navigateSub(delta) {
-        const newIdx = currentSubIdx + delta;
-        if (newIdx < 0 || newIdx >= allSubs.length) return;
-        currentSubIdx = newIdx;
-        const sub = allSubs[currentSubIdx];
+        const newIdx = globalSubIdx + delta;
+        if (newIdx < 0 || newIdx >= globalSubs.length) return;
+        globalSubIdx = newIdx;
+        const sub = globalSubs[globalSubIdx];
 
-        // 同步更新下拉選單
+        // 若切換到不同章節，先切換章節 UI（不重置 globalSubIdx）
+        if (sub.chapterId !== currentChapter) {
+            currentChapter = sub.chapterId;
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.chapter === currentChapter);
+            });
+            _setupChapterUI(currentChapter);
+        }
+
+        // 同步下拉選單
         const midSel = document.getElementById('mid-select');
         midSel.value = sub.gIdx;
         fillSubSelect(currentChapter, sub.gIdx);
@@ -1750,16 +1837,33 @@
         updateNavButtons();
     }
 
-    // ── 更新底部按鈕狀態 ──
+    // ── 更新底部按鈕 ──
     function updateNavButtons() {
-        const bottomNav = document.getElementById('bottom-nav');
-        const btnPrev = document.getElementById('btn-prev');
-        const btnNext = document.getElementById('btn-next');
-        const navPos = document.getElementById('nav-pos');
+        document.getElementById('btn-prev').disabled = globalSubIdx <= 0;
+        document.getElementById('btn-next').disabled = globalSubIdx >= globalSubs.length - 1;
+        const sub = globalSubs[globalSubIdx];
+        const chLabel = { ch1: 'Ch.1', ch2: 'Ch.2', ch3: 'Ch.3', app: 'App.' };
+        document.getElementById('nav-pos').textContent =
+            (chLabel[sub.chapterId] || '') + '　' + (globalSubIdx + 1) + ' / ' + globalSubs.length;
+    }
 
-        btnPrev.disabled = currentSubIdx <= 0;
-        btnNext.disabled = currentSubIdx >= allSubs.length - 1;
-        navPos.textContent = (currentSubIdx + 1) + ' / ' + allSubs.length;
+    // ── 章節 UI 初始化（不影響 globalSubIdx）──
+    function _setupChapterUI(chapterId) {
+        const ch = structure[chapterId];
+        document.getElementById('sub-nav').classList.remove('hidden');
+        document.getElementById('bottom-nav').classList.remove('hidden');
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('list-screen').style.display = 'block';
+
+        const midSel = document.getElementById('mid-select');
+        midSel.innerHTML = '';
+        ch.groups.forEach((g, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = g.label;
+            midSel.appendChild(opt);
+        });
+        fillSubSelect(chapterId, 0);
     }
 
     // ── 初始化 ──
@@ -1795,36 +1899,16 @@
     }
 
     function showChapter(chapterId) {
-        const ch = structure[chapterId];
-        const subNav = document.getElementById('sub-nav');
-        subNav.classList.remove('hidden');
-        document.getElementById('bottom-nav').classList.remove('hidden');
-
-        // 建立扁平小主題清單
-        buildAllSubs(chapterId);
-        currentSubIdx = 0;
-
-        // 填充中主題
-        const midSel = document.getElementById('mid-select');
-        midSel.innerHTML = '';
-        ch.groups.forEach((g, i) => {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = g.label;
-            midSel.appendChild(opt);
-        });
-
-        // 填充小主題（預設第一個中主題）
+        _setupChapterUI(chapterId);
+        // 當從 tab / 首頁卡片點進來，跳到該章第一節
+        globalSubIdx = globalSubs.findIndex(s => s.chapterId === chapterId);
+        const sub = globalSubs[globalSubIdx];
+        document.getElementById('mid-select').value = 0;
         fillSubSelect(chapterId, 0);
-
-        // 隱藏首頁，顯示列表
-        document.getElementById('welcome-screen').style.display = 'none';
-        document.getElementById('list-screen').style.display = 'block';
-
-        // 載入預設：第一個中主題第一個小主題
-        const firstSub = ch.groups[0].subs[0];
-        loadPosts(firstSub.key, firstSub.label, firstSub.range);
+        document.getElementById('sub-select').value = sub.key;
+        loadPosts(sub.key, sub.label, sub.range);
         updateNavButtons();
+        document.getElementById('content-area').scrollTop = 0;
     }
 
     function fillSubSelect(chapterId, midIdx) {
@@ -1842,10 +1926,9 @@
     function onMidChange() {
         const midIdx = parseInt(document.getElementById('mid-select').value);
         fillSubSelect(currentChapter, midIdx);
-        // 自動載入小主題第一個
         const firstSub = structure[currentChapter].groups[midIdx].subs[0];
-        // 同步 currentSubIdx
-        currentSubIdx = allSubs.findIndex(s => s.key === firstSub.key);
+        // 同步 globalSubIdx
+        globalSubIdx = globalSubs.findIndex(s => s.key === firstSub.key);
         loadPosts(firstSub.key, firstSub.label, firstSub.range);
         updateNavButtons();
     }
@@ -1853,16 +1936,14 @@
     function onSubChange() {
         const key = document.getElementById('sub-select').value;
         if (!key) return;
-        // 直接從 sub-select 的 selectedOption 拿 label/range
         const sel = document.getElementById('sub-select');
         const optText = sel.options[sel.selectedIndex].textContent;
-        // optText 格式是 "label　range"，用全形空格切
         const parts = optText.split('　');
         const label = parts[0] || key;
         const range = parts[1] || '';
-        // 同步 currentSubIdx
-        const idx = allSubs.findIndex(s => s.key === key);
-        if (idx !== -1) currentSubIdx = idx;
+        // 同步 globalSubIdx
+        const idx = globalSubs.findIndex(s => s.key === key);
+        if (idx !== -1) globalSubIdx = idx;
         loadPosts(key, label, range);
         updateNavButtons();
     }
@@ -1875,19 +1956,86 @@
         if (!posts[key] || posts[key].length === 0) {
             list.innerHTML = '<p style="color:var(--smoke); padding:20px 0;">（此主題內容尚未建立）</p>';
         } else {
-			list.innerHTML = posts[key].map(p => `
-				<div class="post-card">
-					<span class="post-num">${p.num}</span>
-					<div class="post-body">
-						<div class="post-title">${p.title}</div>
-						${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
-						<a href="${p.href}" class="post-more">閱讀全文 →</a>
-					</div>
-				</div>
-			`).join('');
+            list.innerHTML = posts[key].map(p => `
+                <div class="post-card">
+                    <span class="post-num">${p.num}</span>
+                    <div class="post-body">
+                        <div class="post-title">${p.title}</div>
+                        ${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
+                        <span class="post-more" onclick="openReader('${p.href}')">閱讀全文 →</span>
+                    </div>
+                </div>
+            `).join('');
         }
         document.getElementById('content-area').scrollTop = 0;
     }
+    // ── 全書題目扁平清單（for 閱讀模式上下題）──
+    let allQuestions = []; // { num, title, href }
+
+    function buildAllQuestions() {
+        allQuestions = [];
+        const seen = new Set();
+        chapterOrder.forEach(chId => {
+            structure[chId].groups.forEach(g => {
+                g.subs.forEach(s => {
+                    if (posts[s.key]) {
+                        posts[s.key].forEach(p => {
+                            if (!seen.has(p.href)) {
+                                seen.add(p.href);
+                                allQuestions.push({ num: p.num, title: p.title, href: p.href });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }
+    buildAllQuestions();
+
+    let currentQIdx = 0;
+
+    function openReader(href) {
+        const idx = allQuestions.findIndex(q => q.href === href);
+        if (idx === -1) { window.open(href, '_blank'); return; }
+        currentQIdx = idx;
+        _showReader();
+    }
+
+    function _showReader() {
+        const q = allQuestions[currentQIdx];
+        document.getElementById('reader-num').textContent = '第 ' + q.num + ' 問';
+        document.getElementById('reader-title').textContent = q.title;
+        document.getElementById('reader-iframe').src = q.href;
+        document.getElementById('reader-pos').textContent = (currentQIdx + 1) + ' / ' + allQuestions.length;
+        document.getElementById('reader-btn-prev').disabled = currentQIdx <= 0;
+        document.getElementById('reader-btn-next').disabled = currentQIdx >= allQuestions.length - 1;
+
+        // 顯示閱讀模式，隱藏其他
+        document.getElementById('reader-screen').classList.add('active');
+        document.getElementById('content-area').style.display = 'none';
+        document.getElementById('bottom-nav').classList.add('hidden');
+        document.getElementById('sub-nav').classList.add('hidden');
+        document.getElementById('main-nav-bar').style.display = 'none';
+    }
+
+    function navigateQ(delta) {
+        const newIdx = currentQIdx + delta;
+        if (newIdx < 0 || newIdx >= allQuestions.length) return;
+        currentQIdx = newIdx;
+        _showReader();
+    }
+
+    function closeReader() {
+        document.getElementById('reader-screen').classList.remove('active');
+        document.getElementById('content-area').style.display = '';
+        document.getElementById('main-nav-bar').style.display = '';
+        // 若目前是章節頁，恢復 sub-nav 和 bottom-nav
+        if (currentChapter !== 'home') {
+            document.getElementById('sub-nav').classList.remove('hidden');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+        }
+    }
+
     </script>
 </body>
 </html>
