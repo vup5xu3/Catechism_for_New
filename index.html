@@ -1865,10 +1865,39 @@
         fillSubSelect(chapterId, 0);
     }
 
-    // ── Hash 工具 ──
+    let _fromPop = false;
+
     function setHash(hash) {
-        history.replaceState(null, '', hash ? '#' + hash : '#');
+        if (_fromPop) return;
+        history.pushState({ hash }, '', hash ? '#' + hash : '#');
     }
+
+    // ── 瀏覽器上一頁／下一頁 ──
+    window.addEventListener('popstate', () => {
+        _fromPop = true;
+        const state = readHash();
+        if (state.type === 'reader') {
+            const idx = allQuestions.findIndex(q => q.href === state.href);
+            if (idx !== -1) { currentQIdx = idx; _showReader(); }
+        } else if (state.type === 'chapter' && structure[state.chapterId]) {
+            currentChapter = state.chapterId;
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.chapter === state.chapterId);
+            });
+            document.getElementById('reader-screen').classList.remove('active');
+            document.getElementById('main-nav-bar').style.display = '';
+            showChapter(state.chapterId, state.subKey);
+        } else {
+            currentChapter = 'home';
+            document.querySelectorAll('.nav-tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.chapter === 'home');
+            });
+            document.getElementById('reader-screen').classList.remove('active');
+            document.getElementById('main-nav-bar').style.display = '';
+            showHome();
+        }
+        _fromPop = false;
+    });
 
     function readHash() {
         const h = location.hash.slice(1); // 去掉 #
