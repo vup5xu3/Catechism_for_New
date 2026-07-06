@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自有永有 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight strong     { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>自有<span>永有</span></h1>
+  <p class="subtitle">當一切都在變動，誰是那不改變的？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個讓我半夜醒來的問題</h2>
+      <p class="card-hook">如果什麼都可能變，那我到底能抓住什麼？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>你有沒有過這樣的夜晚——工作的變動、關係的起伏、健康的一點風吹草動，都會讓你突然清醒過來，腦子裡冒出一個很簡單卻很沉重的問題：「這世界上，到底有沒有什麼是真正不會變的？」</p>
+
+      <p>我曾經把安全感放在很多地方。放在一份穩定的工作上，結果公司組織重整；放在一段關係上，結果對方的心意也會流動；放在自己的健康和能力上，結果一場感冒就讓我發現，其實我對自己的身體也沒有想像中那麼有把握。每一次，那份「靠山」都在某個瞬間輕輕地晃動了一下，然後我才驚覺，原來我一直站在會移動的地面上。</p>
+
+      <div class="highlight">
+        <strong>一個誠實的提問</strong>
+        我們常常把信心的錨，拋向那些本質上就會改變、會老化、會消逝的事物——地位、財富、外貌、他人的評價。這不是誰的錯，而是因為我們太渴望一個「靠得住」的東西了，只是找錯了對象。
+      </div>
+
+      <p>後來我開始重新翻看聖經裡一段很古老的故事——一個八十歲的老人，在曠野裡遇見一叢燒不盡的荊棘，並且聽見了一個名字。那個名字，後來被翻譯成中文裡極美的四個字：「自有永有」。當時我沒有想到，這短短一句自我宣告，竟然會牽出希伯來文法、七十士譯本、中世紀神學、宗教改革，一路談到我今天晚上失眠的這個問題。</p>
+
+      <p>如果你也曾在深夜裡問過類似的問題，那麼接下來這幾天，我想陪你一起，把這段故事和它背後的深意，慢慢攤開來看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">何烈山上，那把燒不盡的荊棘</h2>
+      <p class="card-hook">一個牧羊人，一叢火焰，一個名字的重量</p>
+    </div>
+    <div class="card-body">
+
+      <p>要理解「自有永有」這句話的分量，得先回到那個具體的場景。故事的主角，是一位已經八十歲的老牧人——摩西。他的前半生分成兩段截然不同的四十年：前四十年，在埃及王宮接受最頂尖的人文教育；後四十年，在米甸的曠野裡放羊、成家、被生活磨得沉默而謙卑。這樣的一個人，早已不年輕，也早已不天真。</p>
+
+      <p>就在這樣一個平凡的放羊日子裡，他在何烈山的荒野深處，看見一叢荊棘在火焰中燃燒，卻怎麼樣都燒不成灰燼。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">荊棘在火中燃燒，卻沒有被燒毀</p>
+        <p class="scripture-ref">出埃及記 三章</p>
+      </div>
+
+      <p>這個異象，其實藏著一層很深的隱喻。一般的火焰需要燃料，燒著燒著，燃料耗盡，火自然就熄了。可是這把火不一樣——它燃燒，卻不依賴那叢荊棘作為燃料。換句話說，這火焰的能量,不是從外面「借」來的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        這就好像我們平常看到的燈,插著電線,電線一拔就熄了;可是這把火,竟然不用插電——它自己就是光源,自己供應自己。這正是後來摩西自己一生的寫照:他一生被神聖的同在燃點,發光卻不至枯竭,直到一百二十歲離世時,眼目未曾昏花,精神也未曾衰敗。
+      </div>
+
+      <p>摩西在這奇異的景象前停下腳步,聽見了呼喚,也接下了一個艱鉅到近乎荒謬的任務——回到埃及,帶領整個民族脫離法老的奴役。他很清楚,百姓不會輕易相信一個空手而來的人,於是他問了一個在古代近東文化裡再自然不過的問題:「祢叫什麼名字?」</p>
+
+      <p>在那個時代,知道一位神明的名字,幾乎等於掌握了某種與祂溝通、甚至是操控祂的鑰匙。摩西想要一個明確的、可以交代的稱號。可是,他得到的回答,遠遠超出了他的預期——那不是一個名字,而是一句宣告。這句宣告是什麼,又為什麼會讓後世的哲學家與神學家爭論了三千年,我們下一篇繼續往裡走。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">「我是自有永有的」——一句翻轉哲學史的宣告</h2>
+      <p class="card-hook">當你以為會得到一個名字，卻得到了一整個本體論</p>
+    </div>
+    <div class="card-body">
+
+      <p>摩西得到的回答,希伯來原文是 אֶהְיֶה אֲשֶׁר אֶהְיֶה,音譯為 Ehyeh Asher Ehyeh。這句話,後來在中文和合本裡被譯成我們熟悉的六個字:「我是自有永有的」。</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>要真正讀懂這句話,得先進入希伯來文的動詞系統。古希伯來語不像中文或英文那樣,有清楚劃分的過去式、現在式、未來式,而是用「完成式」與「未完成式」來表達動作的狀態。</p>
+
+      <div class="term-box">
+        <div class="term-original">Ehyeh<br>希伯來文</div>
+        <div class="term-desc">動詞 hayah(是、存在、成為)的第一人稱單數未完成式。未完成式所傳達的,是一種持續、動態、尚未完結、面向未來的狀態。所以這句話最貼近語法的直譯,其實是「我將是我所將是的」。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>一句話裡的雙重張力</strong>
+        這句重疊式的宣告,在希伯來語裡是常見的修辭手法,通常用來表達一種保留或自由——就像「他們去了他們去的地方」,其實是在說去向未明。上帝藉此宣告:祂的本質不能被任何受造的名字定義,祂會在未來的歷史行動中,親自向世人顯明自己。
+      </div>
+
+      <p>更耐人尋味的是,神聖四字名「YHWH」(יְהוָה),與這個動詞有著極緊密的詞源關聯。Ehyeh 是第一人稱的自稱(「我是」),而當人們用第三人稱稱呼祂時,這個動詞就變成 Yihyeh(「祂是」),在古老的拼寫中演變成了 YHWH。這個名字本身,其實就是一個高度濃縮的語法縮寫——融合了過去式(祂曾是)、現在式(祂是)與未來式(祂將是)。</p>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <div class="analogy">
+        <span class="analogy-icon">⏳</span>
+        換一個角度想:如果有人問你「你是誰」,你多半會用一個名字、一份職業、一段關係來回答。但如果有一位存在,祂的答案是「我就是『是』本身」——不是某個名字,而是存在這件事的源頭——那祂等於在說:「我不是被定義出來的,我是所有定義的起點。」
+      </div>
+
+      <div class="big-quote">
+        我是自有永有的
+        <cite>— 出埃及記 三章十四節</cite>
+      </div>
+
+      <p>這句宣告,不只是一次自我介紹,更拉開了後世經院哲學、系統神學,一路到存在主義哲學,對「神聖本質」長達數千年討論的序幕。而這句話翻譯成中文的過程,本身也是一段跨越三千年的旅程——這正是我們接下來要一起研究的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">一句話，跨越三千年的翻譯之旅</h2>
+      <p class="card-hook">從希伯來文到希臘文，再到中文，每一次翻譯都是一次神學選擇</p>
+    </div>
+    <div class="card-body">
+
+      <p>一句話要從古希伯來文,一路傳遞到今天我們手上的中文聖經,中間經過了無數次的翻譯與詮釋。每一次翻譯,譯者都必須在「忠於原文語法」與「讓讀者聽懂」之間做出取捨,而這些取捨,往往悄悄地帶入了譯者所處時代的哲學語彙。我整理了幾個關鍵版本的對照,你會發現這段翻譯史本身就很精彩:</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>版本來源</th>
+            <th>譯文</th>
+            <th>神學側重</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">希伯來文原文</td>
+            <td>Ehyeh Asher Ehyeh</td>
+            <td>強調歷史行動的自由與非受造的動態活性</td>
+          </tr>
+          <tr>
+            <td class="src">七十士譯本(希臘文)</td>
+            <td>Ego eimi ho on</td>
+            <td>引入希臘存在論,強調上帝是「那存在者」本體</td>
+          </tr>
+          <tr>
+            <td class="src">文理委辦譯本</td>
+            <td>我自有而恆有</td>
+            <td>古典漢語對仗,突顯不借外力、無始無終</td>
+          </tr>
+          <tr>
+            <td class="src">天主教思高譯本</td>
+            <td>我是自有者</td>
+            <td>偏人格化實體,指向不依賴受造物的自存主體</td>
+          </tr>
+          <tr>
+            <td class="src">官話和合本</td>
+            <td>我是自有永有的</td>
+            <td>對偶結構,並列「自存性」與「永恆性」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        和合本的「自有永有」,其實是一個非常精準的雙重架構:「自有」對應拉丁神學的「自存性」(Aseitas)——存在源於自身;「永有」對應「永恆性」(Aeternitas)——超越時間的限制。中文譯者在無意間,用四個字扣住了西方神學花了上千年才梳理清楚的兩個核心概念。
+      </div>
+
+      <p>從七十士譯本把它譯成希臘的存在論語言,到中文譯者用「自有永有」這樣工整的對句來承載,每一個版本都不是隨意的選字,而是那個時代的譯者,盡力想把這句古老的宣告,說給自己時代的人聽懂。</p>
+
+      <p>那麼,「自有」與「永有」這兩個詞,在系統神學裡究竟被如何深入剖析?這是下一篇要進入的部分——也是整個系列裡最需要慢慢咀嚼的一章。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">自存、純一與永恆——三個概念的深度對話</h2>
+      <p class="card-hook">從阿奎那到加爾文,從東正教到斯賓諾莎,神學家們如何理解這位「是」</p>
+    </div>
+    <div class="card-body">
+
+      <p>「自有永有」拆開來看,其實藏著系統神學裡兩個極重要的教義——自存性與永恆性。這一篇,我想陪你把這兩個概念,連同幾位神學家的洞見,一起攤開來看清楚。</p>
+
+      <div class="term-box">
+        <div class="term-original">Aseity<br>自存性</div>
+        <div class="term-desc">源自拉丁語 a se,意為「從自身而來」。神學家巴文克指出,自存性意味著上帝完全不依賴受造界。受造物是「偶性存有」,需要先決條件才能存在;上帝卻是「必然存有」,祂的存在完全蘊含於自身本質之中。</div>
+      </div>
+
+      <p>與自存性互為表裡的,是「神聖純一性」的教義。阿奎那論證,上帝是「獨立自存的存在活動本身」——在上帝內,本質與存在完全同一。不像人類「擁有」智慧,上帝本身就是「智慧本身」。這個教義防止我們把上帝想像成一個由不同零件拼湊而成的複雜實體,因為任何有部分的東西,存在都依賴各部分的結合,那將摧毀祂的獨立性。</p>
+
+      <div class="highlight">
+        <strong>加爾文的精緻拓展</strong>
+        加爾文在三一論的脈絡裡,提出了「神性自存」(Autotheos)的概念:就神聖本質而言,聖子與聖父共享同一個不可分割的自存本體;就位格秩序而言,聖子作為「子」的位格,是永恆地由父所生。這細緻的區分,既維護了三位一體在本質上的完全平等,也保留了位格之間的關係次序。
+      </div>
+
+      <p>東正教神學則走出了另一條路——「本質-能量區分」。上帝的「本質」絕對超越、受造物永不可觸及;但祂的「非受造能量」,如同火焰散發的光與熱,是可以被信徒經歷、參與的。這在祂的「絕對超越」與「歷史臨在」之間,架起了一座橋。</p>
+
+      <p>至於「永有」這個面向,歷史上發展出幾種不同的時間模型,我用同心圈的方式排列給你看:</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🕊️ 超越時間模型</span>
+          奧古斯丁、波愛修斯——上帝完全處於時間之外,祂的永恆是對無盡生命「完整且完美的同時佔有」,只有一個永恆的「現在」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⏳ 無盡綿延模型</span>
+          早期護教士——上帝存在於時間之內,但生命在時間軸上無限延續,無始無終,使祂與歷史的互動顯得真實有血有肉。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">♾️ 自因必然模型</span>
+          斯賓諾莎——永恆不是無限延伸的時間,而是上帝本質中必然蘊含存在這一真理本身。
+        </div>
+      </div>
+
+      <p>奧古斯丁在《懺悔錄》裡有一句話,我覺得特別能總結這一切:上帝的「今天」就是永恆,祂的日子不屬於任何一天,因為祂是在一切時間之前創造了時間。</p>
+
+      <p>這些概念聽起來抽象,但它們共同指向一件事:這位「自有永有」的上帝,不是一個遙遠、冷冰冰的哲學概念,而是有著絕對的自由與資源,主動選擇進入時間、走進人的生命裡。這一點,正是最後一篇想帶你回到的地方。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">磐石不改，你也可以安心</h2>
+      <p class="card-hook">寫給正在動盪中,還在尋找依靠的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果「自有永有」只停留在形上學的討論裡,那祂終究只是哲學家眼中一個冷靜、疏離、高高在上的「絕對第一因」,和我們的生活沒有太大關係。但聖經神學真正動人的地方在於——這位在荊棘火焰中宣告自己是「自有永有」的上帝,緊接著說的下一句話,是「我是亞伯拉罕的神、以撒的神、雅各的神」。</p>
+
+      <p>祂的自存,並沒有讓祂與世界隔絕。相反地,正因為祂不依賴任何受造界,祂才擁有絕對的自由與無限的資源,主動選擇降卑自己,走進時間裡,和有限、會犯錯的我們建立關係。新約裡,耶穌多次用同樣絕對的語氣說「我是」,並且說「還沒有亞伯拉罕,就有了我」——這位不受時間限制的生命源頭,親自走進了人的歷史。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們當倚靠耶和華,直到永遠,因為耶和華是永遠屹立的磐石</p>
+        <p class="scripture-ref">以賽亞書 二十六章四節</p>
+      </div>
+
+      <p>在古代近東的地理環境裡,磐石是躲避風暴、抵擋敵人的天然堡壘。上帝作為「永久的磐石」,祂的形上學基礎正是自存與永恆:祂不受外部力量損害,也不隨世代更迭而風化消逝。這正是為什麼,當我們的環境、關係、健康急劇變動時,依然可以有一個不動搖的支點。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">仰望祂的,便有光榮;他們的臉,決不蒙羞</p>
+        <p class="scripture-ref">詩篇 三十四篇五節</p>
+      </div>
+
+      <p>波愛修斯在《哲學的慰藉》裡說得很直白:人類的痛苦與羞愧,常常來自把幸福建立在幸運女神的輪盤上——地位、財富、名譽、外貌。這些都是偶然而短暫的,終將隨時間朽壞,讓依附其上的人墜入失落。可是當我們把信心的錨,拋向那絕對自存、無始無終的「自有永有者」,我們就是把自己短暫的生命,和那永不枯竭的源頭連結在一起。</p>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        回到我們第一篇的那個失眠夜晚——其實答案一直都在那裡。這世界上真的有一個不會變的:不是我們的處境變好、變穩定,而是那位「自有永有」的,從沒有變過,以後也不會變。你不需要靠自己撐住一切,你可以把重量,交給那位真正撐得住的。
+      </div>
+
+      <div class="big-quote">
+        耶和華,耶和華是永遠屹立的磐石
+        <cite>— 以賽亞書 二十六章四節</cite>
+      </div>
+
+      <p>願你在動盪的日子裡,也能安穩地想起這句話——祂昔在、今在、以後永在,而你,可以安心地靠著祂。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  自有永有 · Threads Series
+</footer>
+
+</body>
+</html>
