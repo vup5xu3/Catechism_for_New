@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基督再來的預兆 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>七個<span>預兆</span></h1>
+  <p class="subtitle">日期不可知，而預兆可以察看</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">看得懂季節，不等於算得出日期</h2>
+      <p class="card-hook">而聖經要我們做的，是前者</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>上一篇我們談過：那日子、那時辰，沒有人知道。</p>
+
+      <p>而這一篇要談的，是另一半——<strong>聖經確實給了預兆，而且要我們察看。</strong></p>
+
+      <div class="highlight">
+        <strong>這兩件事不矛盾</strong>
+        主耶穌自己就把它們放在同一段裡：<br><br>先是無花果樹的比喻：「當樹枝發嫩長葉的時候，你們就知道<strong>夏天近了</strong>。這樣，你們看見這一切的事，也該知道<strong>人子近了，正在門口了</strong>。」<br><br>然後緊接著：「但那日子，那時辰，<strong>沒有人知道</strong>。」<br><br>——<strong>可以知道「近了」，不能知道「哪一天」。</strong>
+      </div>
+
+      <p>而祂還責備過一群人，責備的理由正是<strong>不會看預兆</strong>：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們知道分辨天上的氣色，倒不能分辨這時候的神蹟</p>
+        <p class="scripture-ref">馬太福音 十六章三節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌤️</span>
+        祂的話是：「晚上天發紅，你們就說：『天必要晴。』早晨天發紅，又發黑，你們就說：『今日必有風雨。』」<br><br>——你們看天氣看得很準。<br><br>「<strong>倒不能分辨這時候的神蹟。</strong>」<br><br>所以「察看預兆」不是好奇心，<strong>那是主要求的一種分辨力。</strong>
+      </div>
+
+      <p>接下來這幾篇，我們來看聖經所列的七個預兆。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">祂講預兆時，第一句是「你們要謹慎」</h2>
+      <p class="card-hook">而不是「你們要興奮」</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音二十四章，門徒問了三個問題：「請告訴我們，甚麼時候有這些事？你降臨和世界的末了有甚麼預兆呢？」</p>
+
+      <p>而主耶穌回答的第一句話，語氣值得注意：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們要謹慎，免得有人迷惑你們</p>
+        <p class="scripture-ref">馬太福音 二十四章四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>祂沒有先講預兆，祂先講警告</strong>
+        而那個警告的內容是：<strong>「免得有人迷惑你們。」</strong><br><br>然後祂立刻說明了危險來自哪裡：「因為將來有好些人<strong>冒我的名</strong>來，說：『我是基督』，並且要迷惑許多人。」<br><br>——而在那一整章裡，「<strong>迷惑</strong>」這個警告，祂重複了好幾次。<br><br>「且有好些假先知起來，迷惑多人。」<br>「因為假基督、假先知將要起來，顯大神蹟、大奇事；<strong>倘若能行，連選民也就迷惑了。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚠️</span>
+        這個順序告訴我們一件事：<strong>主講預兆的目的，是為了讓人不被騙，不是為了讓人興奮。</strong><br><br>而事實上，末世的題目最容易產生兩種相反的問題：<br><br>一種是<strong>過度熱衷</strong>——把每一則新聞都對進預言表，天天推算。<br>一種是<strong>完全迴避</strong>——因為看多了亂象，索性不談。<br><br>而主給的態度是第三種：<strong>謹慎地看，然後回去做該做的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那一整章裡，還有另一句反覆出現的話：<strong>「那時……你們不要驚慌。」</strong></p>
+
+      <div class="highlight">
+        <strong>「這些事是必須有的，只是末期還沒有到」</strong>
+        主講到打仗、饑荒、地震的時候，說了一句很重要的話：<br><br>「你們也要聽見打仗和打仗的風聲，總不要驚慌；因為這些事是必須有的，<strong>只是末期還沒有到。</strong>」<br><br>——「只是末期還沒有到」。<br><br>這句話等於是在說：<strong>不要一有災難就以為到了。</strong><br><br>而祂用了一個很生動的比喻來定位這些事：「這都是<strong>災難的起頭</strong>。」<br><br>原文那個詞，字面是「<strong>生產之難</strong>」——就是產痛。<br><br>而產痛的特徵是：<strong>它會來、會走、然後越來越密。</strong>而它指向的不是死亡，是<strong>一個新生命的到來。</strong>
+      </div>
+
+      <p>那麼，聖經所列的預兆有哪些？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">七個預兆</h2>
+      <p class="card-hook">六個在外面，一個在裡面</p>
+    </div>
+    <div class="card-body">
+
+      <p>基督再來的預兆，聖經列了七項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 離道反教</span>
+          「因為那日子以前，必有<strong>離道反教</strong>的事。」（帖後二 3）<br>「必有好譏誚的人隨從自己的私慾出來譏誚說：『主要降臨的應許在哪裡呢？』」（彼後三 3～4）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 大罪人（敵基督）不法的隱意開始發動</span>
+          「並有那大罪人，就是沉淪之子顯露出來……<strong>那不法的隱意已經發動</strong>。」（帖後二 3～7）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 兩個見證人的工作期</span>
+          「我要使我那兩個見證人，穿著毛衣，傳道一千二百六十天。」（啟十一 2～14）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 聖殿要重建</span>
+          「他是抵擋主，高抬自己，超過一切稱為神的和一切受人敬拜的，<strong>甚至坐在神的殿裡</strong>，自稱是神。」（帖後二 4；但九 27）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 異端流行</span>
+          「聖靈明說，在後來的時候，必有人離棄真道，聽從那引誘人的邪靈和鬼魔的道理。」（提前四 1）<br>「因為時候要到，人必厭煩純正的道理，耳朵發癢，就隨從自己的情慾，增添好些師傅。」（提後四 3～4）
+        </div>
+      </div>
+
+      <p>還有兩項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⑥ 人心奸險，自私自利</span>
+          「你該知道，末世必有危險的日子來到。因為那時人要<strong>專顧自己</strong>、貪愛錢財、自誇、狂傲、謗讟、違背父母、忘恩負義、心不聖潔……」（提後三 1～5）<br>「你們這些富足人哪，應當哭泣、號咷……工人的工錢……被你們虧欠。」（雅五 1～4）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⑦ 晨星出現在愛慕主顯現的人心中</span>
+          「直等到天發亮，<strong>晨星在你們心裡出現</strong>的時候。」（彼後一 19）<br>「我又要把晨星賜給他。」（啟二 28）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這七項，有一個很值得注意的結構：<strong>前六項在外面，第七項在裡面。</strong></p>
+
+      <div class="highlight">
+        <strong>前六項，都是可以從外部觀察的</strong>
+        離道反教、不法的發動、兩個見證人、聖殿重建、異端流行、人心敗壞——<br><br>這些都是<strong>世界的、教會的、社會的</strong>景況。<br><br>而第七項不一樣：<strong>「晨星出現在<span style="font-size:inherit;">愛慕主顯現的人心中</span>。」</strong><br><br>——那個預兆，發生在<strong>人的心裡</strong>。<br><br>而且它有一個條件：<strong>「愛慕主顯現的人」。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        而「晨星」這個意象，選得很好。<br><br>晨星是天快亮時，最後仍然明亮的那一顆。<br><br>它出現的時候，<strong>天還是黑的</strong>——但它的出現，意味著<strong>夜要盡了。</strong><br><br>彼得後書那節的完整句子是：「我們並有先知更確的預言，如同<strong>燈照在暗處</strong>。你們在這預言上留意，直等到天發亮，晨星在你們心裡出現的時候。」<br><br>——「燈照在暗處」。<br><br>所以那不是一個「天已經亮了」的訊號，是<strong>「在暗處還有光」</strong>的意思。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第七項的存在，讓整份清單的性質改變了。</p>
+
+      <div class="highlight">
+        <strong>因為前六項，會讓人絕望</strong>
+        離道反教、異端流行、人心奸險、自私自利——<br><br>如果只讀這六項，一個人看世界的眼光會越來越黑。<br><br>而第七項是往回收的：<strong>在這一切之中，有一群「愛慕主顯現的人」，而晨星在他們心裡出現。</strong><br><br>——外面越暗，那顆星越顯得亮。<br><br>而啟示錄裡，主自己說：「我是明亮的<strong>晨星</strong>。」<br><br>所以那第七個預兆，指向的其實是祂自己。
+      </div>
+
+      <p>下一篇，我們把幾個比較難的項目說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「離道反教」與「不法的隱意」</h2>
+      <p class="card-hook">兩個原文詞，說明了危險的性質</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Apostasia<br>離道反教</div>
+        <div class="term-desc">字面是「<strong>離棄、背離</strong>」——從原本站立的位置退出去。<br><br>而重點在於：<strong>要能「離棄」，前提是原本在裡面。</strong><br><br>所以這個預兆講的不是「外面的人不信」——那從來就有。<br><br>它講的是：<strong>原本在裡面的，走出去了。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>而彼得後書描述了那個離棄的具體語氣</strong>
+        「必有好譏誚的人隨從自己的私慾出來譏誚說：<strong>『主要降臨的應許在哪裡呢？』</strong>」<br><br>——注意那句話的內容。<br><br>他們的論據是：<strong>時間太久了，什麼都沒發生。</strong>「因為從列祖睡了以來，萬物與起初創造的時候仍是一樣。」<br><br>而彼得的回應，是那句有名的話：<br><br>「主看一日如千年，千年如一日。<strong>主所應許的尚未成就，有人以為他是耽延，其實不是耽延，乃是寬容你們，不願有一人沉淪，乃願人人都悔改。</strong>」<br><br>——那個「遲延」，不是失效。<strong>是寬容。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">To mystērion tēs anomias<br>不法的隱意</div>
+        <div class="term-desc">字面是「<strong>不法的奧祕</strong>」。<br><br>「奧祕」（mystērion）指的是<strong>還未完全顯明的、隱藏在暗處運作的</strong>。<br><br>而保羅說：「那不法的隱意<strong>已經發動</strong>」——注意時態，那是<strong>他寫信的當時</strong>就已經在運作了。<br><br>所以這個預兆不是「將來某天會開始」，而是<strong>「已經在進行，只是還沒顯露」</strong>。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        而保羅接著說：「只是現在有一個攔阻的，等到那攔阻的被除去。」<br><br>——所以那股力量現在是<strong>被壓著</strong>的。<br><br>就像水壓在閘門後面。閘門在，水就上不來；閘門一開，水就湧出。<br><br>而「那攔阻的」是什麼，歷代有不同的看法，聖經沒有明說。<br><br><strong>而重點不在辨認那個攔阻者，重點在於：這件事在神的掌控之下，有一個時間表。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第六項——<strong>人心奸險，自私自利</strong>——提摩太後書那份清單，值得完整讀一次，因為它的第一項就定了調：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為那時人要專顧自己、貪愛錢財、自誇、狂傲、謗讟、違背父母、忘恩負義、心不聖潔、無親情、不解怨、好說讒言、不能自約、性情兇暴、不愛良善、賣主賣友、任意妄為、自高自大、愛宴樂、不愛神
+        </p>
+        <p class="scripture-ref">提摩太後書 三章二至四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        整份清單的第一項是「<strong>專顧自己</strong>」，最後一項是「<strong>不愛神</strong>」。<br><br>——而中間那十七項，某種意義上都是這兩項的展開。<br><br>頭尾兩端一夾：<strong>把自己放在第一位，把神放在最後。</strong><br><br>而那正是第一誡的完全顛倒。<br><br>而保羅接著加了一句非常尖銳的話：<br><br>「<strong>有敬虔的外貌，卻背了敬虔的實意。</strong>」<br><br>——所以這份清單描述的，不一定是教會外面的人。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第三、第四項——<strong>兩個見證人</strong>與<strong>聖殿重建</strong>——涉及較多解經上的討論，歷代有不同的理解。</p>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        關於這幾項，我想守住一個分寸：<strong>經文說了什麼，我們讀什麼；經文沒說的，不硬編。</strong><br><br>啟示錄十一章記載那兩個見證人「傳道一千二百六十天」，穿著毛衣，有能力，最後被殺，三天半後復活升天。<br><br>而帖撒羅尼迦後書說那大罪人「坐在神的殿裡，自稱是神」。<br><br>——這些是經文明說的。<br><br>至於那兩位見證人是誰、聖殿指的是哪一座、時序如何對應——<strong>歷代有不同看法，而聖經沒有給出定論。</strong><br><br>而主自己說過：那些細節不是我們可以知道的。<strong>我們該做的，是察看、是警醒、是安靜做工。</strong>
+      </div>
+
+      <p>下一篇，我們談那第七個預兆——因為它是唯一一個，你可以直接檢查的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">唯一一個你可以自己檢查的預兆</h2>
+      <p class="card-hook">「晨星在你們心裡出現」</p>
+    </div>
+    <div class="card-body">
+
+      <p>前六個預兆，你只能<strong>觀察</strong>——它們發生在世界上、教會裡、別人身上。</p>
+
+      <p>而第七個不一樣。<strong>它發生在你心裡，所以你可以直接檢查。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們並有先知更確的預言，如同燈照在暗處。你們在這預言上留意，直等到天發亮，晨星在你們心裡出現的時候
+        </p>
+        <p class="scripture-ref">彼得後書 一章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個檢查的問題，其實很簡單</strong>
+        提摩太後書用了一個詞，來形容那些會得公義冠冕的人：<br><br>「並且不但賜給我，也賜給<strong>凡愛慕他顯現的人</strong>。」（提後四 8）<br><br>——「<strong>愛慕他顯現</strong>」。<br><br>所以那個檢查是：<strong>你盼望祂來嗎？</strong><br><br>不是「你相信祂會來嗎」——那是頭腦的事。<br><br>是「<strong>你希望祂快點來嗎</strong>」——那是心的事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💛</span>
+        而這個問題很誠實，因為它測的是<strong>你的重心在哪裡</strong>。<br><br>如果一個人的一切都在這裡——他的計畫、他的期待、他還沒完成的事、他捨不得的東西——<br><br>那句「主耶穌啊，我願你來」，說出口會有點勉強。<br><br>而如果一個人心裡真的把那裡當家——那句話就會很自然。<br><br><strong>而這不是一個要拿來自責的檢查。</strong>它比較像是一個溫度計：告訴你現在的重心落在哪裡。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而約翰壹書把「盼望」與「行為」的關係，講得很直接：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡向他有這指望的，就潔淨自己，像他潔淨一樣</p>
+        <p class="scripture-ref">約翰壹書 三章三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意那個因果</strong>
+        <strong>「向他有這指望的」→「就潔淨自己」。</strong><br><br>不是「先潔淨自己，才能有指望」。<br><br>是<strong>指望產生潔淨</strong>。<br><br>而這個順序很重要，因為它說明了一件事：<strong>如果一個人在生活上長期無力改變，問題可能不在意志力，在盼望。</strong><br><br>一個心裡真的在等的人，活法會不一樣。<br><br>——就像一個知道最愛的人隨時會回來的人，家裡的樣子會不一樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想把七個預兆，換一個方式收攏：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">前六項告訴你：不要意外</span>
+          當你看見教會裡有人離開、看見異端流行、看見人心越來越冷——<br><strong>那不是意外，那是被預告過的。</strong><br>而知道這件事，可以讓人在失望時不至於崩塌。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">第七項告訴你：不要熄滅</span>
+          在那一切之中，還有一群「愛慕主顯現的人」，而晨星在他們心裡。<br><strong>那顆星，是可以熄的——也是可以被守住的。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而彼得那節經文，其實給了守住的方法</strong>
+        「你們在<strong>這預言上留意</strong>，直等到天發亮，晨星在你們心裡出現的時候。」<br><br>——「在這預言上留意」。<br><br>而他前一句說：「我們並有先知更確的預言，<strong>如同燈照在暗處</strong>。」<br><br>那個燈，就是聖經。<br><br>所以守住那顆星的方法，樸實得有點意外：<strong>持續讀神的話。</strong><br><br>在暗處，就照著那盞燈走。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">產痛的意思是，有東西要生出來</h2>
+      <p class="card-hook">寫給那個看世界越看越灰的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>七個預兆看完，如果心裡有點沉，那是正常的。因為前六項，確實不是好消息。</p>
+
+      <p>而我想把主自己給的那個比喻，留到最後。</p>
+
+      <div class="highlight">
+        <strong>「這都是災難的起頭」</strong>
+        主在講完打仗、饑荒、地震之後，說了這一句。<br><br>而「災難」那個字，原文的字面是<strong>「生產之難」</strong>——就是產痛。<br><br>而產痛有三個特徵：<br><br><strong>它會越來越密</strong>——所以那些事會加劇。<br><strong>它很痛</strong>——聖經沒有粉飾這一點。<br><strong>而它指向的不是死亡，是新生。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而保羅在羅馬書用了同一個意象：<br><br>「我們知道，一切受造之物一同<strong>歎息、勞苦</strong>，直到如今。」——那個「勞苦」，原文也是生產之苦。<br><br>而他接著說：受造之物「指望脫離敗壞的轄制，得享神兒女自由的榮耀」。<br><br>——所以那些歎息，不是死亡的呻吟。<br><br><strong>是分娩的聲音。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主在馬太福音二十四章講完那一整章之後，說了一句話，我覺得是給每一個看世界看得很累的人的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">惟有忍耐到底的，必然得救</p>
+        <p class="scripture-ref">馬太福音 二十四章十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話的上一句是：「只因不法的事增多，許多人的愛心才漸漸冷淡了。」</strong>
+        注意那個因果：<strong>不法增多 → 愛心冷淡。</strong><br><br>這是一個很寫實的觀察。<br><br>當一個人看太多惡、太多虛偽、太多失望，他的心會慢慢硬起來——那是一種<strong>自我保護</strong>。<br><br>而主說：<strong>惟有忍耐到底的。</strong><br><br>所以那個真正的爭戰，不在外面的局勢，<strong>在你的心會不會冷掉。</strong><br><br>——而這，正好接回第七個預兆：<strong>晨星在你心裡。</strong>
+      </div>
+
+      <div class="big-quote">
+        直等到天發亮，<br>晨星在你們心裡出現的時候
+        <cite>— 彼得後書 一章十九節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到最開始：日期不可知，預兆可以察看。</p>
+
+      <p>而察看預兆的目的，不是為了算，是為了<strong>不被嚇到，也不被騙。</strong></p>
+
+      <p>當那些事發生時，你不會慌——因為你知道那被預告過。</p>
+
+      <p>當有人拿著日期來找你時，你不會信——因為你知道那是不可知的。</p>
+
+      <p>而在這一切之間，你可以做一件很小、卻很關鍵的事：<strong>守住那顆星。</strong></p>
+
+      <p>方法是彼得說的：在這預言上留意，讓那盞燈一直照著。</p>
+
+      <p>因為天還是黑的，而晨星已經出來了。</p>
+
+      <p>那意味著——<strong>夜要盡了。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  基督再來的預兆 · Threads Series
+</footer>
+
+</body>
+</html>

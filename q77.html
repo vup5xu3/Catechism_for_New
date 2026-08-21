@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>怎樣證明耶穌是神的兒子 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>五項<span>憑據</span></h1>
+  <p class="subtitle">怎樣證明耶穌是神的兒子？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「你們憑什麼這樣說？」</h2>
+      <p class="card-hook">這是一個好問題，而聖經沒有迴避它</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一次和一個學理工的朋友聊天，他問了一個很直接的問題：</p>
+
+      <p>「你們說耶穌是神的兒子。這個主張很大。<strong>那你們憑什麼？</strong>」</p>
+
+      <p>他不是在挑釁。他只是照著他受過的訓練在問：一個越大的主張，需要越強的證據。</p>
+
+      <div class="highlight">
+        <strong>而我很喜歡這個問題，因為聖經沒有迴避它</strong>
+        聖經從來沒有說「你就信吧，不要問」。<br><br>相反地，它一再地<strong>提出證據</strong>。<br><br>約翰福音整卷書的寫作目的，就是這件事：「但記這些事要叫你們信耶穌是基督，是神的兒子。」——他<strong>「記這些事」</strong>，就是在舉證。<br><br>而使徒行傳裡，保羅「本著聖經與他們<strong>辯論</strong>」；庇哩亞人被稱讚，是因為他們「天天<strong>考查</strong>聖經，要曉得這道是與不是」。<br><br><strong>信仰不怕被查。</strong>
+      </div>
+
+      <p>而我後來整理發現，聖經在這件事上提出的憑據，可以歸納成五項。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧩</span>
+        而它們有一個很好的結構：<br><br>從<strong>祂的來</strong>（誕生）開始，經過<strong>祂的能力</strong>、<strong>祂的本質</strong>、<strong>祂的作為</strong>，一直到<strong>祂的去而復返</strong>（復活）。<br><br>頭尾兩項，都是別人做不到的事——沒有人能安排自己怎麼出生，也沒有人能安排自己從死裡復活。<br><br><strong>而這五項合起來，構成一個相當難繞過去的整體。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你一項一項看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">施洗約翰派人去問的那個問題</h2>
+      <p class="card-hook">而主的回答，是叫他們「去看」</p>
+    </div>
+    <div class="card-body">
+
+      <p>施洗約翰在監獄裡的時候，做了一件很多人意外的事。</p>
+
+      <p>他派兩個門徒去問耶穌：「<strong>那將要來的是你嗎？還是我們等候別人呢？</strong>」</p>
+
+      <div class="highlight">
+        <strong>問這句話的，是施洗約翰</strong>
+        就是那個在約旦河指著祂說「看哪，神的羔羊」的人。<br>就是那個親眼看見聖靈降下、親耳聽見天上聲音的人。<br>就是那個說「我不配給他解鞋帶」的人。<br><br>而他在監獄裡，開始不確定了。<br><br>我覺得這件事被記在聖經裡，本身就是一份恩典。<strong>連他都會問。</strong>
+      </div>
+
+      <p>而主耶穌的回答，很值得注意。祂沒有生氣，沒有責備，也沒有說「你怎麼可以懷疑」。</p>
+
+      <p>祂說的是：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們去，把所聽見、所看見的事告訴約翰。就是瞎子看見，瘸子行走，長大痲瘋的潔淨，聾子聽見，死人復活，窮人有福音傳給他們</p>
+        <p class="scripture-ref">馬太福音 十一章四至五節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👀</span>
+        「把<strong>所聽見、所看見</strong>的事告訴約翰。」<br><br>——祂給的不是一段論證，是一份<strong>事實清單</strong>。<br><br>而那份清單，其實是在引用以賽亞書。約翰是熟讀先知書的人，他一聽就會知道那些話出自哪裡。<br><br>所以主的回答，等於是說：<strong>你去對照一下先知書，然後自己判斷。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這個回答的方式，正是聖經一貫的做法：<strong>提出可以查驗的事實。</strong></p>
+
+      <div class="highlight">
+        <strong>而主自己也用同樣的邏輯</strong>
+        「我若不行我父的事，你們就不必信我；<strong>我若行了，你們縱然不信我，也當信這些事</strong>。」（約十 37～38）<br><br>這句話很有意思。祂等於在說：<strong>如果你暫時信不了我這個人，那你至少先看看這些事。</strong><br><br>——祂給人留了一條路。<br><br>而彼得在五旬節講道時，用的也是同一種語氣：「以色列人哪，請聽我的話：神藉著拿撒勒人耶穌，在你們中間施行異能、奇事、神蹟，將他證明出來，<strong>這是你們自己知道的</strong>。」<br><br>「這是你們自己知道的」——他訴諸的是聽眾自己的見聞。
+      </div>
+
+      <p>那麼，那五項憑據是什麼？下一篇，我們列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五項憑據</h2>
+      <p class="card-hook">從誕生，到復活</p>
+    </div>
+    <div class="card-body">
+
+      <p>怎樣證明耶穌是神的兒子？聖經提出了五項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 祂的誕生奇妙</span>
+          祂因聖靈成孕，由童女而生（太一 18～23）。<br>而且——<strong>世上的人，只有祂未曾犯過罪</strong>（來四 15；林後五 21）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 祂以聖靈施洗</span>
+          「我曾看見聖靈降下……這就是用聖靈施洗的。」（約一 33～34）<br><strong>這是任何人所辦不到的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 祂獨特的榮光</span>
+          天父獨生子的榮光，在天父懷裡，將天父表明出來；祂的生命滿有天父的智慧和豐盛（約一 14、18；西一 15～19、二 3；來一 3）。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 祂行天父所行的事</span>
+          遠超過最有能力的先知（約五 19～23、九 32～33、十四 11）。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 祂從死人中首先復活</span>
+          祂復活後永遠不死，<strong>以大能顯明為神的兒子</strong>（羅一 4；啟一 18）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>這五項的排列，其實有一個很清楚的邏輯。它們涵蓋了一個人的<strong>全部</strong>：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>憑據</th>
+            <th>涵蓋的層面</th>
+            <th>關鍵在於</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">① 誕生</td>
+            <td>祂的<strong>來歷</strong></td>
+            <td>沒有人能安排自己怎麼出生</td>
+          </tr>
+          <tr>
+            <td class="src">② 施洗</td>
+            <td>祂的<strong>權能</strong></td>
+            <td>這件事只有神能做</td>
+          </tr>
+          <tr>
+            <td class="src">③ 榮光</td>
+            <td>祂的<strong>本質</strong></td>
+            <td>不是像神，是神本體的真像</td>
+          </tr>
+          <tr>
+            <td class="src">④ 作為</td>
+            <td>祂的<strong>工作</strong></td>
+            <td>不是奉命行事，是「父所做的事，子也照樣做」</td>
+          </tr>
+          <tr>
+            <td class="src">⑤ 復活</td>
+            <td>祂的<strong>結局</strong></td>
+            <td>沒有人能安排自己從死裡復活</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第一項裡，藏著一個容易被讀過去的細節</strong>
+        「<strong>世上的人，只祂未曾犯過罪。</strong>」<br><br>這一項，其實是一個極其大膽的宣稱。<br><br>因為<strong>宗教史上偉大的人物，幾乎沒有一個敢這樣說</strong>——越是敬虔的人，越清楚自己的不足。舊約的義人，一遇見神的聖潔，第一反應都是「禍哉，我滅亡了」。<br><br>而祂公開問過：「<strong>你們中間誰能指證我有罪呢？</strong>」（約八 46）<br><br>祂是當著那些正在找祂把柄、極力想抓住祂錯處的人問的。<br><br>而經文沒有記下任何人的回答。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項——「以聖靈施洗」——是這五項裡最容易被略過的，卻可能是最尖銳的一項。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💧</span>
+        施洗約翰自己把這個分別講得很清楚：<br><br>「<strong>我是用水給你們施洗</strong>……但那在我以後來的，能力比我更大，我就是給他提鞋也不配。<strong>他要用聖靈與火給你們施洗。</strong>」<br><br>——這是約翰親口劃下的界線。<br><br>用水施洗，人做得到。<strong>用聖靈施洗，人做不到。</strong><br><br>而約翰福音記載，神給約翰的辨認記號正是這一件：「你看見聖靈降下來，住在誰的身上，<strong>誰就是用聖靈施洗的</strong>。」<br><br>然後約翰說：「我看見了，就證明這是神的兒子。」
+      </div>
+
+      <div class="highlight">
+        <strong>注意約翰的邏輯順序</strong>
+        <strong>我看見聖靈降在他身上</strong> → <strong>所以他就是用聖靈施洗的那一位</strong> → <strong>所以我證明這是神的兒子</strong>。<br><br>「以聖靈施洗」這件事，在約翰的論證裡，正是「這是神的兒子」的<strong>直接根據</strong>。
+      </div>
+
+      <p>下一篇，我們細看其中兩項——祂的榮光，和祂所行的事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「我父做事直到如今，我也做事」</h2>
+      <p class="card-hook">聽的人立刻就懂了這句話的意思</p>
+    </div>
+    <div class="card-body">
+
+      <p>先看第三項：<strong>祂獨特的榮光。</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Doxa<br>榮光</div>
+        <div class="term-desc">約翰說：「我們也見過他的榮光，正是父獨生子的榮光。」（約一 14）<br><br>而他用的動詞是 theaomai——不是瞥見，是<strong>長期的凝視與觀察</strong>。<br><br>約翰寫這句話的時候，已經是幾十年後了。他是在說：<strong>我們跟祂朝夕相處了三年，而我們看見的是那個。</strong></div>
+      </div>
+
+      <p>而新約用了三個極精確的詞來描述這份榮光：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>原文</th>
+            <th>意思</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">來一 3</td>
+            <td>Apaugasma<br>光輝</td>
+            <td>「神榮耀所發的光輝」——從光源發出的照耀。<strong>光不是太陽的複製品，光就是太陽在發出它自己。</strong></td>
+          </tr>
+          <tr>
+            <td class="src">來一 3</td>
+            <td>Charaktēr<br>真像</td>
+            <td>「神本體的真像」——印章壓在蠟上的印痕，每一道紋路完全對應。</td>
+          </tr>
+          <tr>
+            <td class="src">西一 15</td>
+            <td>Eikōn<br>像</td>
+            <td>「那不能看見之神的像」——不是仿製，是真實的顯現。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而歌羅西書把這件事推到了頂</strong>
+        「因為神本性一切的豐盛，都<strong>有形有體地</strong>居住在基督裡面。」（西二 9）<br><br>——「一切的豐盛」，不是一部分；「有形有體地」，不是象徵性地。<br><br>而歌羅西書二章三節說：「所積蓄的<strong>一切智慧知識，都在他裡面藏著</strong>。」<br><br>這正是「祂的生命滿有天父的智慧和豐盛」那句話的根據。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第四項：<strong>祂行天父所行的事。</strong>而這一項，有一段極關鍵的經文。</p>
+
+      <p>約翰福音第五章，主在安息日醫好了一個病了三十八年的人。猶太人為此逼迫祂。而祂的回答是：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我父做事直到如今，我也做事</p>
+        <p class="scripture-ref">約翰福音 五章十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而聽的人立刻就懂了</strong>
+        經文緊接著記下他們的反應：「所以猶太人越發想要殺他；因他不但犯了安息日，<strong>並且稱神為他的父，將自己和神當作平等。</strong>」<br><br>——這是聖經自己給的解讀。<br><br>那句話為什麼這麼嚴重？<br><br>因為猶太人相信，神在第七日安息了，但祂對世界的<strong>維繫與治理從未停止</strong>——否則萬物就會崩解。也就是說：<strong>只有神，在安息日仍然「做事」而不算違例。</strong><br><br>而主耶穌說「我父做事直到如今，<strong>我也做事</strong>」——祂把自己放進了那個唯一的例外裡。
+      </div>
+
+      <p>而接下來那一整段，主把「子與父的關係」講得極其細膩：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">「子憑著自己不能做甚麼」</span>
+          這一句常被拿來說明祂低於父。但要連著下一句讀。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">「惟有看見父所做的，子才能做」</span>
+          這不是能力的限制，是<strong>完全的一致</strong>——祂不會做任何父不做的事。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">「父所做的事，子也照樣做」</span>
+          「<strong>照樣</strong>」——不是類似，是同樣。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">「父怎樣叫死人起來，子也照樣隨自己的意思使人活著」</span>
+          <strong>叫死人復活</strong>——這是舊約中專屬於神的作為。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">「叫人都尊敬子如同尊敬父一樣」</span>
+          而這一句是最強的：<strong>「不尊敬子的，就是不尊敬差子來的父。」</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        而那個生來瞎眼的人，說了一句非常樸實、卻極有力的話。<br><br>他被法利賽人反覆盤問，最後他說：<br><br>「<strong>從創世以來，未曾聽見有人把生來是瞎子的眼睛開了。</strong>他若不是從神來的，甚麼也不能做。」（約九 32～33）<br><br>——一個沒有受過神學訓練的人，用最直白的推理，得出了結論。<br><br>而他因此被趕出會堂。然後主耶穌去找他，問他：「你信神的兒子嗎？」
+      </div>
+
+      <p>下一篇，我們談那第五項——那一項，是所有憑據的關鍵。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">復活——「以大能顯明為神的兒子」</h2>
+      <p class="card-hook">這一項若倒，其餘四項都跟著倒</p>
+    </div>
+    <div class="card-body">
+
+      <p>第五項是所有憑據的樞紐。保羅在羅馬書一開頭，就把它說清楚了：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">按肉體說，是從大衛後裔生的；按聖善的靈說，因從死裡復活，以大能顯明是神的兒子</p>
+        <p class="scripture-ref">羅馬書 一章三至四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「顯明」——不是「成為」</strong>
+        這個分辨很重要。<br><br>經文<strong>不是</strong>說「祂因為復活，才成為神的兒子」。<br><br>而是說：<strong>復活這件事，把祂原本就是的身分，公開地證實了。</strong><br><br>就像一份判決書不會「使」一個人無辜，它只是<strong>宣告</strong>了他本來就無辜。<br><br>而復活，就是那份公開的宣告。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        我覺得可以這樣理解：<br><br>十字架看起來像是一場敗訴——祂被判有罪、被公開處決、被埋葬。就世人所見，那個主張被推翻了。<br><br>而復活，是<strong>上訴成功</strong>。<br><br>提摩太前書說：祂「在肉身顯現，<strong>被聖靈稱義</strong>」——那個「稱義」，指的正是這個公開的平反。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而為什麼說「這一項若倒，其餘四項都跟著倒」？</p>
+
+      <p>保羅自己把話說得非常重，而且毫不迴避：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">若基督沒有復活，我們所傳的便是枉然，你們所信的也是枉然……你們仍在罪裡</p>
+        <p class="scripture-ref">哥林多前書 十五章十四、十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>保羅在這裡做了一件很少有宗教領袖會做的事</strong>
+        <strong>他親手指出了自己這套信仰的「否證條件」。</strong><br><br>他說：如果這一件事不成立，那我們所傳的全部作廢，你們所信的全部枉然，我們還是「<strong>比眾人更可憐</strong>」。<br><br>他沒有留退路，沒有說「就算復活只是象徵，這套教導仍然很有價值」。<br><br>他把全部的賭注，押在一個<strong>可以被查證的歷史事件</strong>上。
+      </div>
+
+      <p>而他接著做的事，是<strong>列出證人名單</strong>：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">磯法（彼得）</span>
+          那個三次不認主的人。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">十二使徒</span>
+          那群在祂被抓時全部逃走的人。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">五百多弟兄，一時同看見</span>
+          而保羅加了一句關鍵的話：「<strong>其中一大半到如今還在，卻也有已經睡了的。</strong>」<br>——這句話的意思是：<strong>你們可以去問他們。</strong>那些人還活著。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">主的兄弟雅各</span>
+          而福音書記載，主的弟兄們原本<strong>不信祂</strong>。而後來雅各成了耶路撒冷教會的領袖。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">末了，也顯給我看</span>
+          保羅自己——那個原本逼迫教會、要把基督徒捆綁下監的人。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>這張名單裡，有兩個人特別值得注意</strong>
+        <strong>雅各</strong>——一個從小看著哥哥長大、原本不信的弟弟。<br><br>要說服一個人相信自己的哥哥是神的兒子，難度是極高的。而雅各後來不但信了，還為此殉道。<br><br><strong>保羅</strong>——一個原本以逼迫教會為職志的法利賽人。<br><br>他不是被說服的，也不是慢慢想通的。他是在往大馬士革的路上，被打斷的。<br><br>而這兩個人的轉變，都很難用「集體幻覺」或「門徒編造」來解釋——<strong>因為他們原本都在另一邊。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而復活還有一個常被忽略的面向：<strong>祂復活後，永遠不死。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">♾️</span>
+        聖經裡不是只有祂復活過。拉撒路復活了，睚魯的女兒復活了，寡婦的兒子復活了。<br><br>但那些人，後來都又死了一次。<strong>那是「甦醒」，不是「復活」。</strong>他們回到的是同一具會朽壞的身體。<br><br>而主耶穌不一樣。羅馬書說：「基督既從死裡復活，就<strong>不再死</strong>，死也不再作他的主了。」<br><br>而祂自己在啟示錄裡說：「我曾死過，現在又活了，直活到永永遠遠；<strong>並且拿著死亡和陰間的鑰匙。</strong>」（啟一 18）<br><br>——不只是從那扇門出來了，<strong>還拿走了鑰匙。</strong>
+      </div>
+
+      <p>而這一項，正是「首先復活」的意思：<strong>祂是第一個，而後面還有。</strong></p>
+
+      <p>保羅說：「基督已經從死裡復活，成為睡了之人<strong>初熟的果子</strong>。」——初熟的果子，意思是後面還有一整片田要收。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">證據夠了，但那不是全部</h2>
+      <p class="card-hook">寫給那個查了很多，卻還沒有「到」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>五項憑據列完了。而我想在最後說一件很誠實的事。</p>
+
+      <div class="highlight">
+        <strong>證據可以帶你到門口，但它不會替你進去</strong>
+        主耶穌在世的時候，有一群人親眼看見了這五項中的大部分。<br><br>他們看見祂醫病、趕鬼、餵飽五千人。他們甚至看見祂叫拉撒路從墳墓裡出來——那個人已經死了四天。<br><br>而約翰福音記載，那件事之後發生了什麼？<br><br>「<strong>祭司長商議連拉撒路也要殺了。</strong>」<br><br>——他們沒有否認那個神蹟。他們的反應是：<strong>把證據也除掉。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        這件事讓我明白了一個道理：<strong>證據解決的是「有沒有理由相信」，它不解決「願不願意相信」。</strong><br><br>而後者，往往才是真正卡住的地方。<br><br>主耶穌自己說過：「若不聽從摩西和先知的話，<strong>就是有一個從死裡復活的，他們也是不聽勸。</strong>」<br><br>而後來，真的有一個從死裡復活的。而確實有很多人不聽。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>那麼，證據還有意義嗎？</p>
+
+      <p>有，而且意義很大。</p>
+
+      <div class="highlight">
+        <strong>因為信仰不是「明知沒有根據還要相信」</strong>
+        聖經從來沒有要求盲信。<br><br>約翰福音明說寫作的目的是「<strong>叫你們信</strong>」——他在舉證。<br>路加福音的開頭說：「要按著次序寫給你，使你知道<strong>所學之道都是確實的</strong>。」<br>彼得說：「有人問你們心中盼望的緣由，就要常作準備，以溫柔、敬畏的心<strong>回答各人</strong>。」<br><br>證據是真實的、可查的、經得起問的。<br><br><strong>它讓信心不是一場賭博，而是一個有根據的信任。</strong>
+      </div>
+
+      <p>而信心與證據的關係，我覺得多馬那一段講得最好。</p>
+
+      <p>主對多馬說：「伸過你的指頭來，摸我的手。」——祂給了證據。</p>
+
+      <p>而多馬認信之後，主說了一句話：</p>
+
+      <div class="big-quote">
+        你因看見了我才信；<br>那沒有看見就信的有福了
+        <cite>— 約翰福音 二十章二十九節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而下一節，就是約翰寫作的目的宣告</strong>
+        「耶穌在門徒面前另外行了許多神蹟，沒有記在這書上。<strong>但記這些事要叫你們信耶穌是基督，是神的兒子；並且叫你們信了他，就可以因他的名得生命。</strong>」<br><br>——約翰把這兩段接在一起，是有用意的。<br><br>「那沒有看見就信的有福了」——那說的正是我們。<br><br>而我們雖然沒有看見，卻有<strong>那些看見的人所留下的記錄</strong>。<br><br>那就是這卷書存在的理由。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我那位學理工的朋友。</p>
+
+      <p>那次聊完之後，我沒有說服他。而我後來明白，那不是我的工作。</p>
+
+      <p>我的工作是把知道的說清楚——就像主耶穌對施洗約翰的門徒說的：「<strong>把所聽見、所看見的事告訴約翰。</strong>」</p>
+
+      <p>而那個從「知道」到「相信」的最後一步，是另一位帶的。</p>
+
+      <p>彼得認信之後，主說：「這不是屬血肉的指示你的，<strong>乃是我在天上的父指示的</strong>。」</p>
+
+      <p>所以如果你此刻查了很多、想了很久，卻還沒有「到」——</p>
+
+      <p>那也許可以試著做一件很簡單的事：<strong>把那個問題，直接問祂。</strong></p>
+
+      <p>因為指示彼得的那一位，也在聽你說話。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  五項憑據 · Threads Series
+</footer>
+
+</body>
+</html>

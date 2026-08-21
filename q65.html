@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第七誡 貞潔 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第七誡 · <span>貞潔</span></h1>
+  <p class="subtitle">存心、行事、說話——保守自己和別人</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一個沒有人教我的字：貞潔</h2>
+      <p class="card-hook">我以為它只跟身體有關，結果它管的範圍大得多</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>「貞潔」這兩個字，在我年輕的時候，聽起來很老派。</p>
+
+      <p>而且我對它的理解非常狹窄——大概就是「婚前不要發生關係」。一條界線，過了就是過了，沒過就沒事。</p>
+
+      <p>直到後來我讀到提摩太前書裡保羅對一個年輕傳道人的囑咐，才發現這個字的範圍，遠比我想的寬。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">總要在言語、行為、愛心、信心、清潔上，都作信徒的榜樣</p>
+        <p class="scripture-ref">提摩太前書 四章十二節</p>
+      </div>
+
+      <p>「言語、行為、愛心、信心、清潔」——它是被放在一整組品格裡講的，不是一條孤立的紅線。</p>
+
+      <p>而更讓我停住的，是下一章那句對提摩太說的話：「勸少年婦女如同姊妹，<strong>總要清清潔潔的</strong>。」</p>
+
+      <div class="highlight">
+        <strong>「如同姊妹」</strong>
+        保羅教一個年輕男性怎麼與年輕女性相處，給的方法不是一套規則，而是<strong>一個關係的定位</strong>：把她當成你的姊妹。<br><br>這個定位一旦成立，很多事情就自動有了分寸——不需要條列，因為你本來就知道怎麼對待自己的妹妹。<br><br>而反過來說，當一個人開始把另一個人看成「機會」、「資源」、「可能性」的時候，那個分寸就已經鬆了，還沒有做任何事之前就鬆了。
+      </div>
+
+      <p>那時我才明白，第七誡真正管的，不是一條界線，是<strong>一整套怎麼看待人的方式。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        我後來用一個問題檢查自己：<strong>我心裡是把這個人當成「一個人」，還是當成「一種可能」？</strong><br><br>這兩者的差別，在言語上、在眼神上、在你為她做的事的動機上，其實都看得出來。<br><br>而只有當事人自己知道，是哪一個。
+      </div>
+
+      <p>接下來這幾篇，我想陪你認真看這一誡。它會涵蓋幾個很不容易談的部分，我不會繞過去。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">婚姻為什麼在聖經裡分量這麼重？</h2>
+      <p class="card-hook">因為它從一開始，就被用來說明另一件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>要理解第七誡的重量，得先問一個更前面的問題：<strong>婚姻在聖經裡，為什麼佔那麼重的分量？</strong></p>
+
+      <p>聖經的第一卷書，在人被造之後很快就講到婚姻：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因此，人要離開父母，與妻子連合，二人成為一體</p>
+        <p class="scripture-ref">創世記 二章二十四節</p>
+      </div>
+
+      <p>而聖經的最後一卷書，結尾的畫面是<strong>羔羊的婚筵</strong>。</p>
+
+      <p>從第一卷到最後一卷，同一個意象貫穿到底。這不是巧合。</p>
+
+      <div class="highlight">
+        <strong>婚姻在聖經裡，一直被用來說明神與祂百姓的關係</strong>
+        舊約先知譴責以色列拜偶像時，用的比喻幾乎都是<strong>婚姻的不忠</strong>——不是「你們犯法了」，是「你們行淫了」。<br><br>何西阿書更是把整卷書變成一個活生生的示範：神吩咐先知娶一個不貞的妻子，然後在她離開後把她贖回來。<br><br>而新約說：「你們作丈夫的，要愛你們的妻子，正如基督愛教會，為教會捨己。」保羅講完之後說：「這是極大的奧祕，但我是指著基督和教會說的。」<br><br><strong>所以婚姻不只是一種社會制度，它是一個活的比喻。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💍</span>
+        這解釋了為什麼第七誡的分量這麼重。<br><br>如果婚姻只是兩個人的私人約定，那背叛它主要是一件人際的事。<br><br>但如果婚姻是神用來說明祂自己那份盟約之愛的<strong>圖畫</strong>——那麼破壞它，就不只是傷害了一個人，<strong>更是把那幅圖畫塗花了。</strong><br><br>而這個世界認識神的方式，有一部分就是透過那幅圖畫。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>瑪拉基書有一段，是舊約談婚姻最沉重的一段。當時的人在祭壇前哭泣、獻祭，卻得不到神的悅納。他們問為什麼，先知的回答是：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這是因耶和華在你和你幼年所娶的妻中間作見證。她雖是你的配偶，又是你盟約的妻，你卻以詭詐待她</p>
+        <p class="scripture-ref">瑪拉基書 二章十四節</p>
+      </div>
+
+      <p>然後那一段裡有一句非常重的話：「<strong>耶和華以色列的神說：休妻的事……是我所恨惡的。</strong>」</p>
+
+      <div class="highlight">
+        <strong>兩個關鍵詞</strong>
+        「<strong>作見證</strong>」——神親自站在那對夫妻中間作見證。婚姻在聖經裡從來不是兩個人的事，那是三方的。<br><br>「<strong>盟約的妻</strong>」——用的是「約」（berit）這個字，就是神與人立約的同一個字。<br><br>所以婚姻的破裂之所以嚴重，是因為<strong>那是一份有神作見證的盟約。</strong>而聖經對背約的態度，一向是嚴肅的。
+      </div>
+
+      <p>那麼，第七誡對我們的提示是什麼？下一篇，我們完整地把它排出來——包括那些不容易談的部分。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個提示，和主論離婚的三個要點</h2>
+      <p class="card-hook">這一篇會把話說清楚，包括不容易聽的部分</p>
+    </div>
+    <div class="card-body">
+
+      <p>第七誡對我們的提示，有三個層面：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 存心、行事、說話，都要保守貞潔</span>
+          不只是自己的，也包括<strong>別人的</strong>。<br>「總要在言語、行為……清潔上，都作信徒的榜樣。」（提前四 12）「勸少年婦女如同姊妹，總要清清潔潔的。」（提前五 2）<br>「至於淫亂並一切污穢……在你們中間連提都不可。」（弗五 3～4）「污穢的言語，一句不可出口。」（弗四 29）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 竭力保守一夫一妻的制度</span>
+          「她雖是你的配偶，又是你盟約的妻，你卻以詭詐待她。」（瑪二 13～16）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 竭力避免離婚的事件</span>
+          「神配合的，人不可分開。」（太十九 1～9）另參可十 11；林前七 10～11。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>先看第一點，因為它涵蓋的範圍最容易被低估。</p>
+
+      <div class="highlight">
+        <strong>「存心、行事、說話」——三個層面</strong>
+        <strong>存心</strong>：主耶穌說「凡看見婦女就動淫念的，這人心裡已經與她犯姦淫了」。這一誡從念頭就開始了。<br><br><strong>行事</strong>：包括一切踰越分際的接觸與相處方式。<br><br><strong>說話</strong>：以弗所書說得極嚴格——「淫詞、妄語，和戲笑的話都不相宜」、「連提都不可」。<strong>那些聽起來只是玩笑的話，在這一誡的範圍內。</strong><br><br>而最容易被忽略的，是「<strong>保守別人的貞潔</strong>」。這一誡不只要求你守住自己，也要求你<strong>不要成為別人跌倒的原因</strong>——在言語上、在穿著上、在相處的分寸上、在你製造的曖昧裡。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>接著是離婚的問題。主耶穌對此發表過談話，其中有三個要點：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>要點</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一</td>
+            <td>若非夫婦之一犯淫亂的罪，就<strong>不該離婚</strong>。</td>
+          </tr>
+          <tr>
+            <td class="src">二</td>
+            <td>離婚後<strong>不得再婚</strong>，除非被離棄的一方，是因為對方犯淫亂的罪而離婚的。<br><br>而信主的姊妹，在任何情況下離婚之後，就不可以再嫁。</td>
+          </tr>
+          <tr>
+            <td class="src">三</td>
+            <td><strong>婚前任何之性行為，是姦淫罪。</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>這些話不容易聽，我想先說明它們的根據</strong>
+        主耶穌在馬太福音十九章的回答，是把問題帶回<strong>創造的起初</strong>。<br><br>法利賽人問「人無論甚麼緣故都可以休妻嗎」，主沒有直接回答那個技術問題。祂反問：「那起初造人的，是造男造女，並且說：『因此，人要離開父母，與妻子連合，二人成為一體。』這經你們沒有念過嗎？」<br><br>然後祂下了結論：「<strong>所以，神配合的，人不可分開。</strong>」<br><br>接著法利賽人追問：那摩西為什麼吩咐給休書？主的回答很關鍵：「<strong>摩西因為你們的心硬，所以許你們休妻，但起初並不是這樣。</strong>」<br><br>——律法中的許可，是一種對人心剛硬的<strong>讓步</strong>，不是神原本的心意。而主把標準拉回了「起初」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        這個回答的方式很值得注意。<br><br>法利賽人問的是「<strong>底線在哪裡</strong>」——什麼情況下我可以離。<br><br>主回答的是「<strong>設計是什麼</strong>」——這件事本來是怎麼被造出來的。<br><br>而這兩種問法，反映的是兩種完全不同的心。一種在找可以走的最寬的路，一種在問這件事的本意。
+      </div>
+
+      <p>而門徒聽完的反應也很真實。他們說：「人和妻子既是這樣，倒不如不娶。」——連門徒都覺得這個標準太高了。</p>
+
+      <p>主的回答是：「這話不是人都能領受的，惟獨賜給誰，誰才能領受。」</p>
+
+      <div class="highlight">
+        <strong>我想誠實地說一件事</strong>
+        以上這些話，對某些讀到這裡的人來說，可能會很痛。<br><br>因為婚姻的破裂，往往不是一個人單方面的選擇；有些人是被離棄的一方，有些人的處境複雜到無法用幾行字概括。<br><br>這一篇的功能，是把教導說清楚。但<strong>教導不是判決，而聖經對已經破碎的人，還有另外的話要說。</strong><br><br>那些話，我留在最後一篇。
+      </div>
+
+      <p>下一篇，我們先回到原文，看看「姦淫」與「淫亂」這兩個字的分別——那個分別，正好是主那句「除非為淫亂的緣故」的關鍵。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「姦淫」與「淫亂」，原文是兩個字</h2>
+      <p class="card-hook">而這個分別，決定了很多事的理解</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Moicheia<br>姦淫</div>
+        <div class="term-desc">專指<strong>已婚者</strong>的不忠——破壞了一個既存的婚約。第七誡「不可姦淫」用的就是這個範疇。<br><br>它的核心是<strong>「背約」</strong>。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Porneia<br>淫亂</div>
+        <div class="term-desc">範圍寬得多。它泛指<strong>一切不合神心意的性關係</strong>——包括婚前的、婚外的，以及聖經所禁止的各種形式。<br><br>主耶穌說「若不是為<strong>淫亂</strong>的緣故」，用的正是 porneia 這個較寬的字。<br><br>而婚前的性行為，正落在 porneia 的範圍內——這也是為什麼第三個要點說：<strong>婚前任何之性行為是姦淫罪。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        新約在講到這件事時，常把兩個字並列（如加五 19「姦淫、污穢、邪蕩」），意思是<strong>把整個範圍都涵蓋進去</strong>。<br><br>換句話說：聖經在這件事上沒有「還沒結婚所以不算」這個空間。<strong>porneia 這個字的存在，就是為了把那個空間填滿。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看創世記那句「二人成為一體」，因為保羅對它的引用方式，非常出人意料。</p>
+
+      <p>保羅在哥林多前書處理一個具體的問題時，引用了這節經文。而他的論證是這樣的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">豈不知與娼妓聯合的，便是與她成為一體嗎？因為主說：「二人要成為一體。」</p>
+        <p class="scripture-ref">哥林多前書 六章十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔗</span>
+        保羅在這裡說了一件很重的事：<strong>身體的結合，不可能只是身體的。</strong><br><br>當時哥林多的流行看法是「食物是為肚腹，肚腹是為食物」——意思是這些都是生理需求，處理掉就好，沒什麼大不了。<br><br>而保羅的反駁是：不對。<strong>那個結合會產生一個「成為一體」的實際</strong>，無論你當時打不打算如此。<br><br>換句話說：<strong>沒有「只是身體」這回事。</strong>
+      </div>
+
+      <p>而保羅接下來給的行動建議，也很特別。面對其他的罪，他說「要抵擋」、「要站穩」。但面對這一項，他說的是：</p>
+
+      <div class="big-quote">
+        你們要逃避淫行
+        <cite>— 哥林多前書 六章十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>「逃避」——不是「抵擋」</strong>
+        這個動詞的選擇非常實際。<br><br>有些試探，你可以站在原地面對它、辯贏它、意志力壓過它。<br><br>而聖經對這一項的建議是：<strong>跑。</strong><br><br>約瑟就是這樣做的。波提乏的妻子拉住他的衣裳，經文說他「<strong>把衣裳丟在婦人手裡，跑到外邊去了</strong>」。<br><br>他沒有留下來講道理，沒有試著說服她。他連衣服都不要了。<br><br>那個畫面看起來很狼狽——一個男人衣衫不整地跑出去。<strong>但那是聖經記載的正確做法。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後看保羅在提摩太前書給的那個「關係定位法」，因為它非常實用：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">不可嚴責老年人，只要勸他如同父親；勸少年人如同弟兄；勸老年婦女如同母親；勸少年婦女如同姊妹，總要清清潔潔的
+        </p>
+        <p class="scripture-ref">提摩太前書 五章一至二節</p>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>對象</th>
+            <th>定位</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">老年人</td>
+            <td>如同父親</td>
+          </tr>
+          <tr>
+            <td class="src">少年人</td>
+            <td>如同弟兄</td>
+          </tr>
+          <tr>
+            <td class="src">老年婦女</td>
+            <td>如同母親</td>
+          </tr>
+          <tr>
+            <td class="src">少年婦女</td>
+            <td>如同姊妹，<strong>總要清清潔潔的</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        保羅沒有給提摩太一份「不可以做的事」清單。他給的是<strong>一組家庭關係的定位</strong>。<br><br>這個方法之所以有效，是因為它處理的是<strong>看待的方式</strong>，而不是行為的邊界。<br><br>當你真心把一個人當成妹妹，很多界線就不需要被規定——<strong>它們是那個定位的自然結果。</strong><br><br>而反過來，一個人若已經在心裡把對方定位成別的，那再多的規則也擋不住。
+      </div>
+
+      <p>下一篇，我們談這個時代特有的難處——以及一個關於「保守」的正面理解。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼是「不可」？因為它在保護一樣東西</h2>
+      <p class="card-hook">而這個時代，讓這件事變得特別難</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想先處理一個常見的誤解：<strong>聖經對性的態度，不是負面的。</strong></p>
+
+      <div class="highlight">
+        <strong>證據就在聖經裡</strong>
+        神造男造女，然後說「甚好」。<br><br>「二人成為一體」是<strong>在墮落之前</strong>就有的設計，是伊甸園的一部分，不是墮落的產物。<br><br>而聖經裡有一整卷書——雅歌——毫不迴避地歌頌夫妻之間的愛慕與親密。歷代以來有人試圖把它完全靈意化，但那卷書的字面，就是在講愛情。<br><br>箴言五章更是直接勸勉：「要喜悅你幼年所娶的妻……願她的胸懷使你時時知足，她的愛情使你常常戀慕。」<br><br><strong>所以第七誡不是在說「這件事很髒」。它是在說「這件事很重要，重要到需要被保護」。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        我覺得最好的比方還是火。<br><br>壁爐裡的火是家的中心——溫暖、明亮、讓人聚攏。同樣的火，跑到窗簾上，就會燒掉整棟房子。<br><br>火沒有變。<strong>變的是它有沒有在該在的地方。</strong><br><br>而壁爐的存在，不是因為討厭火。<strong>壁爐的存在，正是因為太重視火了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那麼婚姻保護的，究竟是什麼？我想是這三樣：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 保護「被完全接納」的可能</span>
+          創世記說：「當時夫妻二人赤身露體，並不羞恥。」<br>那句話講的不只是身體。<strong>「赤身露體卻不羞恥」，是人類最深的渴望——被完全看見，而仍然被接納。</strong><br>而這件事，只有在一份不會走的承諾裡才可能發生。因為只有在「他不會離開」的前提下，人才敢真的把自己打開。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 保護「人不被當成工具」</span>
+          當性脫離了盟約，那個關係的本質就會滑向<strong>交易</strong>——我從你這裡得到什麼，你從我這裡得到什麼。<br>而一旦成為交易，人就成了工具。<strong>而工具，是可以被替換的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 保護那幅圖畫</span>
+          婚姻是神用來說明祂與百姓關係的比喻。<br>而那個比喻的核心，正是<strong>「不離不棄」</strong>。如果這幅畫上的顏色是「可以換人」，那它就說明不了那位「縱然我們失信、他仍是可信的」神。
+        </div>
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我也想誠實地談這個時代的難處。</p>
+
+      <div class="highlight">
+        <strong>今天守這一誡，客觀上比以前難</strong>
+        <strong>可及性</strong>：那些過去需要特意去尋找的東西，現在在口袋裡，隨時、免費、私密。<br><br><strong>常態化</strong>：影劇、廣告、社群把某些事描繪成理所當然，久了人的感受會被重新校準。<br><br><strong>匿名性</strong>：網路讓人以為「沒有人知道」。而沒有人知道的地方，正是品格真正被塑造的地方。<br><br>我說這些，不是要為軟弱找藉口，<strong>而是要說：如果你覺得這一項特別難守，那不是你特別敗壞。</strong>環境確實不一樣了。<br><br>而正因為如此，「逃避」這個動詞，在今天有了更具體的意思——它可能是關掉某個 app、設定某個限制、找一個可以問你的人。<strong>這不是小題大作，這是把衣裳丟下就跑。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        約瑟那一段還有一個細節值得注意：經文說那婦人「天天和約瑟說，約瑟卻不聽從她，<strong>不與她同寢，也不和她在一處</strong>」。<br><br>「也不和她在一處」——他在事情發生之前，就已經在減少獨處的機會了。<br><br>最後那次是因為「家中人沒有一個在那屋裡」，他才被拉住。<br><br><strong>約瑟的勝利，有一大半是在那一天之前就打好的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後我想留下一個正面的角度。</p>
+
+      <p>「保守貞潔」這件事，如果只理解成「忍住」，那是撐不久的。因為<strong>純粹的壓抑，會累積成反彈。</strong></p>
+
+      <div class="highlight">
+        <strong>保羅給提摩太的方法，不是「忍住」</strong>
+        「你要逃避少年的私慾，<strong>同那清心禱告主的人追求公義、信德、仁愛、和平</strong>。」（提後二 22）<br><br>注意這句話的結構：<strong>逃避</strong>什麼，同時<strong>追求</strong>什麼，而且是<strong>「同那些人」</strong>一起。<br><br>三個要素：<strong>離開、追求、群體。</strong><br><br>只有「逃避」沒有「追求」，人會空虛；只有自己一個人努力，人會撐不住。<br><br>而「同那清心禱告主的人」——這幾個字，可能是整節裡最實際的一句。<strong>這件事，不要一個人扛。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那個被帶到祂面前的女人</h2>
+      <p class="card-hook">寫給那個讀完前面幾篇，心裡很沉的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果你一路讀到這裡，心裡是沉的——因為那些標準，你已經跨過去了；因為那件事已經發生了；因為那段婚姻已經碎了——</p>
+
+      <p>那麼這一篇，是寫給你的。</p>
+
+      <p>我想帶你去看一個場景。約翰福音第八章，一群人把一個女人帶到主耶穌面前。</p>
+
+      <div class="highlight">
+        <strong>請注意那個場面有多羞辱</strong>
+        經文說她是「正行淫之時被拿的」。所以她被帶來的時候，狀態可想而知。<br><br>他們讓她「站在當中」——在聖殿的院子裡，眾目睽睽之下。<br><br>然後他們對主說：「摩西在律法上吩咐我們把這樣的婦人用石頭打死。你說該把她怎麼樣呢？」<br><br>她在那個場景裡，連一個名字都沒有。她只是一個「這樣的婦人」，一個用來設局的道具。
+      </div>
+
+      <p>而主耶穌做的第一件事，是<strong>彎下腰，用指頭在地上畫字。</strong></p>
+
+      <p>經文沒有說祂寫了什麼。但我一直覺得，那個動作本身就有意義——<strong>當所有人都在盯著她看的時候，祂把目光移開了。</strong></p>
+
+      <p>然後祂直起腰來說：「你們中間誰是沒有罪的，誰就可以先拿石頭打她。」</p>
+
+      <p>接著又彎下腰，繼續在地上畫字。</p>
+
+      <p>經文說，他們聽見這話，「就從老到少，一個一個地都出去了」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌就直起腰來，對她說：婦人，那些人在哪裡呢？沒有人定你的罪嗎？她說：主啊，沒有。耶穌說：我也不定你的罪。去吧，從此不要再犯罪了</p>
+        <p class="scripture-ref">約翰福音 八章十至十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>這兩句話，必須一起讀</strong>
+        「<strong>我也不定你的罪</strong>」——如果只有這句，那是縱容。而且說這句話的，是唯一一位真正有資格拿起石頭的人。<br><br>「<strong>從此不要再犯罪了</strong>」——如果只有這句，那是要求。<br><br>兩句放在一起，才是福音：<strong>先赦免，後吩咐。</strong>不是「你先改好我才赦免你」，是「我不定你的罪——現在，去，重新開始」。<br><br>這個順序，和十誡的順序是一樣的：<strong>先領你出埃及，後給你誡命。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>我想把三件事留給你。</p>
+
+      <p><strong>第一，第七誡的標準沒有降低。</strong>前面幾篇說的那些，是真的。聖經在這件事上是嚴肅的，而假裝它不嚴肅，對誰都沒有幫助。</p>
+
+      <p><strong>第二，跨過了那條線的人，不等於被判出局。</strong>大衛犯的正是這一項，而且還加上了謀殺。詩篇五十一篇就是他在那之後寫的：「神啊，求你按你的慈愛憐恤我……求你將我的罪孽洗除淨盡。」而聖經後來仍然稱他為「合神心意的人」。<strong>那件事帶來的後果他一生都在承擔，但神沒有丟棄他。</strong></p>
+
+      <p><strong>第三，如果你正在承擔一段破碎的關係所帶來的重量</strong>——無論是你造成的，還是你承受的——請不要一個人扛。這件事需要有人陪你走，需要牧養，需要時間。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        我想到何西阿書。<br><br>神吩咐先知去把那個離開他的妻子贖回來。而經文記載那個價錢：十五舍客勒銀子和一賀梅珥半大麥。<br><br>那是一個很寒酸的價格——她已經淪落到那個地步了。<br><br><strong>而他還是去了，還是付了。</strong><br><br>整卷何西阿書要說的，就是這件事：<strong>神就是那個會去把人贖回來的丈夫。</strong>
+      </div>
+
+      <div class="big-quote">
+        我也不定你的罪。<br>去吧，從此不要再犯罪了
+        <cite>— 約翰福音 八章十一節</cite>
+      </div>
+
+      <p>第七誡保護的，是「被完全看見，卻仍然被接納」的那份可能。</p>
+
+      <p>而那個女人在聖殿院子裡經歷的，正是這件事——<strong>她被完全看見了，而她沒有被丟掉。</strong></p>
+
+      <p>願你也知道：那位有資格拿起石頭的，把石頭放下了。</p>
+
+      <p>然後祂說：去吧。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第七誡 · 貞潔 · Threads Series
+</footer>
+
+</body>
+</html>

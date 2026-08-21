@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖靈的洗 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>聖靈的<span>洗</span></h1>
+  <p class="subtitle">水洗與靈洗——兩種關係，兩件必須</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">施洗約翰指著祂說的那句話</h2>
+      <p class="card-hook">「他要用聖靈給你們施洗」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>四卷福音書，都記了施洗約翰的同一句話。</p>
+
+      <p>四卷都記，本身就說明了那句話的分量：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我是用水給你們施洗，叫你們悔改；但那在我以後來的，能力比我更大……他要用聖靈與火給你們施洗
+        </p>
+        <p class="scripture-ref">馬太福音 三章十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而約翰是在對比中說這句話的</strong>
+        「<strong>我</strong>是用水……<strong>他</strong>要用聖靈。」<br><br>那是一個很清楚的分界：<br><br><strong>約翰能做的，到水為止。</strong><br><strong>而那位要來的，能做另一件事。</strong><br><br>而約翰接著說：「我就是給他提鞋也不配。」<br><br>——所以那不是「更好一點」的差別。<strong>是不同層級的事。</strong>
+      </div>
+
+      <p>而主耶穌升天前，最後的吩咐裡，也提到了同一件事：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⏳</span>
+        「不要離開耶路撒冷，要<strong>等候</strong>父所應許的，就是你們聽見我說過的。<br><br>約翰是用水施洗，但<strong>不多幾日，你們要受聖靈的洗</strong>。」（徒一 4～5）<br><br>——注意那個吩咐：<strong>等候。</strong><br><br>祂沒有叫他們立刻出去傳福音。<strong>祂叫他們先等。</strong><br><br>因為還缺一件事。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這件事：什麼是聖靈的洗，它與水洗是什麼關係。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">撒瑪利亞那一次，他們受了水洗，卻還沒有</h2>
+      <p class="card-hook">而使徒特地下去，為他們禱告</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第八章，記載了一段很值得注意的事。</p>
+
+      <p>腓利在撒瑪利亞城傳福音，那裡的人信了，也受了洗。</p>
+
+      <p>而經文接著說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">使徒在耶路撒冷聽見撒瑪利亞人領受了神的道，就打發彼得、約翰往他們那裡去。兩個人到了，就為他們禱告，要叫他們受聖靈。因為聖靈還沒有降在他們一個人身上；他們只奉主耶穌的名受了洗
+        </p>
+        <p class="scripture-ref">使徒行傳 八章十四至十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那一段的措辭，非常明確</strong>
+        「<strong>因為聖靈還沒有降在他們一個人身上</strong>；他們<strong>只</strong>奉主耶穌的名受了洗。」<br><br>——「只」受了洗。<br><br>而經文說，使徒<strong>特地從耶路撒冷下去</strong>，為的就是這件事。<br><br>「於是使徒按手在他們頭上，他們就受了聖靈。」<br><br>所以在使徒行傳的記載裡，<strong>水洗與靈洗，是兩件可以分開發生的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第十九章，保羅在以弗所遇見的那一群人，情況更明顯。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">❓</span>
+        保羅問他們的第一句話是：<strong>「你們信的時候受了聖靈沒有？」</strong><br><br>——那是他開口就問的問題。<br><br>而他們回答：「沒有，也未曾聽見有聖靈賜下來。」<br><br>保羅接著問：「這樣，你們受的是甚麼洗呢？」<br><br>他們說：「是<strong>約翰的洗</strong>。」<br><br>——問題就在這裡。他們受的是約翰的洗，而不是奉主耶穌名的洗。<br><br>於是「他們聽見這話，就奉主耶穌的名受洗。保羅按手在他們頭上，<strong>聖靈便降在他們身上</strong>。」
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅那句開場問句，本身就很有意思</strong>
+        「<strong>你們信的時候受了聖靈沒有？</strong>」<br><br>——這是一個保羅認為<strong>應該要問、而且應該有答案</strong>的問題。<br><br>他沒有問「你們的信仰生活好嗎」、「你們聚會嗎」。<br><br>他問的是這一件。
+      </div>
+
+      <p>那麼，聖靈的洗是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩種洗，兩種關係</h2>
+      <p class="card-hook">水洗與教會，靈洗與基督</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖靈的洗是什麼？答案有三個要點：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 聖靈的洗，是每個真得救的人的經歷</span>
+          「我們不拘是猶太人，是希臘人，是為奴的，是自主的，<strong>都從一位聖靈受洗，成了一個身體</strong>。」（林前十二 13）<br>「我一開講，聖靈便降在他們身上，正像當初降在我們身上一樣。」（徒十一 15～17）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 水洗與靈洗，關係不同</span>
+          <strong>水洗是與教會發生關係。</strong><br><strong>靈洗是與基督發生關係。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 每個重生的人，都必須再受靈洗</span>
+          （徒一 4～5；八 16～17；十九 1～7）<br>——這正是前一篇那兩段記載所顯明的。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第二點那個分別，值得停下來想。</p>
+
+      <div class="highlight">
+        <strong>「與教會發生關係」與「與基督發生關係」</strong>
+        <strong>水洗</strong>——那是一個外在的、可見的、在會眾面前完成的動作。它把一個人接進了那個有形的群體。<br><br><strong>靈洗</strong>——那是一件發生在人身上的、由主親自施行的事。施洗約翰說：「<strong>他</strong>要用聖靈給你們施洗。」<br><br>——施洗的那一位，是主自己。<br><br>而哥林多前書十二章十三節說：「都從一位聖靈受洗，<strong>成了一個身體</strong>」——那個身體，就是基督的身體。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔗</span>
+        我覺得可以這樣理解：<strong>兩者處理的是兩個不同的連結。</strong><br><br>一個把你接進<strong>群體</strong>。<br>一個把你接進<strong>那一位</strong>。<br><br>而兩者都需要——就像一個人加入一個家庭，既需要法律上的手續，也需要真實的關係。<br><br><strong>少了任何一邊，都不完整。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「每個真得救的人的經歷」這一點，哥林多前書那節說得很全面：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們不拘是猶太人，是希臘人，是為奴的，是自主的，都從一位聖靈受洗，成了一個身體，飲於一位聖靈
+        </p>
+        <p class="scripture-ref">哥林多前書 十二章十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意保羅列的那幾組對照</strong>
+        猶太人／希臘人——<strong>種族</strong>。<br>為奴的／自主的——<strong>階級</strong>。<br><br>而保羅的重點是：<strong>「都」。</strong><br><br>那個經歷，不分種族、不分階級、不分背景。<br><br>而彼得在哥尼流家中的見證，也是同一個重點：<br><br>「神既然給他們恩賜，像在我們信主耶穌基督的時候給了我們一樣；<strong>我是誰，能攔阻神呢？</strong>」（徒十一 17）<br><br>——「像……一樣」。<strong>同樣的經歷。</strong>
+      </div>
+
+      <p>下一篇，我們看使徒行傳裡的幾次記載——因為那些細節，把這件事說得很具體。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">使徒行傳裡的幾次記載</h2>
+      <p class="card-hook">順序不一樣，而那件事本身是一樣的</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳記載了幾次聖靈降下的場景。把它們排在一起看，會很清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>場景</th>
+            <th>對象</th>
+            <th>經過</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">徒二<br>五旬節</td>
+            <td>門徒</td>
+            <td>他們照吩咐<strong>等候</strong>。五旬節那天，「都被聖靈充滿，按著聖靈所賜的口才說起別國的話來」。</td>
+          </tr>
+          <tr>
+            <td class="src">徒八<br>撒瑪利亞</td>
+            <td>撒瑪利亞信徒</td>
+            <td>已經<strong>奉主耶穌的名受了洗</strong>，但「聖靈還沒有降在他們一個人身上」。使徒按手，他們就受了聖靈。</td>
+          </tr>
+          <tr>
+            <td class="src">徒十<br>哥尼流家</td>
+            <td>外邦人</td>
+            <td>彼得還在講道，「<strong>聖靈降在一切聽道的人身上</strong>」。之後彼得說：「這些人既受了聖靈，誰能禁止用水給他們施洗呢？」</td>
+          </tr>
+          <tr>
+            <td class="src">徒十九<br>以弗所</td>
+            <td>約翰門徒</td>
+            <td>原本只受過<strong>約翰的洗</strong>。奉主耶穌的名受洗後，保羅按手，「聖靈便降在他們身上」。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        把這四次放在一起，會看見一件事：<strong>發生的順序不完全一樣。</strong><br><br>撒瑪利亞：<strong>先水洗，後靈洗</strong>。<br>哥尼流家：<strong>先靈洗，後水洗</strong>。<br>以弗所：<strong>水洗與靈洗接連發生</strong>。<br><br>——所以順序不是固定的公式。<br><br>而<strong>四次都發生了</strong>——這才是重點。<br><br>而彼得在哥尼流家那句話很重要：「這些人既受了聖靈，<strong>誰能禁止</strong>用水給他們施洗呢？」——他把兩件事都要了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「洗」這個字的意象，也值得看。</p>
+
+      <div class="term-box">
+        <div class="term-original">Baptizō<br>施洗</div>
+        <div class="term-desc">字面是「<strong>浸入</strong>」。<br><br>而這個字的畫面很重要：那不是「灑一點在上面」，是<strong>整個進到裡面去</strong>。<br><br>所以「受聖靈的洗」的意象，是<strong>被浸入</strong>——被完全包圍、被完全覆蓋。<br><br>而哥林多前書那節說：「都從一位聖靈受洗，成了一個身體，<strong>飲於一位聖靈</strong>。」<br><br>——外面被浸，裡面被飲。<strong>內外都是那一位。</strong></div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而五旬節那一天的記載，還有一個細節值得注意：<strong>他們是照著吩咐等候的。</strong></p>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        主的吩咐是：「<strong>不要離開耶路撒冷，要等候父所應許的。</strong>」<br><br>而使徒行傳第一章記載他們做了什麼：<br><br>「這些人同著幾個婦人和耶穌的母親馬利亞，並耶穌的弟兄，都<strong>同心合意地恆切禱告</strong>。」<br><br>——「同心合意」、「恆切」。<br><br>而那段等候，經文說是<strong>十天</strong>（升天後四十日，五旬節是逾越節後五十日）。<br><br>所以那不是一個瞬間發生的事。<strong>是十天的恆切禱告。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🙏</span>
+        而主在路加福音也給過一個關於祈求聖靈的教導：<br><br>「你們雖然不好，尚且知道拿好東西給兒女；<strong>何況天父，豈不更將聖靈給求他的人嗎？</strong>」（路十一 13）<br><br>——「<strong>給求他的人</strong>」。<br><br>而那段的上下文，正是主在教導<strong>恆切祈求</strong>（半夜求餅的朋友、「祈求，就給你們」）。
+      </div>
+
+      <p>下一篇，我們談那個實際的問題：這件事，對今天的我意味著什麼？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼主叫他們「等候」？</h2>
+      <p class="card-hook">因為少了那一件，其餘的做不動</p>
+    </div>
+    <div class="card-body">
+
+      <p>我一直覺得使徒行傳第一章那個吩咐，很不容易接受。</p>
+
+      <div class="highlight">
+        <strong>因為那是最不需要等的時刻</strong>
+        他們剛見過復活的主。<br>他們親眼看見祂升天。<br>他們手上有大使命：「你們要去，使萬民作我的門徒。」<br>耶路撒冷正擠滿了從各地上來過節的人——<strong>那是傳福音最好的時機。</strong><br><br>而主說：<strong>等。</strong><br><br>「不要離開耶路撒冷，要等候父所應許的。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔌</span>
+        而主給的理由，在下一節：<br><br>「但聖靈降臨在你們身上，你們就必<strong>得著能力</strong>，並要在耶路撒冷、猶太全地，和撒瑪利亞，直到地極，作我的見證。」<br><br>——注意那個順序：<br><br><strong>聖靈降臨 → 得著能力 → 才能作見證。</strong><br><br>所以那個「等」，不是拖延。<strong>是因為少了那一件，其餘的做不動。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那個「能力」，五旬節之後的門徒身上，看得非常明顯。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>五旬節之前</th>
+            <th>五旬節之後</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">彼得</td>
+            <td>在使女面前三次不認主，「發咒起誓」</td>
+            <td>站在耶路撒冷的人群前公開講道，一天三千人歸主</td>
+          </tr>
+          <tr>
+            <td class="src">門徒</td>
+            <td>「門都關了」，因為怕猶太人</td>
+            <td>站在公會面前說：「聽從你們，不聽從神，這在神面前合理不合理，你們自己酌量吧」</td>
+          </tr>
+          <tr>
+            <td class="src">被打之後</td>
+            <td>——</td>
+            <td>「心裡歡喜，<strong>因被算是配為這名受辱</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而公會的人自己也注意到了</strong>
+        「他們見彼得、約翰的<strong>膽量</strong>，又看出他們原是沒有學問的小民，就希奇，認明他們是跟過耶穌的。」（徒四 13）<br><br>——「膽量」。<br><br>那個字（parrēsia），意思是「<strong>坦然無懼地說話</strong>」。<br><br>而那正是聖靈充滿的一個標記。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想留下一個很實際的提醒。</p>
+
+      <div class="highlight">
+        <strong>保羅那句開場問句，值得我們自己問一次</strong>
+        「<strong>你們信的時候受了聖靈沒有？</strong>」<br><br>——那不是一個為了讓人不安的問題。<br><br>而是因為：<strong>那件事，聖經認為是應該有、而且應該知道的。</strong><br><br>而如果答案是「我不確定」——那不是被定罪，那是一個可以帶到神面前的祈求。<br><br>因為主自己說：「何況天父，豈不更將聖靈<strong>給求他的人</strong>嗎？」<br><br>而那段的上下文，是<strong>恆切的祈求</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而路加福音十一章那個比喻，我覺得很有安慰。<br><br>一個人半夜去敲朋友的門要三個餅。那個朋友已經睡了、門已經關了、孩子也在床上。<br><br>而主說：他雖然不因是朋友起來給他，<strong>但因他情詞迫切地直求，就必起來照他所需用的給他。</strong><br><br>——「情詞迫切地直求」。<br><br>而那段的結論，就是那句「何況天父，豈不更將聖靈給求他的人嗎」。<br><br><strong>所以那扇門，是為那些一直敲的人留的。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那是父所應許的</h2>
+      <p class="card-hook">寫給那個在等候中的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在主用的那個詞上。</p>
+
+      <div class="highlight">
+        <strong>「父所應許的」</strong>
+        主沒有說「等候一個屬靈的經歷」。<br><br>祂說的是：「要等候<strong>父所應許的</strong>。」（徒一 4）<br><br>——那是一份<strong>應許</strong>。<br><br>而應許的性質是：<strong>那不是你要去爭取的，是有人答應要給的。</strong><br><br>而彼得在五旬節講道的結尾也說：「<strong>因為這應許是給你們和你們的兒女，並一切在遠方的人，就是主我們神所召來的。</strong>」（徒二 39）<br><br>——「一切在遠方的人」。<strong>那包括你。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎁</span>
+        而「應許」與「獎賞」的差別很大。<br><br>獎賞是你賺來的。應許是有人答應的。<br><br>所以那件事的根據，不在你夠不夠好，<strong>在祂說過。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而三個要點，我想這樣收：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">是每個真得救的人的經歷</span>
+          「不拘是猶太人，是希臘人，是為奴的，是自主的，<strong>都</strong>從一位聖靈受洗。」<br>——所以那不是特殊階級的事。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">水洗與教會，靈洗與基督</span>
+          兩種關係，兩件都需要。<br>而彼得在哥尼流家的態度是：<strong>兩件都要。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">每個重生的人都必須再受靈洗</span>
+          而使徒行傳裡的做法很一致：<strong>為這件事禱告、按手、祈求。</strong>
+        </div>
+      </div>
+
+      <div class="big-quote">
+        你們要等候父所應許的
+        <cite>— 使徒行傳 一章四節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻正在等候——已經求了一段時間，還沒有——</p>
+
+      <p>我想留下那十天。</p>
+
+      <div class="highlight">
+        <strong>因為那一百二十個人，也等了十天</strong>
+        他們不知道要等多久。主只說「不多幾日」。<br><br>而他們做的是：<strong>同心合意地恆切禱告。</strong><br><br>——「恆切」那個字，意思是<strong>持續不放棄</strong>。<br><br>所以如果你還在等，那不表示你被跳過了。<br><br>那可能只表示：<strong>還沒到第十天。</strong>
+      </div>
+
+      <p>而那位應許的，是父。</p>
+
+      <p>而主說：「何況天父，豈不更將聖靈給求他的人嗎？」</p>
+
+      <p>願你繼續求。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖靈的洗 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>預備與等候 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>油、賬、<span>細麻衣</span></h1>
+  <p class="subtitle">聖徒對基督再來，應有的預備與態度</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">十個童女，五個被關在門外</h2>
+      <p class="card-hook">而她們全部都在等，全部都有燈</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>馬太福音二十五章那個比喻，是我讀過最讓人不安的比喻之一。</p>
+
+      <div class="highlight">
+        <strong>因為那十個童女，共同點非常多</strong>
+        <strong>十個都是童女</strong>——身分一樣。<br><strong>十個都拿著燈</strong>——裝備一樣。<br><strong>十個都出去迎接新郎</strong>——方向一樣。<br><strong>十個都打盹睡著了</strong>——連軟弱都一樣。<br><br>而差別只有一項：<br><br>「愚拙的拿著燈，<strong>卻不預備油</strong>；聰明的拿著燈，<strong>又預備油在器皿裡</strong>。」
+      </div>
+
+      <p>而讓我不安的地方在於：<strong>那個差別，在半夜之前是看不出來的。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        白天的時候，十盞燈看起來一模一樣。<br><br>甚至剛點起來的時候，也看不出差別——因為燈裡都有油。<br><br>差別要等到<strong>燈燒了很久之後</strong>才顯出來。<br><br>而經文說：「新郎<strong>遲延</strong>的時候，她們都打盹睡著了。」<br><br>那個「遲延」，是比喻的一部分。<br><br>——<strong>正是因為遲延，油夠不夠才成為問題。</strong>
+      </div>
+
+      <p>而那五個愚拙的，最後說了一句很急的話：「請分點油給我們，因為我們的燈要滅了。」</p>
+
+      <p>而聰明的回答是：「恐怕不夠你我用的；<strong>不如你們自己到賣油的那裡去買吧。</strong>」</p>
+
+      <div class="highlight">
+        <strong>那個回答，聽起來很不近人情</strong>
+        可是它指出了一件事：<strong>有些東西，是不能借的。</strong><br><br>你可以借錢給人、可以幫人做事、可以替人跑腿。<br><br>而有些東西——那個與神的關係、那份長年累積的生命——<strong>沒有辦法在最後一刻轉讓。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看聖經所說的五項預備。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">主用三個比喻，講同一件事</h2>
+      <p class="card-hook">而它們各處理一個不同的問題</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音二十五章，主連續講了三個比喻。而它們是一組的：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">十個童女——關乎「有沒有」</span>
+          油夠不夠。<strong>這是關於裡面的儲備。</strong><br>而結論是：「所以，你們要警醒；因為那日子，那時辰，你們不知道。」
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">按才受託——關乎「用不用」</span>
+          五千、二千、一千。<strong>這是關於恩賜的運用。</strong><br>而那個被責備的，不是虧損的，是<strong>把銀子埋起來的</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">綿羊山羊——關乎「做不做」</span>
+          「我餓了，你們給我吃……這些事你們既做在我這弟兄中一個最小的身上，就是做在我身上了。」<strong>這是關於實際的行動。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>三個比喻，三個層面</strong>
+        <strong>內在的儲備</strong>（油）、<strong>恩賜的運用</strong>（銀子）、<strong>實際的行動</strong>（給飢餓的人吃）。<br><br>而它們是連著講的，一個接一個，中間沒有換題目。<br><br>——所以「預備」這件事，聖經看的不只是一個層面。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二個比喻裡，有一個常被誤讀的地方。</p>
+
+      <div class="highlight">
+        <strong>那個被責備的僕人，沒有做壞事</strong>
+        他沒有偷、沒有花掉、沒有虧損。<br><br>他做的是：「把主人的銀子<strong>埋藏在地裡</strong>。」——而且他把原數完好地交回去了。<br><br>他的理由是：「我就害怕，去把你的一千銀子<strong>埋藏在地裡</strong>。請看，你的原銀在這裡。」<br><br>——「我就害怕」。<br><br>而主人的判語是：「你這又惡又懶的僕人……<strong>你就當把我的銀子放給兌換銀錢的人</strong>，到我來的時候，可以連本帶利收回。」<br><br>所以他的問題不是<strong>做錯</strong>，是<strong>沒有做</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚱️</span>
+        而「埋起來」這個動作，在當時其實是一種<strong>被認可的保管方式</strong>——把貴重物品埋在地下，確實安全。<br><br>所以他的邏輯是：<strong>不要出錯，比較保險。</strong><br><br>而主人要的不是「不出錯」。<br><br>——而這正好對應教材所指出的：<strong>若無恩賜應用，信主五十年也不能賺十兩銀子。</strong>
+      </div>
+
+      <p>那麼，聖徒該有的預備與態度，具體是哪五項？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五項預備</h2>
+      <p class="card-hook">盼望、油、交賬、細麻衣、耐心</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖徒對於基督再來，應有的預備與態度，共五項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 應當盼望祂快來</span>
+          「阿們！主耶穌啊，我願你來！」（啟廿二 20）<br>「凡向他有這指望的，就潔淨自己，像他潔淨一樣。」（約壹三 2～3）<br>「也賜給凡<strong>愛慕他顯現</strong>的人。」（提後四 8）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 應當有所預備——油在器皿裡</span>
+          「聰明的拿著燈，<strong>又預備油在器皿裡</strong>。」（太廿五 1～13）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 預備交賬</span>
+          「按著各人的才幹給他們銀子……過了許久，那些僕人的主人來了，<strong>和他們算賬</strong>。」（太廿五 15～30）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 預備穿光明潔白的細麻衣</span>
+          「就蒙恩得穿光明潔白的細麻衣。<strong>這細麻衣就是聖徒所行的義。</strong>」（啟十九 8）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 應當耐心等候</span>
+          「你們腰裡要束上帶，燈也要點著，自己好像僕人等候主人。」（路十二 35～36）<br>「等候所盼望的福。」（多二 13）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而關於第三項——<strong>交賬</strong>——教材有一段很具體的提醒：</p>
+
+      <div class="highlight">
+        <strong>關於「賺銀子」的時間</strong>
+        從被聖靈充滿得恩賜之日算起，<strong>能賺得一千，最少要用五年到十五年的時間</strong>。<br><br>而<strong>若無恩賜應用，信主五十年也不能賺十兩銀子，必被撇下而不能被提。</strong><br><br>——這段話的重點，正是那個比喻的重點：<br><br>被責備的那一位，不是虧損的，是<strong>把銀子埋起來的</strong>。<br><br>時間長短不是關鍵，<strong>有沒有拿出來用，才是。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第四項——<strong>細麻衣</strong>——那節經文有一個很特別的結構：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">就蒙恩得穿光明潔白的細麻衣。這細麻衣就是聖徒所行的義
+        </p>
+        <p class="scripture-ref">啟示錄 十九章八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>兩個要素，同時存在</strong>
+        「<strong>蒙恩得穿</strong>」——那件衣服是被賜下的，不是自己織的。<br><br>「<strong>這細麻衣就是聖徒所行的義</strong>」——而它的內容，是聖徒實際所行的。<br><br>——恩典與行為，在同一節裡。<br><br>就像那個銀子的比喻：<strong>銀子是主人給的</strong>（沒有一個僕人是自己賺來本金的），<strong>而運用是僕人的責任。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👗</span>
+        而「細麻衣」的意象也很有意思。<br><br>那是新婦在婚筵上所穿的。啟示錄十九章的上下文，正是<strong>羔羊的婚筵</strong>：<br><br>「我們要歡喜快樂，將榮耀歸給他；因為羔羊婚娶的時候到了，<strong>新婦也自己預備好了</strong>。」<br><br>——「<strong>自己預備好了</strong>」。<br><br>那件衣服是賜的，而「預備好」是新婦的事。
+      </div>
+
+      <p>下一篇，我們細看那個「油」——因為那是五項裡最核心、也最不能借的一項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「油在器皿裡」——多帶的那一份</h2>
+      <p class="card-hook">而聖經裡的油，一貫指向同一件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>那個比喻裡最關鍵的差別，是<strong>「油在器皿裡」</strong>——也就是<strong>燈以外，另外多帶的那一份</strong>。</p>
+
+      <div class="highlight">
+        <strong>兩邊都有燈，兩邊燈裡都有油</strong>
+        因為經文說：五個愚拙的說「我們的燈<strong>要滅了</strong>」——那表示它們原本是點著的。<br><br>差別在於：聰明的<strong>另外帶了一瓶</strong>。<br><br>而那個差別，只有在「遲延」的時候才顯出來。<br><br>——短時間內，兩者無法分辨。
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">油<br>聖經中的一貫象徵</div>
+        <div class="term-desc">我們在別處看過：<strong>油在聖經中，一貫是聖靈的象徵。</strong><br><br>受膏用油——而神「以聖靈和能力膏拿撒勒人耶穌」。<br>金燈臺要用純橄欖油點著——而撒迦利亞書的異象裡，天使的解釋是：「<strong>不是倚靠勢力，不是倚靠才能，乃是倚靠我的靈。</strong>」<br><br>而燈與油的關係也很清楚：<strong>燈是器皿，油是能燒的那一樣。</strong>沒有油，燈只是一個空殼。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪔</span>
+        而這帶出一個很直接的提醒：<strong>燈是可以有的，油卻不一定有。</strong><br><br>一個人可以有信仰的外在形式——聚會、事奉、身分、多年的資歷。<strong>那是燈。</strong><br><br>而燈本身不會發光。<strong>發光的是油。</strong><br><br>而提摩太後書那句話，正好扣在這裡：「<strong>有敬虔的外貌，卻背了敬虔的實意。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「不能借」這件事，是比喻裡最鋒利的一點。</p>
+
+      <div class="highlight">
+        <strong>「恐怕不夠你我用的」</strong>
+        那五個聰明的，聽起來很自私。<br><br>但那不是自私，是<strong>做不到</strong>。<br><br>因為有些東西，本質上是不可轉讓的：<br><br>你可以請人替你排隊，不能請人替你長大。<br>你可以借錢給人，不能借給他你的體力。<br>你可以把知識教給人，<strong>不能把你與神的關係轉給他。</strong><br><br>而那句「你們自己到賣油的那裡去買吧」——重點在「<strong>自己</strong>」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第五項——<strong>耐心等候</strong>——路加福音那段用了一個很具體的畫面：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們腰裡要束上帶，燈也要點著，自己好像僕人等候主人從婚姻的筵席上回來。他來到叩門，就立刻給他開門
+        </p>
+        <p class="scripture-ref">路加福音 十二章三十五至三十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        「<strong>腰裡束上帶</strong>」——當時的長袍垂到腳踝，要工作或趕路時，必須把下襬提起、用帶子束在腰間。<br><br>所以「束上帶」的意思是：<strong>隨時可以動的狀態。</strong>不是躺著等，是<strong>站著等</strong>。<br><br>而「燈也要點著」——不是等到聽見腳步聲才點。<br><br>「<strong>就立刻給他開門</strong>」——那個「立刻」，說明了那份預備的程度。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而這一段接下來那句，是整本福音書最出人意料的一句之一：<br><br>「主人來了，看見僕人警醒，那僕人就有福了。我實在告訴你們，<strong>主人必叫他們坐席，自己束上帶，進前伺候他們。</strong>」<br><br>——<strong>主人束上帶，伺候僕人。</strong><br><br>那個等候的結局，不是被檢查，是<strong>被服事</strong>。<br><br>而這正是祂在最後的晚餐上做過的事：脫了外衣，束上手巾，替門徒洗腳。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        所以那五項預備，最後指向的不是一場考試。<br><br>而是一場<strong>筵席</strong>——羔羊的婚筵。<br><br>細麻衣是婚筵的禮服。<br>燈與油是迎接新郎的。<br>而那位主人，會親自束上帶，伺候等候祂的人。<br><br>——<strong>整組意象，都是婚宴的意象。</strong>
+      </div>
+
+      <p>下一篇，我們談那個最實際的問題：那「油」到底怎麼預備？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">那份儲備，是一天一天累積的</h2>
+      <p class="card-hook">而這也是為什麼它不能在最後一刻補上</p>
+    </div>
+    <div class="card-body">
+
+      <p>五項預備，有一個共同點：<strong>它們都需要時間。</strong></p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">油——需要日積月累</span>
+          一個長年與神相交的人，和一個臨時想補的人，儲備是不一樣的。<br><strong>而那個差別，平常看不出來。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">賬——需要時間去賺</span>
+          教材說得很具體：<strong>能賺得一千，最少要用五年到十五年的時間。</strong><br>那不是一個週末可以完成的事。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">細麻衣——是「聖徒所行的義」</span>
+          而「所行的」，是複數的、累積的。<br>那不是一件事，是<strong>一生的行事</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">耐心——本身就是時間的產物</span>
+          「耐心」這件事，沒有速成的方法。<strong>它只能靠等出來。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這正好說明了那個比喻的殘酷之處</strong>
+        當那五個愚拙的想去買油時，經文說：「<strong>她們去買的時候，新郎到了。</strong>」<br><br>——時間不夠了。<br><br>不是賣油的關門了，不是買不到。<strong>是來不及了。</strong><br><br>而這就是為什麼「預備」是一件現在的事，不是將來的事。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而關於「交賬」，那個比喻還有一個常被略過的細節：<strong>主人的評語，兩次一模一樣。</strong></p>
+
+      <div class="highlight">
+        <strong>賺五千的和賺二千的，得到的評語完全相同</strong>
+        對賺了五千的：「<strong>好，你這又良善又忠心的僕人，你在不多的事上有忠心，我要把許多事派你管理；可以進來享受你主人的快樂。</strong>」<br><br>對賺了二千的：<strong>一字不差，同一句話。</strong><br><br>——雖然一個賺五千，一個賺二千。<br><br>因為評的不是<strong>總量</strong>，是<strong>忠心</strong>。<br><br>而經文一開始就說了：「按著<strong>各人的才幹</strong>給他們銀子。」<br><br>本金不同，所以產出不同——<strong>而那不是評分的項目。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        這一點對很多人是釋放。<br><br>因為我們很容易比較：那個人恩賜比我大、影響力比我廣、做的事比我多。<br><br>而那個比喻說：<strong>主人給的本金本來就不一樣，而評語是一樣的。</strong><br><br>你不需要跟五千的比。<br><br><strong>你只需要不要把你的那一份埋起來。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第一項——<strong>盼望祂快來</strong>——其實是這五項的動力來源。</p>
+
+      <div class="highlight">
+        <strong>因為約翰壹書給了那個因果</strong>
+        「<strong>凡向他有這指望的，就潔淨自己</strong>，像他潔淨一樣。」<br><br>——指望在前，潔淨在後。<br><br>所以如果一個人在預備上長期無力，問題可能不在意志力，<strong>在盼望。</strong><br><br>而提摩太後書那個描述，也很值得注意：「凡<strong>愛慕他顯現</strong>的人。」<br><br>不是「相信」祂顯現，是「<strong>愛慕</strong>」。<br><br>——那是一份感情，不只是一個信念。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💛</span>
+        而那個比喻的背景，正是一場<strong>婚禮</strong>。<br><br>那十個童女，是在等新郎。<br><br>所以整件事的底色，不是「等一個檢查的人」，是<strong>「等一個要來娶的人」</strong>。<br><br>而如果一個人真的在等那個人——<strong>油會準備好的。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">今天，就是預備的日子</h2>
+      <p class="card-hook">寫給那個覺得自己來不及的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>五項預備看完，如果心裡有壓力，那是正常的。因為這一題確實是有分量的。</p>
+
+      <p>而我想留下三件事。</p>
+
+      <div class="highlight">
+        <strong>第一，那些比喻的重點，不是「你不夠好」，是「不要埋起來」</strong>
+        被責備的那個僕人，罪名不是「賺得太少」。<br><br>是<strong>什麼都沒做</strong>。<br><br>而他的理由是：「<strong>我就害怕</strong>。」<br><br>——所以那個比喻真正在對付的，是<strong>因為害怕而不動</strong>。<br><br>怕做不好、怕出錯、怕不夠格、怕被評價。<br><br>而主人的回應是：你至少可以放給兌換銀錢的人。<strong>做一點什麼，總比什麼都不做好。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>第二，本金是祂給的</strong>
+        沒有一個僕人是自己籌到本金的。五千、二千、一千，全部是主人交的。<br><br>而「細麻衣」也是——「<strong>蒙恩得穿</strong>」。<br><br>所以那些預備，起點不是你的努力，是祂的賜予。<br><br>你要做的，是<strong>把祂給的拿出來用</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>第三，如果你覺得自己起步太晚——</strong>
+        那個葡萄園的比喻，是給你的。<br><br>有人清早就進去做工，有人午正，有人申初，還有人<strong>酉初</strong>——就是收工前一小時才被雇的。<br><br>而那位家主，給了他們一樣的工錢。<br><br>而他對那些抱怨的人說：「<strong>我的東西難道不可隨我的意思用嗎？</strong>」<br><br>——所以「來不及」這件事，主自己已經處理過了。<br><br><strong>而重點是：那些酉初被雇的人，是進去做了工的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想把五項，換成五個可以今天就做的問題：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">盼望</span>
+          我心裡，還盼望祂來嗎？<strong>如果那個渴望淡了，那是第一件要處理的事。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">油</span>
+          我與神的相交，是有儲備的，還是每次都燒到見底？
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">交賬</span>
+          祂交給我的那一份，我拿出來用了嗎？<strong>還是埋在地裡？</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">細麻衣</span>
+          我這一段日子所行的，若擺出來，是什麼樣子？
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">耐心</span>
+          我在等的姿勢，是「腰裡束上帶」，還是已經坐下來了？
+        </div>
+      </div>
+
+      <div class="big-quote">
+        所以，你們要警醒；<br>因為那日子，那時辰，<br>你們不知道
+        <cite>— 馬太福音 二十五章十三節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想用路加福音那一句，收在最後。</p>
+
+      <p>因為在所有的警醒、預備、交賬之後，主說了那個結局：</p>
+
+      <p>「主人來了，看見僕人警醒，那僕人就有福了。我實在告訴你們，<strong>主人必叫他們坐席，自己束上帶，進前伺候他們。</strong>」</p>
+
+      <div class="highlight">
+        <strong>那個等候的結局，是被伺候</strong>
+        不是被檢查，不是被審問。<br><br>是主人親自束上帶，讓你坐下，然後服事你。<br><br>——而那位主人，是誰？<br><br>是那位在最後的晚餐上，脫了外衣、拿手巾束腰、替門徒洗腳的那一位。<br><br><strong>祂做過一次了。</strong>
+      </div>
+
+      <p>所以那五項預備，不是為了通過一場審查。</p>
+
+      <p>是為了在那一天，能夠<strong>坐下來</strong>。</p>
+
+      <p>願你今天，就多預備一點油。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  預備與等候 · Threads Series
+</footer>
+
+</body>
+</html>

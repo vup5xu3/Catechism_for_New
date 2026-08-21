@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>靈洗與聖靈充滿 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>一次，與<span>多次</span></h1>
+  <p class="subtitle">聖靈的洗與聖靈充滿，有什麼分別？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">彼得被記載「被聖靈充滿」，不只一次</h2>
+      <p class="card-hook">而這個細節，解開了我很多困惑</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一段時間，我對「被聖靈充滿」這件事很困惑。</p>
+
+      <p>因為我讀到五旬節那一段：「他們就<strong>都被聖靈充滿</strong>」——那是一個很明確的事件。</p>
+
+      <p>而我的疑問是：<strong>那既然充滿了，怎麼還會有第二次？</strong></p>
+
+      <div class="highlight">
+        <strong>而使徒行傳的記載，其實很清楚</strong>
+        <strong>徒二 4</strong>：五旬節那天，「他們就都被聖靈充滿」——<strong>彼得在其中</strong>。<br><br><strong>徒四 8</strong>：彼得站在公會前，「那時<strong>彼得被聖靈充滿</strong>，對他們說……」<br><br><strong>徒四 31</strong>：眾人禱告完，「聚會的地方震動，他們就<strong>都被聖靈充滿</strong>，放膽講論神的道」——<strong>又一次</strong>。<br><br>——同一個彼得，同一群人，被記載「被聖靈充滿」好幾次。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌊</span>
+        而那個困惑，來自我把兩件事混在一起了。<br><br>後來我才明白：<strong>聖經講的是兩件事。</strong><br><br>一件<strong>只有一次</strong>。<br>一件是<strong>持續的、經常的</strong>。<br><br>而分清楚之後，那些經文就全部對上了。
+      </div>
+
+      <p>接下來這幾篇，我想陪你把這兩件事分開。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">使徒行傳裡，「充滿」出現了很多次</h2>
+      <p class="card-hook">而每一次，都連著一件具體的事</p>
+    </div>
+    <div class="card-body">
+
+      <p>把使徒行傳裡「被聖靈充滿」的記載排出來，會看見一個很清楚的模式：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>誰</th>
+            <th>接著發生了什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">徒二 4</td>
+            <td>門徒</td>
+            <td>說起別國的話來</td>
+          </tr>
+          <tr>
+            <td class="src">徒四 8</td>
+            <td>彼得</td>
+            <td>在公會面前<strong>放膽</strong>回答</td>
+          </tr>
+          <tr>
+            <td class="src">徒四 31</td>
+            <td>眾人</td>
+            <td><strong>放膽</strong>講論神的道</td>
+          </tr>
+          <tr>
+            <td class="src">徒七 55</td>
+            <td>司提反</td>
+            <td>看見<strong>神的榮耀和人子</strong></td>
+          </tr>
+          <tr>
+            <td class="src">徒九 17</td>
+            <td>掃羅</td>
+            <td>眼睛得看見，起來受洗</td>
+          </tr>
+          <tr>
+            <td class="src">徒十三 9</td>
+            <td>保羅</td>
+            <td>斥責行法術的以呂馬</td>
+          </tr>
+          <tr>
+            <td class="src">徒十三 52</td>
+            <td>門徒</td>
+            <td>「<strong>滿心喜樂</strong>，又被聖靈充滿」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>兩個觀察</strong>
+        <strong>第一：那件事會重複發生。</strong><br>彼得在徒二、徒四都被記載。眾人在徒二、徒四也是。<br><br><strong>第二：每一次都連著一個處境。</strong><br>要在公會前說話、要面對逼迫、要斥責敵擋的、要在受苦中有喜樂。<br><br>——那不是一種抽象的狀態。<strong>那是在需要的時刻，被加上去的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚡</span>
+        而其中最有畫面的是徒四章那一次。<br><br>彼得和約翰被公會威嚇之後放了。他們回到自己人那裡，把事情說了，然後大家一起禱告。<br><br>而他們求的不是「求主保護我們」，是：<br><br>「求主鑒察，一面叫你僕人<strong>大放膽量</strong>講你的道。」<br><br>而禱告完了——「<strong>聚會的地方震動，他們就都被聖靈充滿，放膽講論神的道。</strong>」<br><br>——求什麼，就得著什麼。
+      </div>
+
+      <p>那麼，這兩件事的分別是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">開始，與長進</h2>
+      <p class="card-hook">四個分別，一個順序</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖靈的洗與聖靈充滿，分別如下：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>聖靈的洗</th>
+            <th>聖靈充滿</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">次數</td>
+            <td><strong>只有一次</strong></td>
+            <td><strong>多次</strong></td>
+          </tr>
+          <tr>
+            <td class="src">性質</td>
+            <td>一次性的</td>
+            <td><strong>持續性、經常性</strong>的被聖靈充滿</td>
+          </tr>
+          <tr>
+            <td class="src">在靈命中的位置</td>
+            <td><strong>靈命的開始</strong></td>
+            <td><strong>靈命的長進</strong></td>
+          </tr>
+          <tr>
+            <td class="src">順序</td>
+            <td colspan="2" style="text-align:center;"><strong>必須先受聖靈的洗，才被聖靈充滿</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「持續性、經常性」這一點，可由使徒行傳全書得著證明</strong>
+        就是我們上一篇排的那張表：<br><br>彼得被記載過不只一次，眾人也是。<br><br>而徒十三 52 那句更明顯：「門徒<strong>滿心喜樂，又被聖靈充滿</strong>。」<br><br>——那個「又」字，本身就說明了一切。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「開始」與「長進」這個分別，我覺得是最有幫助的一組詞。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        因為它對應了生命的兩種事件：<br><br><strong>出生</strong>——只有一次。你不會出生兩次。<br><strong>成長</strong>——是持續的，一輩子的。<br><br>而沒有出生，就沒有成長可言。<br><br>——這正是那個順序：<strong>必須先受聖靈的洗，才被聖靈充滿。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而以弗所書那個吩咐的<strong>文法</strong>，正好印證了「持續性」這一點。</p>
+
+      <div class="term-box">
+        <div class="term-original">Plērousthe<br>要被聖靈充滿</div>
+        <div class="term-desc">以弗所書五章十八節。這個動詞有三個特徵：<br><br><strong>命令語氣</strong>——這是一個吩咐。<br><strong>被動語態</strong>——不是「你去充滿自己」，是「讓祂充滿」。<br><strong>現在式</strong>——在希臘文中，這個時態表示<strong>持續、反覆</strong>的動作。<br><br>所以那句話的意思接近：<strong>「你們要持續地、不斷地被聖靈充滿。」</strong><br><br>——如果那是一次完成的事，保羅不會用這個時態下命令。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個文法細節，同時說明了兩件事</strong>
+        <strong>它是命令</strong>——所以那不是可有可無的。<br><strong>它是持續的</strong>——所以那不是一次就結束的。<br><br>而這也解釋了為什麼保羅要對<strong>已經信主的以弗所信徒</strong>下這個命令。<br><br>——他們已經「受了所應許的聖靈為印記」（弗一 13）。<br><br>而保羅還是對他們說：<strong>要被聖靈充滿。</strong>
+      </div>
+
+      <p>下一篇，我們看那個「充滿」在原文裡的意象。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「充滿」與「醉酒」，被放在同一句裡</h2>
+      <p class="card-hook">而那個對比，說明了「充滿」的意思</p>
+    </div>
+    <div class="card-body">
+
+      <p>以弗所書五章十八節的完整句子，是一個對比：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">不要醉酒，酒能使人放蕩；乃要被聖靈充滿
+        </p>
+        <p class="scripture-ref">以弗所書 五章十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>為什麼拿醉酒來對比？</strong>
+        因為兩者的結構是一樣的：<strong>被某樣東西掌管。</strong><br><br>一個人喝醉了，他的言語、動作、判斷、膽量，全部改變——<strong>那不是他在控制自己。</strong><br><br>而「被聖靈充滿」講的是同一種結構：<strong>被誰主導。</strong><br><br>——所以「充滿」的重點不是「裝滿了多少」，是<strong>「被誰掌管」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍷</span>
+        而五旬節那一天，旁觀的人的反應，正好印證了這個對比。<br><br>他們看見門徒的樣子，說：「<strong>他們無非是新酒灌滿了。</strong>」<br><br>——那是一個誤解，而那個誤解本身很說明問題：<br><br>那些人的狀態，讓旁觀者聯想到「被某樣東西充滿」。<br><br>而彼得的回答是：「你們想這些人是醉了，其實不是醉了，因為時候剛到巳初。」<br><br>然後他開始講道。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅在那句命令之後，列出了「被充滿」的實際結果。而那份清單，很值得注意：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">彼此對說</span>
+          「當用詩章、頌詞、靈歌<strong>彼此對說</strong>。」——那是<strong>群體</strong>的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">口唱心和地讚美主</span>
+          「口唱心和地讚美主。」——那是<strong>向上</strong>的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">凡事謝恩</span>
+          「<strong>凡事</strong>要奉我們主耶穌基督的名常常感謝父神。」——注意那個「凡事」。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">彼此順服</span>
+          「又當存敬畏基督的心，<strong>彼此順服</strong>。」<br>——而接下來一整段，講的是夫妻、父母子女、主僕的關係。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        這份清單有一個共同點：<strong>全部落在關係上。</strong><br><br>彼此對說、彼此順服、家裡的相處。<br><br>——所以保羅拿來驗證「被聖靈充滿」的，<strong>不是某種現象，是你在人群中、在家裡的樣子。</strong><br><br>而那份驗證，比任何感覺都誠實。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而使徒行傳裡「充滿」的用法，還有另一個值得注意的地方。</p>
+
+      <div class="highlight">
+        <strong>有些人被描述為「常被聖靈充滿」的狀態</strong>
+        司提反被選作執事時，經文說他是「<strong>大有信心、聖靈充滿的人</strong>」——那是一種<strong>持續的品格描述</strong>，不是某一刻的事件。<br><br>巴拿巴也是：「這巴拿巴原是個好人，<strong>被聖靈充滿</strong>，大有信心。」（徒十一 24）<br><br>而揀選執事的條件之一，正是：「當從你們中間選出七個有好名聲、<strong>被聖靈充滿</strong>、智慧充足的人。」（徒六 3）<br><br>——所以那是一種<strong>可以被別人看出來的狀態</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👀</span>
+        而「有好名聲」與「被聖靈充滿」被列在同一個條件裡，很有意思。<br><br>因為「好名聲」是<strong>別人給的評價</strong>。<br><br>所以那份充滿，不是自己宣稱的。<strong>是周圍的人看得出來的。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        所以「充滿」在使徒行傳裡，有兩種用法：<br><br><strong>事件性的</strong>——在某個時刻、為某件事被充滿（徒四 8、四 31、十三 9）。<br><strong>狀態性的</strong>——一個人的常態（徒六 3、5、十一 24）。<br><br>而這兩種並不矛盾。<br><br>就像一個健康的人，平常身體是好的（狀態），而在需要出力時還能再使上力（事件）。
+      </div>
+
+      <p>下一篇，我們談那個最實際的問題：怎麼保持？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼需要「一再」充滿？</h2>
+      <p class="card-hook">因為我們是會漏的器皿</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果聖靈已經內住，為什麼還需要一再被充滿？</p>
+
+      <div class="highlight">
+        <strong>那個問題，其實預設了一個錯誤的模型</strong>
+        它把「充滿」想成「<strong>裡面有多少</strong>」——像一個容器裝了多少水。<br><br>而按照那個模型，如果已經滿了，就不需要再加。<br><br>而聖經的模型不是這樣。<strong>「充滿」講的是「被誰掌管」。</strong><br><br>——所以它是一個關於<strong>主導權</strong>的問題，不是關於<strong>存量</strong>的問題。<br><br>而主導權，是每一天、每一件事上都在被決定的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎛️</span>
+        我覺得可以這樣理解：<br><br>「內住」是<strong>祂在不在</strong>——這件事已經定了，有印記為證。<br><br>「充滿」是<strong>誰在開車</strong>——而這件事，每一天都在發生。<br><br>你可以車上坐著一位很好的駕駛，而方向盤還在自己手上。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經給的兩個「不要」，正好說明了那個掌管會怎麼被打斷：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">不要銷滅聖靈的感動</span>
+          「不要銷滅聖靈的感動。」（帖前五 19）<br>原文那個字（sbennymi）是「<strong>熄滅</strong>」——用在火上。<br><br>——所以那是一個<strong>主動壓下去</strong>的動作。<br>當祂催促你去做一件事、去道歉、去說一句話，而你把它壓下去了。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">不要叫聖靈擔憂</span>
+          「不要叫神的聖靈擔憂。」（弗四 30）<br>而上下文列的是：<strong>污穢的言語、苦毒、惱恨、忿怒、嚷鬧、毀謗</strong>。<br><br>——那是一個<strong>關係被弄僵</strong>的狀態。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而兩者的差別</span>
+          「銷滅」是<strong>對祂的引導說不</strong>。<br>「擔憂」是<strong>用生命的樣子傷了祂</strong>。<br><br>一個關乎<strong>順服</strong>，一個關乎<strong>品格</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這兩個「不要」，正好是「充滿」的反面</strong>
+        所以保持被充滿的方法，不是某種技巧。<br><br>是這兩件事：<strong>祂說的，去做；祂在意的，不要做。</strong><br><br>——樸實得有點意外，但那正是聖經給的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而使徒行傳第四章那一次，示範了一個很實際的模式。</p>
+
+      <div class="highlight">
+        <strong>他們求，然後就得著了</strong>
+        彼得和約翰被威嚇之後，回到自己人那裡。<br><br>而他們做的第一件事是<strong>一起禱告</strong>。<br><br>而他們求的內容，值得注意：<strong>不是求脫離逼迫</strong>。<br><br>是：「求主鑒察，一面叫你僕人<strong>大放膽量</strong>講你的道。」<br><br>——他們求的是<strong>能夠繼續做那件危險的事</strong>。<br><br>而禱告完了，「聚會的地方震動，他們就都被聖靈充滿。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🙏</span>
+        所以那個模式很簡單：<br><br><strong>在需要的時候，一起求。</strong><br><br>而主自己說過：「何況天父，豈不更將聖靈給求他的人嗎？」<br><br>——「給<strong>求</strong>他的人」。<br><br>那件事，是可以求的。而且不只求一次。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">出生只有一次，長大是一輩子</h2>
+      <p class="card-hook">寫給那個覺得自己「退步了」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在那組「開始」與「長進」上。</p>
+
+      <div class="highlight">
+        <strong>因為這個分別，可以解決一個常見的不安</strong>
+        很多人在靈裡枯乾的時候，會問一個很傷的問題：<br><br><strong>「我是不是根本沒有得救？」</strong><br><br>而這個分別給的答案是：<strong>那是兩件事。</strong><br><br>「開始」那一件，是已經發生的，有印記為證。<br>「長進」這一件，本來就有起伏——因為它是持續的。<br><br>——所以今天的枯乾，不會取消那個開始。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌡️</span>
+        一個孩子生病了、瘦了、沒精神——<br><br>沒有人會因此懷疑<strong>他是不是這家的孩子</strong>。<br><br>他是。他只是需要被照顧。<br><br>而「要被聖靈充滿」那個命令，正是給已經是兒女的人的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而四個分別，我想這樣收：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">洗只有一次</span>
+          所以你不需要每次都重新來過。<strong>那個已經成了。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">充滿是多次的</span>
+          所以今天不夠，不表示失敗。<strong>那本來就是要一再求的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">洗是靈命的開始</span>
+          那是你的身分。<strong>身分不隨狀態變動。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">充滿是靈命的長進</span>
+          而長進有快有慢，有平原也有低谷。<strong>那是正常的。</strong>
+        </div>
+      </div>
+
+      <div class="big-quote">
+        不要醉酒，酒能使人放蕩；<br>乃要被聖靈充滿
+        <cite>— 以弗所書 五章十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個命令是「被動」的，我覺得是最大的安慰</strong>
+        「<strong>被</strong>聖靈充滿」——不是「你去充滿自己」。<br><br>所以你要做的，不是使力，是<strong>不擋住</strong>。<br><br>不銷滅祂的感動。<br>不叫祂擔憂。<br>然後求。<br><br>——其餘的，是祂做的。
+      </div>
+
+      <p>回到我開頭那個困惑：彼得為什麼被記載充滿了好幾次？</p>
+
+      <p>因為那本來就不是一次的事。</p>
+
+      <p>而那對我們是好消息——<strong>因為那表示，今天還可以再求。</strong></p>
+
+      <p>願你今天，就求一次。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  靈洗與充滿 · Threads Series
+</footer>
+
+</body>
+</html>

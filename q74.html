@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>耶穌 救主 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>耶穌 —— <span>救主</span></h1>
+  <p class="subtitle">名字是天使給的，而它說明了祂來做什麼</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">取名字的時候，我們在想什麼？</h2>
+      <p class="card-hook">一個名字裡面，通常裝著一份期待</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>認識的朋友有了孩子，取名字花了好幾個月。</p>
+
+      <p>他們查字典、看筆劃、問長輩、列了一張表又刪掉。而我問他們在糾結什麼，他們說：<strong>「總覺得這個名字，會跟著他一輩子。」</strong></p>
+
+      <p>那句話說得很好。因為取名字這件事，本質上是<strong>把一份期待，放進一個人的身上</strong>。</p>
+
+      <div class="highlight">
+        <strong>而聖經裡的名字，比我們的更重</strong>
+        在希伯來的思維裡，名字不只是一個稱呼，它往往<strong>說明了那個人是誰、或者要成為什麼</strong>。<br><br>雅各——「抓住腳跟的」，而他一生確實在抓、在爭、在搶。後來神給他改名叫以色列。<br>亞伯蘭——「崇高的父」，神給他改成亞伯拉罕，「多國的父」。<br>拿俄米從摩押回來時說：「不要叫我拿俄米（甜），要叫我瑪拉（苦），因為全能者使我受了大苦。」<br><br><strong>名字會變，因為人生變了。</strong>
+      </div>
+
+      <p>而在整本聖經裡，只有極少數幾個名字，是<strong>在出生之前，由神親自指定的。</strong></p>
+
+      <p>以撒是一個。施洗約翰是一個。</p>
+
+      <p>而還有一位——祂的名字，是天使在兩個不同的場合，分別對兩個人說的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        天使先對馬利亞說：「你要懷孕生子，可以給他起名叫<strong>耶穌</strong>。」<br><br>後來又對約瑟說：「馬利亞要生一個兒子，你要給他起名叫<strong>耶穌</strong>。」<br><br>——兩次，同一個名字。<br><br>而對約瑟那一次，天使還多說了一句話。<strong>那句話，把這個名字的意思解釋清楚了。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這個名字。它其實是一個很常見的名字——而正是這一點，讓它特別。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「因他要將自己的百姓從罪惡裡救出來」</h2>
+      <p class="card-hook">天使給的不只是名字，還有理由</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音第一章，約瑟正在為一件事煎熬。</p>
+
+      <p>他已經與馬利亞訂了婚，還沒有迎娶，卻發現她懷了孕。經文說他「是個義人，不願意明明地羞辱她，想要暗暗地把她休了」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌙</span>
+        「不願意明明地羞辱她」——這五個字裡有很深的東西。<br><br>按當時的律法，他完全有權利公開這件事，而那對馬利亞來說後果嚴重。<br><br>而他選擇了那個對自己最不利、對她最有保護的做法：<strong>暗暗地。</strong><br><br>他打算獨自承擔那份難堪。<br><br>經文說：「<strong>正思念這事的時候</strong>」——他大概失眠了很多夜。
+      </div>
+
+      <p>而就在那樣一個夜裡，主的使者向他夢中顯現，說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">她將要生一個兒子，你要給他起名叫耶穌，因他要將自己的百姓從罪惡裡救出來</p>
+        <p class="scripture-ref">馬太福音 一章二十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>請注意那個「因」字</strong>
+        天使不只給了名字，還給了<strong>理由</strong>。<br><br>「你要給他起名叫耶穌，<strong>因</strong>他要將自己的百姓從罪惡裡救出來。」<br><br>——這句話的結構是：<strong>名字＝任務。</strong><br><br>叫這個名字，是因為祂要做這件事。名字本身，就是祂使命的宣告。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那個任務的內容，值得仔細看，因為它跟當時人們的期待，有一個關鍵的落差：</p>
+
+      <div class="highlight">
+        <strong>「從罪惡裡救出來」——不是從羅馬人手裡</strong>
+        當時猶太人期待的拯救，是<strong>政治的</strong>：脫離羅馬的統治，恢復大衛的國。<br><br>而天使說的是：<strong>從罪惡裡。</strong><br><br>這個落差，正是整個福音的核心。<br><br>因為如果人真正的問題是外面的壓迫，那換一個政權就解決了。<br><br>而聖經說：<strong>人真正的問題在裡面。</strong>而那個問題，換誰來執政都不會改變。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩺</span>
+        這就像一個人不斷頭痛，一直換枕頭、換床墊、換房間。<br><br>如果病灶在腦子裡，那換一百個枕頭也沒有用。<br><br>而天使那句話，等於在說：<strong>祂來，是處理病灶的。</strong>
+      </div>
+
+      <p>而約瑟醒了之後，經文只用了一句話帶過：「起來，就遵著主使者的吩咐把妻子娶過來。」</p>
+
+      <p>沒有辯論，沒有討價還價，沒有記錄任何他的疑問。</p>
+
+      <p>那麼，「耶穌」這個名字，究竟是什麼意思？下一篇，我們回到原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">「耶穌」的意思是「救主」</h2>
+      <p class="card-hook">而祂的一生，與這個名字完全相合</p>
+    </div>
+    <div class="card-body">
+
+      <p>答案很清楚：<strong>「耶穌」意思是「救主」。</strong></p>
+
+      <p>聖子降世為人，起了這個名字——<strong>而這個名字，正與祂的救世大業完全相合。</strong></p>
+
+      <div class="big-quote">
+        你要給他起名叫耶穌，<br>因他要將自己的百姓<br>從罪惡裡救出來
+        <cite>— 馬太福音 一章二十一節</cite>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>從原文來看，這個名字的來歷是這樣的：</p>
+
+      <div class="term-box">
+        <div class="term-original">Yeshua / Yehoshua<br>希伯來文</div>
+        <div class="term-desc">這是一個複合字，由「<strong>耶和華</strong>」與「<strong>拯救</strong>」（yasha）兩個成分組成。<br><br>意思是「<strong>耶和華是拯救</strong>」，或者「耶和華拯救」。<br><br>而舊約裡有一個我們很熟悉的人，名字正是這個——<strong>約書亞</strong>。<br><br>「約書亞」和「耶穌」，在希伯來文裡是同一個名字，只是經過不同語言的轉寫。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Iēsous<br>希臘文</div>
+        <div class="term-desc">Yeshua 的希臘文音譯。新約用希臘文寫成，所以記的是這個形式。<br><br>而中文的「耶穌」，就是從這個希臘文的讀音轉寫而來。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>而「約書亞」這個連結，非常有意思</strong>
+        舊約的約書亞做了什麼？<br><br>他<strong>帶領百姓進入應許之地</strong>。摩西把他們領出埃及，卻不能領他們進去；那個工作，是約書亞完成的。<br><br>而新約的耶穌，做的是同一件事的<strong>屬靈版本</strong>：<br><br>祂不是把人領進一塊土地，是領進<strong>神的國</strong>。<br><br>而希伯來書正好處理了這個對照：它說約書亞所給的安息，並不是真正的安息——「必另有一安息日的安息為神的子民存留」。<br><br><strong>影兒與形體，又一次。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這裡有一件事，我覺得特別值得停下來想：<strong>「耶穌」在當時，是一個很常見的名字。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👥</span>
+        考古發現的第一世紀猶太墓穴銘文中，Yeshua 是相當常見的名字之一。<br><br>就像今天的「志明」、「淑芬」那樣——你在市場上喊一聲，可能會有好幾個人回頭。<br><br>所以福音書常常需要加上限定語：<strong>「拿撒勒人耶穌」</strong>——因為光說「耶穌」，會分不清是誰。<br><br>而歌羅西書裡，保羅還提到一位同工「稱為猶士都的耶穌」。
+      </div>
+
+      <div class="highlight">
+        <strong>而這件事本身，就在說一件事</strong>
+        神給祂兒子取的名字，<strong>不是一個特別尊貴、特別稀有、一聽就知道不簡單的名字。</strong><br><br>祂大可以有一個獨一無二的名。<br><br>而祂用的，是那個時代最普通的名字之一。<br><br>這與整件事的性質完全一致：祂生在馬槽、長在拿撒勒（那個被人說「還能出什麼好的嗎」的地方）、做木匠、穿一般人的衣服、走一般人的路。<br><br><strong>連名字都是普通的。</strong>
+      </div>
+
+      <p>而腓立比書那段有名的經文，正是在描述這件事：「他本有神的形像……<strong>反倒虛己，取了奴僕的形像</strong>，成為人的樣式。」</p>
+
+      <p>那麼，這個名字後來怎麼了？下一篇，我們看那個「至高的名」。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">一個普通的名字，被高舉到至高</h2>
+      <p class="card-hook">腓立比書第二章那段詩歌</p>
+    </div>
+    <div class="card-body">
+
+      <p>腓立比書第二章有一段，學者多認為是初代教會傳唱的一首詩歌。而它的結構，是一個完整的「降下」與「升上」：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">↓ 他本有神的形像</span>
+          起點在最高處。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">↓ 不以自己與神同等為強奪的</span>
+          祂沒有緊抓著那個地位不放。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">↓ 反倒虛己，取了奴僕的形像</span>
+          從最高處，降到奴僕的位置。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">↓ 存心順服，以至於死</span>
+          再往下。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">↓ 且死在十字架上</span>
+          最低點。<strong>十字架在羅馬是留給奴隸與叛亂者的刑罰</strong>，是最羞辱的死法。
+        </div>
+      </div>
+
+      <p>然後，經文出現一個轉折詞：「<strong>所以</strong>，神將他升為至高，又賜給他那超乎萬名之上的名。」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">叫一切在天上的、地上的，和地底下的，因耶穌的名無不屈膝，無不口稱耶穌基督為主，使榮耀歸與父神</p>
+        <p class="scripture-ref">腓立比書 二章十至十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        注意經文說的是「<strong>因耶穌的名</strong>無不屈膝」。<br><br>那個「超乎萬名之上的名」——就是這個名字。<strong>那個在第一世紀滿街都是的、普通的名字。</strong><br><br>而它為什麼會被高舉？<br><br>經文給的理由是那個「所以」——<strong>因為祂降到了最低。</strong><br><br>升高不是補償，是那條路的另一半。<br><br>而更值得注意的是：這一整段的上下文，其實是保羅在勸勉信徒要謙卑。他說「你們當以基督耶穌的心為心」，然後才引出這首詩歌。<br><br>——那段最高的基督論，是被放在一段最實際的勸勉裡的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「無不屈膝」這句話，其實是引用舊約的。以賽亞書四十五章，神說：</p>
+
+      <p>「我指著自己起誓……<strong>萬膝必向我跪拜；萬口必憑我起誓。</strong>」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🙇</span>
+        而那一段的上下文，正是神宣告自己獨一的地方：「除我以外，再沒有神。」<br><br>保羅把那段話，用在了耶穌的名上。<br><br>對一個熟讀舊約的猶太人來說，這個引用的意義是非常明確的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看這個名字在使徒行傳裡的用法。而那個用法非常密集：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>用法</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">徒三 6</td>
+            <td>彼得對瘸腿的說：「我奉<strong>拿撒勒人耶穌基督的名</strong>，叫你起來行走！」</td>
+          </tr>
+          <tr>
+            <td class="src">徒四 12</td>
+            <td>「除他以外，別無拯救；因為在天下人間，沒有賜下別的名，我們可以靠著得救。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒五 41</td>
+            <td>使徒被打之後，「心裡歡喜，因被算是配為這名受辱」</td>
+          </tr>
+          <tr>
+            <td class="src">徒九 15</td>
+            <td>主論到保羅：「他是我所揀選的器皿，要在外邦人和君王，並以色列人面前<strong>宣揚我的名</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        使徒行傳四章十二節那句話，值得逐字讀：<br><br>「<strong>在天下人間，沒有賜下別的名，我們可以靠著得救。</strong>」<br><br>注意它的措辭是「<strong>賜下</strong>」——這個名字不是人選出來的，是神給的。<br><br>而彼得說這句話的場合，是站在公會面前受審。<strong>他是在那些剛把耶穌釘死的人面前，說這句話的。</strong><br><br>經文特別記了公會的反應：「他們見彼得、約翰的膽量，又看出他們原是沒有學問的小民，就希奇，<strong>認明他們是跟過耶穌的</strong>。」
+      </div>
+
+      <p>下一篇，我們談這個名字對我們的實際意義——特別是禱告的時候。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「奉主耶穌的名」不是一句咒語</h2>
+      <p class="card-hook">那是一個關於身分的宣告</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們禱告的時候，習慣以「奉主耶穌的名求」結尾。</p>
+
+      <p>而我很長一段時間，是把那句話當成<strong>結束的訊號</strong>——就像信件末尾的「敬上」。說完那句，大家就可以說阿們了。</p>
+
+      <div class="highlight">
+        <strong>但主自己說的那句話，語氣完全不是這樣</strong>
+        「你們奉我的名無論求甚麼，我必成就。」（約十四 13）<br>「向來你們沒有奉我的名求甚麼，如今你們求，就必得著，叫你們的喜樂可以滿足。」（約十六 24）<br><br>——那是一個<strong>新的權利</strong>，是主在最後的晚餐上，鄭重交給門徒的。<br><br>「向來你們沒有奉我的名求甚麼」——這件事在那之前是不存在的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎫</span>
+        「奉某人的名」在古代的意思，是<strong>以那個人的授權與身分行事</strong>。<br><br>一個使者奉王的名說話，人們聽的不是他這個人，是他背後的那位。<br><br>所以「奉主耶穌的名禱告」的意思，不是加上一個有魔力的口令。<br><br>它的意思是：<strong>我沒有資格自己來。我是憑著那一位的身分、那一位的功勞、那一位所開的路，才站在這裡的。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個理解，會改變兩件事</strong>
+        <strong>第一，它會讓你更有把握。</strong>因為你來到神面前的憑據，不是你今天的表現、不是你這週有沒有讀經、不是你的禱告詞夠不夠好。是祂的名。<br><br><strong>第二，它會讓你更謹慎。</strong>因為「奉某人的名」意味著你所求的，應當是那一位會贊同的。<br><br>——你不能一邊說「奉他的名」，一邊求一件他明明不會要的事。那就像拿著別人的授權書，去辦一件他從未託付的事。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這個名字，在信徒身上還有一層更深的意義。</p>
+
+      <p>使徒行傳記載：「門徒稱為『基督徒』是從安提阿起首。」</p>
+
+      <div class="term-box">
+        <div class="term-original">Christianos<br>基督徒</div>
+        <div class="term-desc">字面是「<strong>屬基督的人</strong>」。這個稱呼很可能最初帶有幾分外人的調侃——「那群跟著基督的」。<br><br>而教會接受了它。<br><br>彼得說：「若為作<strong>基督徒</strong>受苦，卻不要羞恥，倒要因這名歸榮耀給神。」</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏷️</span>
+        所以每一個自稱基督徒的人，都是<strong>把祂的名背在身上</strong>。<br><br>那不是一個標籤，是一份重量。<br><br>你在職場上怎麼做事、你怎麼對待比你弱的人、你在壓力下的反應——<strong>都在替那個名字寫註解。</strong><br><br>這也是我們在第三誡談過的：最深的「妄稱」，是掛著那個名，卻活成相反的樣子。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後我想回到那個名字的意思本身：<strong>救主。</strong></p>
+
+      <p>而「救」這個字，預設了一件事：<strong>有人需要被救。</strong></p>
+
+      <div class="highlight">
+        <strong>這一點，是整個信仰最難跨過的門檻</strong>
+        因為「我需要一位老師」是容易接受的——那表示我還可以學。<br>「我需要一位榜樣」也不難——那表示我還可以努力。<br>「我需要一個力量的來源」也可以——那表示我還在使力。<br><br>但「<strong>我需要一位救主</strong>」，意思是：<strong>我自己出不來。</strong><br><br>那不是需要協助，那是需要救援。<br><br>而這句話，對一個習慣靠自己的人來說，是最難說出口的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛟</span>
+        溺水的人有一個很危險的本能：<strong>掙扎。</strong><br><br>而救生員受過的訓練是：不要在對方還在掙扎的時候靠近，因為溺水的人會下意識地把救援者一起拖下去。<br><br>真正得救的關鍵時刻，往往是那個人<strong>停止掙扎、放鬆下來、讓人把他帶走</strong>的那一刻。<br><br>而那一刻需要的，不是力氣，是<strong>承認自己出不來。</strong>
+      </div>
+
+      <p>而那個名字，從一開始就在說這件事。</p>
+
+      <p>不是「耶穌，那位偉大的教師」。</p>
+
+      <p>是<strong>耶穌——救主。因他要將自己的百姓從罪惡裡救出來。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「他要將自己的百姓從罪惡裡救出來」</h2>
+      <p class="card-hook">寫給那個覺得自己已經沒救的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在天使那句話的三個部分上。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">「他要」</span>
+          不是「他可能」，不是「他試著」，不是「如果條件配合的話」。<br><strong>是「他要」。</strong><br>這是一個確定的宣告，在祂出生之前就說了。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">「將自己的百姓」</span>
+          「<strong>自己的</strong>」——這是所有格。<br>那不是一群陌生人，那是屬於祂的。<br>而後來祂說：「我的羊聽我的聲音，我也認識他們……誰也不能從我手裡把他們奪去。」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">「從罪惡裡救出來」</span>
+          不是「教他們不要犯罪」，不是「幫他們變好一點」。<br><strong>是「救出來」。</strong><br>那是一個把人從裡面拉出來的動作——因為裡面的人，自己出不來。
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想對那個覺得自己「已經沒救了」的人說一件事。</p>
+
+      <div class="highlight">
+        <strong>「救主」這個名字裡，藏著一個前提</strong>
+        一位救主的存在，本身就在承認：<strong>有一種處境，是人自己出不來的。</strong><br><br>所以如果你此刻覺得自己陷得太深、覺得那個習慣改不掉、覺得那件事已經無法挽回——<br><br>那不是你不夠格被救。<strong>那恰恰是「救」這個字存在的理由。</strong><br><br>一個自己爬得出來的人，不需要救主。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而我一直很喜歡福音書裡的一個細節。<br><br>祂被釘在十字架上的時候，旁邊有兩個犯人。其中一個譏誚祂，另一個責備了那人，然後轉過來對主說：<br><br>「<strong>耶穌啊，你得國降臨的時候，求你記念我。</strong>」<br><br>他叫的，正是這個名字。<br><br>而他當時的處境是：手腳被釘住、命只剩幾個小時、一生的帳算不清、什麼都做不了、來不及彌補任何事。<br><br>而主的回答是：「<strong>我實在告訴你，今日你要同我在樂園裡了。</strong>」<br><br>——沒有補課，沒有觀察期，沒有「你得先證明你真的悔改」。<br><br><strong>那個人做的唯一一件事，是叫了那個名字。</strong>
+      </div>
+
+      <div class="big-quote">
+        除他以外，別無拯救；<br>因為在天下人間，<br>沒有賜下別的名，<br>我們可以靠著得救
+        <cite>— 使徒行傳 四章十二節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那對取名字取了好幾個月的朋友。</p>
+
+      <p>他們說：「總覺得這個名字，會跟著他一輩子。」</p>
+
+      <p>而那位的名字，也跟了祂一輩子——從馬槽到十字架，從普通到至高。</p>
+
+      <p>祂沒有辜負那個名字。天使說「他要將自己的百姓從罪惡裡救出來」，而祂做到了。</p>
+
+      <p>所以今天，當你在禱告的最後說出「奉主耶穌的名」——</p>
+
+      <p>你說的不只是一個結束語。</p>
+
+      <p>你說的是：<strong>耶和華是拯救。</strong></p>
+
+      <p>而那，正好是這個名字的意思。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  耶穌 · 救主 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神的智慧 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>測不透的<span>智慧</span></h1>
+  <p class="subtitle">當我看不懂祂的安排，我還能信任祂嗎？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那件我到現在還想不通的事</h2>
+      <p class="card-hook">最難熬的其實不是痛，是「不明白為什麼」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我一直覺得，人生裡最難承受的，往往不是那件痛苦的事本身，而是<strong>看不懂它為什麼要發生。</strong></p>
+
+      <p>如果醫生告訴你，這個療程會很難受，但六個月後你會好起來——你可以咬牙撐過去。真正把人擊垮的，是那種「不知道要撐多久、也不知道撐了到底有沒有意義」的狀態。痛苦加上意義，人是撐得住的；痛苦減去意義，就變成了折磨。</p>
+
+      <p>我心裡有幾件這樣的事。有些過了很多年之後，我回頭看，忽然懂了——原來那扇關上的門，是為了把我推向另一條路；原來那個當時讓我痛得要命的拒絕，攔住了一個我看不見的坑。這些事後來變成了我的見證。</p>
+
+      <p>但也有幾件，我到今天都還沒有看懂。而且我隱約感覺，這輩子可能都不會懂了。</p>
+
+      <div class="highlight">
+        <strong>一個我後來才承認的真相</strong>
+        有很長一段時間，我以為我在向神求的是「解釋」。我一遍一遍地問「為什麼」，好像只要祂肯給我一個理由，我就能過得去。但後來我發現，我真正需要的，其實不是解釋——就算祂真的把整套原因寫下來給我看，我也未必看得懂，甚至未必會接受。<br><br>我真正需要的，是確定<strong>「有人知道自己在做什麼」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✈️</span>
+        這就像飛機遇上強烈亂流的時候。機艙裡所有人都在晃、都在害怕。可是你注意過嗎——大家真正想確認的，其實不是「氣流的成因」和「大氣壓力的數據」。沒有人在那個時候想上一堂流體力學。大家想確認的只有一件事：<strong>駕駛艙裡有人，而且他知道他在做什麼。</strong>
+      </div>
+
+      <p>「神的智慧」這個題目，聽起來像是一個很學術的教義。但我後來才明白，它其實是我們每一個人在亂流裡最需要的那個確據。它要回答的不是「宇宙是怎麼運作的」，而是「這一切，到底有沒有人在掌舵」。</p>
+
+      <p>接下來這幾篇，我想陪你走進去看。我們會先去旋風裡聽一段對話——那是聖經裡最有名的一次「為什麼」，也是最出人意料的一次回答。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">旋風裡的回答，和那七十幾個問題</h2>
+      <p class="card-hook">約伯要一個解釋，神給了他一趟宇宙導覽</p>
+    </div>
+    <div class="card-body">
+
+      <p>約伯記是聖經裡最勇敢的一卷書。它讓一個好人失去一切——財產、兒女、健康——然後花了三十幾章的篇幅，讓這個人把心裡所有的話都說完，包括那些非常不「屬靈」的話。</p>
+
+      <p>約伯要的是什麼？他說得很清楚。他不是要神把財產還給他，他要的是<strong>一場對質</strong>。他說：「惟願我能知道在哪裡可以尋見神，能到他的臺前，我就在他面前將我的案件陳明。」他要上法庭，他要一個說法，他要神親自出來解釋這一切到底是怎麼回事。</p>
+
+      <p>然後，在第三十八章，神真的來了。祂從旋風中回答。</p>
+
+      <p>而神說的第一句話，是一個問題：「誰用無知的言語使我的旨意暗昧不明？」接著祂說：「你要如勇士束腰；我問你，你可以指示我。」</p>
+
+      <div class="highlight">
+        <strong>整卷書最令人震驚的地方</strong>
+        接下來的四章，神一連問了約伯七十幾個問題——而祂<strong>一句都沒有解釋約伯的苦難</strong>。一句都沒有。祂沒有提天上那場對話，沒有提撒但，沒有告訴約伯這一切是怎麼開始的。讀者知道原因，但約伯到最後都不知道。
+      </div>
+
+      <p>那神問了些什麼呢？祂問的全是一些看起來完全不相干的事：我立大地根基的時候，你在哪裡？你曾進到海源，或在深淵的隱密處行走嗎？你能繫住昴星的結嗎？能解開參星的帶嗎？你知道山巖間野山羊幾時生產嗎？母獅子抓取獵物的時候，是誰為牠預備食物？誰為雨水分道？誰為雷電開路？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我立大地根基的時候，你在哪裡呢？你若有聰明，只管說吧</p>
+        <p class="scripture-ref">約伯記 三十八章四節</p>
+      </div>
+
+      <p>第一次讀的時候，我覺得這幾乎是不近人情的。一個人失去了十個孩子，坐在灰堆裡，而神跑來問他知不知道野山羊什麼時候生產？</p>
+
+      <p>可是讀久了，我慢慢明白這一連串問題在做什麼。<strong>神不是在羞辱約伯，也不是在轉移話題。祂是在做一件更深的事——祂在擴張約伯的視野。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔭</span>
+        神帶著約伯走了一圈：從大地的根基，到海的源頭；從昴星參星，到深谷裡沒有人看見的野山羊生產。這些地方，全都是<strong>沒有人在場、沒有人知道、也沒有人管理，卻依然被妥善照顧著</strong>的角落。神像是在說：孩子，這個宇宙裡，有無數你完全不知道、卻一直被我細心看顧的事。你眼前這一件看不懂的事，也是其中之一。
+      </div>
+
+      <p>約伯最後的回應，非常耐人尋味。他沒有說「我懂了」，他說的是：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我從前風聞有你，現在親眼看見你</p>
+        <p class="scripture-ref">約伯記 四十二章五節</p>
+      </div>
+
+      <p>他要的是一個答案，得到的卻是一個「看見」。而那個看見，讓他不再需要那個答案了。</p>
+
+      <p>這件事給了我一個很重要的提醒：<strong>神的智慧，不是一份可以下載給我們的答案清單。</strong>那麼，聖經究竟怎麼描述這位神的智慧？下一篇，我們把它拆成三個具體的層面來看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個層面：知萬事、知人心、知未來</h2>
+      <p class="card-hook">而「知道」和「智慧」，其實不是同一件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經談神的智慧，有一句總綱，出自保羅的筆下。那不是一句冷靜的陳述，而是一聲忍不住的驚嘆：</p>
+
+      <div class="big-quote">
+        深哉！神豐富的智慧和知識！<br>他的判斷何其難測！<br>他的蹤跡何其難尋！
+        <cite>— 羅馬書 十一章三十三節</cite>
+      </div>
+
+      <p>保羅接著問：「誰知道主的心？誰作過他的謀士呢？」——這兩個反問，答案都是：沒有人。神從來不需要顧問。祂做每一個決定的時候，沒有徵詢過任何人的意見，也不需要。</p>
+
+      <p>而這份「豐富淵深、無法測度」的智慧，聖經具體指出了三個層面：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 祂知道萬事</span>
+          沒有一件事在祂的認識之外。過去的、現在的、大的、小的、被人記得的、被人遺忘的。祂的知識不是「累積」來的，祂從來不需要學習，也從來不會忘記。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 祂知道人心</span>
+          這一層更深。祂不只知道你做了什麼，祂知道你為什麼做。祂看得見動機、看得見那些連你自己都還沒察覺的東西。（來四 12～13）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 祂知道未來的事</span>
+          時間對祂不構成遮蔽。將要發生的事，在祂眼中和已經發生的事一樣清楚。（賽四四 6～7）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第二層——「知道人心」——聖經用了一個相當強烈的意象。希伯來書說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">並且被造的沒有一樣在他面前不顯然的；原來萬物在那與我們有關係的主眼前，都是赤露敞開的</p>
+        <p class="scripture-ref">希伯來書 四章十三節</p>
+      </div>
+
+      <p>「赤露敞開」這四個字，原文用的字（tetrachēlismena）字根與「頸項」有關。學者對這個意象的來源有不同看法：有人認為它來自摔角場——選手被扳住頸項、完全制伏、動彈不得；也有人認為它來自獻祭——祭牲的頸項被向後扳開，內臟完全暴露在祭司眼前。無論是哪一個畫面，指向的都是同一件事：<strong>在祂面前，沒有任何角度是遮得住的。</strong></p>
+
+      <p>而在這句話之前，經文說神的道「連心中的思念和主意都能辨明」。「思念」與「主意」——一個是流動的念頭，一個是深藏的意圖。連這兩層都被剖開了。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>不過，這一篇真正的重點在這裡。前面講的三層，嚴格來說都屬於「知識」——是<strong>資訊</strong>的完全。但聖經說神有「智慧和知識」，這是兩個詞。而智慧，比知識更進一步。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍅</span>
+        有一句流傳很廣的話說得極好：<strong>知識，是知道番茄在植物學上是一種水果；智慧，是知道不要把番茄放進水果沙拉裡。</strong>知識關乎「是什麼」，智慧關乎「該怎麼安排才最好」。
+      </div>
+
+      <p>所以神的智慧，不是一部容量無限的資料庫。祂不只是「知道所有的事」，祂是<strong>知道如何把所有的事，安排到最好的結局。</strong>這兩者的差距，就是羅馬書八章二十八節那句話的分量：「萬事都互相效力，叫愛神的人得益處。」</p>
+
+      <p>請注意那個「互相效力」。它的意思不是「每一件事本身都是好的」——聖經從不說苦難是好事。它的意思是：那位智慧的神，能把一堆看起來毫不相干、甚至彼此矛盾的線頭，織成一塊完整的布。而<strong>織的那個人，才知道每一根線的位置。</strong></p>
+
+      <p>那麼，聖經裡的「智慧」這個詞，本身到底是什麼形狀的？下一篇，我們回到原文去看，你會發現一個滿意外的答案。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原來聖經裡的「智慧」，最早是一種手藝</h2>
+      <p class="card-hook">不是坐著沉思的，是動手做出來的</p>
+    </div>
+    <div class="card-body">
+
+      <p>我第一次查「智慧」的希伯來原文時，被嚇了一跳。因為我原本以為它會是一個哲學性的字——結果它最基本的意思，是<strong>工匠的技藝</strong>。</p>
+
+      <div class="term-box">
+        <div class="term-original">Chokmah<br>希伯來文</div>
+        <div class="term-desc">「智慧」。它在舊約裡第一次被大量使用，是在出埃及記講建造會幕的段落。神說比撒列「被神的靈充滿，使他有智慧（chokmah）、有聰明、有知識，能做各樣的工」——雕刻、鑲嵌、金工、紡織。所以聖經裡的智慧，原初的形狀是<strong>「知道怎麼把一件東西做得又對又美」</strong>的那種本事。</div>
+      </div>
+
+      <p>這個發現改變了我的整個理解。希伯來人的智慧觀，不是坐在書房裡推演的，而是<strong>握在手上、看得見成果的</strong>。一個有智慧的人，不是能講出高深道理的人，而是能把生活過好、把事情做對、把東西做美的人。</p>
+
+      <p>順著這條線去讀箴言第八章，就會讀出味道來。那一章把「智慧」擬人化，讓她開口說話。她說自己「在耶和華造化的起頭，在太初創造萬物之先，就有了我」，然後說了一句非常美的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">那時，我在他那裡為工師，日日為他所喜愛，常常在他面前踴躍</p>
+        <p class="scripture-ref">箴言 八章三十節</p>
+      </div>
+
+      <p>「工師」——又是工匠的意象。神創造世界，不是像工程師執行藍圖那樣冷冰冰地完成，經文說祂身邊有智慧「日日踴躍」。<strong>神的智慧，帶著一種創作者的喜悅。</strong>這個世界不只是被算出來的，它是被欣賞著造出來的。</p>
+
+      <div class="card-divider"></div>
+
+      <p>接著，這個概念進入希臘與拉丁世界，重心又開始位移：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>語言／傳統</th>
+            <th>用詞</th>
+            <th>語意重心</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">希伯來文<br>舊約</td>
+            <td>Chokmah</td>
+            <td>工匠的技藝、生活的本事。<strong>會做</strong>——把事情做對、做美、做出來。</td>
+          </tr>
+          <tr>
+            <td class="src">希臘文<br>哲學傳統</td>
+            <td>Sophia</td>
+            <td>沉思性的智慧、對真理的理論性把握。<strong>會想</strong>——重心從手轉移到頭腦。</td>
+          </tr>
+          <tr>
+            <td class="src">希臘文<br>新約</td>
+            <td>Sophia</td>
+            <td>借用了希臘的字，卻灌回希伯來的內涵。保羅刻意用它來對比「世人的智慧」，並宣告十字架才是神的智慧。</td>
+          </tr>
+          <tr>
+            <td class="src">拉丁文</td>
+            <td>Sapientia</td>
+            <td>字源與 sapere（品嚐）相關——「嚐得出滋味的知識」。不只是知道，而是體會過。這個字保留了一點希伯來式的溫度。</td>
+          </tr>
+          <tr>
+            <td class="src">中文</td>
+            <td>智慧</td>
+            <td>「智」是知，「慧」是明辨。兩字合起來，兼有「知道」與「分辨得清」的意思，其實相當貼近原意。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        整段譯史裡最戲劇性的一幕，發生在哥林多前書。當時的希臘世界把 sophia 捧得極高——智慧就是雄辯、是哲學、是能把道理說得漂亮。而保羅走進這座城，說了一句幾乎是挑釁的話：「猶太人是要神蹟，希臘人是求智慧；我們卻是傳釘十字架的基督……在希臘人為愚拙。」<br><br>然後他反手把定義翻了過來：「但在那蒙召的……基督總為神的能力，神的智慧。」<strong>一個被釘死的人，就是神的智慧本身。</strong>這在當時是完全無法理解的說法——而這正是保羅要說的重點：神的智慧，本來就不在人的評分表上。
+      </div>
+
+      <p>所以歌羅西書才會說，「所積蓄的一切智慧知識，都在他裡面藏著」。聖經對「神的智慧是怎樣的」這個問題，最終給的不是一份定義，而是<strong>一個人</strong>。</p>
+
+      <p>下一篇，我們回到保羅那聲「深哉」，看看他到底是在讚嘆什麼——那個上下文，比我原本以為的震撼得多。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「深哉」——那一聲讚嘆前面，是三章難題</h2>
+      <p class="card-hook">保羅不是在讚美一個概念，他是在論證卡住之後跪了下來</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們常常單獨引用羅馬書十一章三十三節，把它當成一句優美的讚美詩。但如果你回頭看它前面那三章，你會發現這聲讚嘆的重量完全不同。</p>
+
+      <p>羅馬書第九到十一章，是保羅處理他一生中最痛的一個問題：<strong>神的選民以色列，為什麼大多數拒絕了彌賽亞？</strong>神的應許失效了嗎？他為這件事「心裡時常傷痛」，甚至說出「就是自己被咒詛，與基督分離，我也願意」這樣的話。</p>
+
+      <p>他寫了整整三章，從神的揀選講到餘民、講到橄欖樹上被折下的枝子與被接上的野枝、講到外邦人的得救如何反過來激動以色列。他一層一層地推，推到最後，他看見了一個完全出乎他意料的圖案——神竟然用以色列的暫時剛硬，打開了外邦人的門；又要用外邦人的蒙恩，把以色列帶回來。</p>
+
+      <div class="highlight">
+        <strong>「深哉」是一聲什麼樣的驚嘆</strong>
+        看清那個圖案的那一刻，保羅的論證停住了。他沒有辦法再往下推，因為那個設計已經超出他能分析的範圍。於是他做了一件神學家很少做的事——<strong>他不寫了，他讚嘆起來。</strong><br><br>「深哉，神豐富的智慧和知識！他的判斷何其難測！他的蹤跡何其難尋！」這不是一句抒情。這是一個世界頂尖的思想家，在自己的推理走到盡頭時，發出的真實反應。
+      </div>
+
+      <p>我覺得這給了我們一個很好的示範：<strong>承認「測不透」，不是放棄思考，而是思考到了盡頭時，最誠實的姿態。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>接著我想處理三個常被問到的難點。</p>
+
+      <div class="term-box">
+        <div class="term-original">Kardiognōstēs<br>知心者</div>
+        <div class="term-desc">使徒行傳裡，門徒要選出接替猶大的人時，這樣禱告：「主啊，你知道萬人的心。」原文是一個複合字，直譯就是「知心者」。這個稱呼在整本聖經只出現兩次，兩次都與「揀選」有關——當人無法判斷誰更適合時，他們把決定權交給那位看得見人心的。<strong>知人心，在聖經裡從來不是一個恐怖的屬性，而是一個可以倚靠的屬性。</strong></div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">預知<br>Foreknowledge</div>
+        <div class="term-desc">賽四四章裡，神拿「預言」作為自己是真神的公開檢驗：「讓他將未來的事和必成的事說明。」祂邀請人來驗證——假神做不到這件事。而在新約，「預知」（proginōskō）帶著關係性的意味，不只是「事先知道會發生什麼」，更是「預先就認定了、看顧了」。</div>
+      </div>
+
+      <p>由此就帶出那個經典的難題：<strong>如果神預先知道我會怎麼選，那我還算自由嗎？</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕰️</span>
+        奧古斯丁的回答很漂亮：我清楚記得昨天發生的每一件事，但我的記憶並沒有強迫昨天發生。知道，不等於造成。神對未來的看見，之所以不構成強迫，是因為祂並不是站在時間的這一端「預測」，而是站在時間之外「看見」——對祂而言，那不是預報，那是現場。
+      </div>
+
+      <p>最後一個難點：<strong>既然祂什麼都知道，為什麼不多告訴我一點？</strong>關於這一點，摩西在申命記裡留下了一句我覺得極其寶貴的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">隱祕的事是屬耶和華我們神的；惟有明顯的事是永遠屬我們和我們子孫的，好叫我們遵行這律法上的一切話</p>
+        <p class="scripture-ref">申命記 二十九章二十九節</p>
+      </div>
+
+      <p>這節經文畫了一條很清楚的界線。<strong>有一部分，神已經明明白白地啟示了——那是給我們的，而且是要我們去遵行的。另有一部分，祂沒有說——那部分屬於祂。</strong></p>
+
+      <p>這條界線是一種保護。它讓我們不必為那些我們無力承擔的事負責，也讓我們不能用「我不明白」當作不遵行「我已明白」的藉口。約伯不知道天上發生了什麼，但他知道該怎麼活；我們也一樣。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">已啟示的智慧</span>
+          聖經上明明白白寫的：祂的心意、祂的誡命、祂的救恩之路。這一部分，是給我們遵行的，不是給我們爭論的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">隱藏的智慧</span>
+          那些我們問了也得不到答案的「為什麼」。這一部分屬於神——不是因為祂吝嗇，而是因為我們現在還承載不起。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">將來要明白的</span>
+          「我們如今彷彿對著鏡子觀看，模糊不清，到那時，就要面對面了。」（林前十三 12）現在的不明白，是暫時的狀態，不是永久的判決。
+        </div>
+      </div>
+
+      <p>最後一篇，我想帶你回到希伯來書那句「赤露敞開」——因為那句話的下一節，是整本聖經裡我最喜歡的轉折之一。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">被完全看透的地方，也是最安全的地方</h2>
+      <p class="card-hook">寫給那個還在等一個「為什麼」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們回到希伯來書第四章那句話：「萬物在那與我們有關係的主眼前，都是赤露敞開的。」</p>
+
+      <p>老實說，這句話單獨讀起來是可怕的。被一位無所不知的神完全看透——我所有的自私、所有的偽裝、所有連我自己都不願意承認的動機，全部攤在祂面前，一個角落都藏不住。如果聖經停在這裡，那我們只能逃。</p>
+
+      <p>但聖經沒有停在這裡。緊接著的下一節，作者說了一句話，讓整段的方向完全翻轉——</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們既然有一位已經升入高天尊榮的大祭司，就是神的兒子耶穌，便當持定所承認的道。因我們的大祭司並非不能體恤我們的軟弱，他也曾凡事受過試探，與我們一樣，只是他沒有犯罪</p>
+        <p class="scripture-ref">希伯來書 四章十四至十五節</p>
+      </div>
+
+      <p>你看見那個銜接了嗎？<strong>「你被完全看透了」，緊接著是「而那位看透你的，完全體恤你」。</strong></p>
+
+      <p>這兩句話必須放在一起讀。單有前一句，是審判；單有後一句，是廉價的安慰。兩句放在一起，才是福音——那位知道你一切的，正是那位為你捨命的。祂不是遠遠地看穿你，祂是走進你的處境裡，親身經歷過你的軟弱之後，才看穿你的。</p>
+
+      <p>所以這段話的結論，不是「你逃不掉」，而是：</p>
+
+      <div class="big-quote">
+        所以，我們只管坦然無懼地<br>來到施恩的寶座前
+        <cite>— 希伯來書 四章十六節</cite>
+      </div>
+
+      <p><strong>坦然無懼。</strong>在那位知道你一切的神面前，坦然無懼。這是全世界最不可思議的一種安全感——因為它不建立在「祂還不知道我有多糟」的僥倖上，而建立在「祂全都知道了，而祂仍然為我開了門」的事實上。</p>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        回到第一篇那架顛簸的飛機。<br><br>我不會告訴你，你那件想不通的事一定有一天會水落石出。有些事，可能真的要等到面對面的那一天。<br><br>但我可以告訴你，經過這一趟，我心裡踏實了很多。因為我知道了三件事：<strong>祂知道萬事</strong>，所以沒有一個細節被漏掉；<strong>祂知道人心</strong>，所以我不需要向祂解釋我自己，也不需要偽裝；<strong>祂知道未來</strong>，所以此刻這段我看不懂的路，在祂眼中早已經走到了終點。<br><br>駕駛艙裡有人。而且，祂知道祂在做什麼。
+      </div>
+
+      <p>約伯到最後都沒有得到他要的解釋。但他說：「我從前風聞有你，現在親眼看見你。」——他失去了答案，卻得著了神自己。</p>
+
+      <p>願你在還沒看懂的日子裡，也能得著這樣的看見。不是看懂了全局才安心，而是因為看見了那位掌舵的，所以在還看不懂的時候，也能安心。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  測不透的智慧 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神的德性 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>祂是<span>怎樣的一位</span></h1>
+  <p class="subtitle">認識祂的能力，不等於認識祂的品格</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我花了很多年確認祂「做得到」</h2>
+      <p class="card-hook">卻很少去問，祂到底是「什麼樣的一位」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>回頭看我信主的頭幾年，我發現自己的注意力放得很偏。</p>
+
+      <p>我很在意神能不能。祂能不能醫治？能不能開路？能不能讓那件事翻轉？我讀見證、聽講道、抓應許，全都圍繞著「能力」這件事打轉。</p>
+
+      <p>可是我幾乎沒有認真問過另一個問題：<strong>祂是什麼樣的一位？</strong></p>
+
+      <div class="highlight">
+        <strong>而這兩件事，其實是完全不同的問題</strong>
+        你可以知道一個人非常有錢、非常有權、手上握有你完全無法抗衡的資源——卻完全不知道他心地如何。這兩種認識之間，隔著一道很深的鴻溝。<br><br>而在這道鴻溝上，人是不敢睡覺的。<strong>一位全能、卻不知道好不好的神，是宇宙裡最恐怖的一件事。</strong>
+      </div>
+
+      <p>後來我慢慢明白，我禱告時那種說不出來的緊繃，根源就在這裡。我相信祂做得到，但我不確定祂是不是「站在我這邊」。所以我的禱告總帶著一點討好、一點小心翼翼、一點「先說好話再提要求」的算計。</p>
+
+      <p>而更麻煩的是——當聖經沒有清楚告訴我祂的品格時，我腦中的空白會自動被別的東西填滿。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        我後來發現，我對神品格的想像，很多是<strong>從別的地方偷來的</strong>。從我父親對我的方式，從學生時代那個嚴厲的老師，從一個曾經讓我很受傷的權威。我把這些人的臉，悄悄貼在了神的身上。<br><br>所以我以為祂大概是嚴格的、不容易滿意的、隨時準備指出我哪裡又不夠好的。這些從來沒有人教過我，但我就是這樣感覺。
+      </div>
+
+      <p>所以「神的德性」這個題目，聽起來像是一份要背誦的清單，其實它是整個信仰能不能安放下來的關鍵。因為<strong>你怎麼理解祂的品格，就會怎麼站在祂面前。</strong></p>
+
+      <p>而讓我整個人鬆下來的，是有一天讀到一段經文——那段經文，是神親口為自己下的定義。而祂選擇宣告這段話的時機，出乎我意料。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">神親口為自己下的那段定義</h2>
+      <p class="card-hook">而祂選在人最不配的時候說出口</p>
+    </div>
+    <div class="card-body">
+
+      <p>出埃及記三十四章，是整本舊約裡最重要的一段自我啟示。</p>
+
+      <p>先看它的時機。前一章，百姓才剛鑄了金牛犢。那不是一個小過失——那是在西奈山下、在剛剛聽見誡命的餘音裡、在神親自與他們立約沒多久之後，他們就造了一隻牛，指著它說「這是領你出埃及地的神」。摩西氣得摔碎了石版。三千人在那天倒下。</p>
+
+      <p>就在這一切之後，摩西上山重新求告。他求神顯出榮耀給他看。而神的回應是：我要「宣告耶和華的名」。</p>
+
+      <p>然後，經文說耶和華在雲中降臨，與摩西一同站在那裡，宣告了這段話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶和華，耶和華，是有憐憫有恩典的神，不輕易發怒，並有豐盛的慈愛和誠實，為千萬人存留慈愛，赦免罪孽、過犯，和罪惡，萬不以有罪的為無罪，必追討他的罪</p>
+        <p class="scripture-ref">出埃及記 三十四章六至七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>請先注意時機</strong>
+        神選擇在百姓犯了最嚴重的罪之後，宣告自己的品格。<br><br>如果換成我來安排，我大概會讓這段話出現在一個榮耀的時刻——過紅海之後、或者進迦南的那天。可是神不是。<strong>祂在人最不配聽見的那一刻，說出了自己最溫柔的自我描述。</strong><br><br>這件事本身，就已經是內容的一部分了。
+      </div>
+
+      <p>這段話在猶太傳統中被稱為「神的十三屬性」，而它在整本舊約裡的地位極其特殊——<strong>它是被後續經文引用最多的一段自我啟示。</strong></p>
+
+      <p>摩西在民數記為百姓代求時引用它；尼希米在悔改的禱告中引用它；詩篇至少四處引用它；約珥書呼籲百姓歸向神時引用它。連約拿都引用了它——而且是在生氣的時候：「我知道你是有恩典、有憐憫的神，不輕易發怒，有豐盛的慈愛，並且後悔不降所說的災，所以我早就逃往他施去。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        你能想像嗎？約拿之所以逃跑，正是因為他<strong>太清楚</strong>神的品格了。他知道只要尼尼微一悔改，神就會饒恕。他背得出這段經文，而他不喜歡它應用在敵人身上。<br><br>這段話在以色列人心中的分量，大概就像一個孩子背得出父親最常說的那句話一樣熟。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這段宣告裡，還藏著一個很多人讀過去的轉折。</p>
+
+      <p>前半段是滿滿的恩慈：有憐憫、有恩典、不輕易發怒、豐盛的慈愛和誠實、為千萬人存留慈愛、赦免罪孽過犯和罪惡。</p>
+
+      <p>然後，緊接著同一句話的後半——「<strong>萬不以有罪的為無罪，必追討他的罪。</strong>」</p>
+
+      <p>這不是兩段話，這是同一段。神在同一口氣裡，說了「我赦免」，也說了「我絕不當作沒發生」。</p>
+
+      <div class="highlight">
+        <strong>第一次讀，我覺得這很矛盾</strong>
+        赦免和追討，怎麼可能同時？如果赦免了，怎麼還追討？如果追討了，那赦免在哪裡？<br><br>但這個「矛盾」，其實正是整本聖經的核心張力。而它最後的解答，在一個十字架上。<br><br>我們會走到那裡。但在那之前，得先把神的德性一項一項看清楚。
+      </div>
+
+      <p>聖經記載神的德性，主要有四項：<strong>聖潔、慈愛、公義、信實。</strong>下一篇，我們一根一根把這四根柱子立起來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四根柱子，缺一根就會塌</h2>
+      <p class="card-hook">而它們不是四個部門，是同一位的四個面向</p>
+    </div>
+    <div class="card-body">
+
+      <p>照聖經記載，神的德性是這四樣：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、聖潔</span>
+          「耶和華啊，眾神之中，誰能像你？誰能像你——至聖至榮，可頌可畏，施行奇事？」（出十五 11）以賽亞見了主，喊的是「禍哉！我滅亡了！」（賽六 5）那聖者說：「你們將誰比我，叫他與我相等呢？」（賽四十 25）而祂雖住在至高至聖的所在，卻「與心靈痛悔謙卑的人同居」（賽五七 15）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、慈愛</span>
+          「有豐盛的慈愛和誠實……赦免罪孽、過犯和罪惡。」（出卅四 6～7）詩篇一三六篇更是把這件事寫成了一首迴響：整整二十六節，每一節的下半句都是同一句——「因他的慈愛永遠長存」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、公義</span>
+          「他是磐石，他的作為完全；他所行的無不公平，是誠實無偽的神，又公義，又正直。」（申卅二 4）「我們若認自己的罪，神是信實的，是公義的，必要赦免我們的罪。」（約壹一 9）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、信實</span>
+          「你要知道耶和華你的神，他是神，是信實的神；向愛他、守他誡命的人守約，施慈愛，直到千代。」（申七 9）「神是信實的，必不叫你們受試探過於所能受的。」（林前十 13）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>在往下講之前，我要先強調一件很容易誤解的事：<strong>這四樣不是神的四個「部門」。</strong></p>
+
+      <p>我們很容易在腦中把神想成一個有多種心情的人——今天心情好，慈愛的那一面出來了；被惹惱了，公義的那一面就上場。這是把神想成了一個放大版的人。</p>
+
+      <div class="highlight">
+        <strong>神是純一的</strong>
+        神的每一個屬性，都是以其他所有屬性的方式運作的。<br><br>祂的慈愛是<strong>聖潔的</strong>慈愛——所以那不是縱容。<br>祂的公義是<strong>慈愛的</strong>公義——所以那不是報復。<br>祂的聖潔是<strong>信實的</strong>聖潔——所以標準不會今天一套、明天一套。<br>祂的信實是<strong>公義的</strong>信實——所以祂守的約，不會犧牲別人的公道。<br><br>這四樣不是四個開關，是同一道光的四種顏色。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>要體會為什麼四樣缺一不可，最快的方法是做一個思想實驗：<strong>把其中一根柱子抽掉，會發生什麼事？</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>如果缺了</th>
+            <th>會變成什麼樣的神</th>
+            <th>對人的後果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">缺慈愛</td>
+            <td>只有聖潔與公義的神：標準絕對，執行精準，毫無憐憫。</td>
+            <td>沒有一個人能站立。信仰只剩下恐懼。</td>
+          </tr>
+          <tr>
+            <td class="src">缺聖潔</td>
+            <td>只有慈愛的神：什麼都可以，什麼都無所謂。</td>
+            <td>罪失去了重量，救恩也就失去了意義——沒有病，還要醫生做什麼？</td>
+          </tr>
+          <tr>
+            <td class="src">缺公義</td>
+            <td>一位慈愛但不追討的神：所有的惡最後都一筆勾銷。</td>
+            <td>受害者的冤屈永遠沒有交代。這種「慈愛」，對被欺壓的人是二次傷害。</td>
+          </tr>
+          <tr>
+            <td class="src">缺信實</td>
+            <td>前面三樣都有，但不保證明天還在。</td>
+            <td>最可怕的一種。因為你永遠不知道今天成立的，明天算不算數。<strong>沒有信實，其餘三樣都不能倚靠。</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        四根柱子撐著同一個屋頂。抽掉任何一根，你得到的不是「少了一點的神」，而是<strong>一位完全不同、而且無法安身其下的神</strong>。<br><br>而我在第一篇說的那種緊繃，其實就是我心裡的那座建築少了柱子——我信祂聖潔、信祂公義，卻不太敢信祂的慈愛也是為我預備的。
+      </div>
+
+      <p>那麼，這四個中文詞的背後，原文究竟是什麼樣的畫面？下一篇，我們一個一個拆開來看——你會發現，每一個抽象名詞底下，都藏著一個非常具體的圖像。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">四個抽象名詞，底下藏著四個具體畫面</h2>
+      <p class="card-hook">希伯來人不太用概念思考，他們用圖像</p>
+    </div>
+    <div class="card-body">
+
+      <p>中文的「聖潔、慈愛、公義、信實」都是抽象名詞，讀起來像四種性質。但希伯來文不太這樣運作——每一個字底下，通常都有一個很實在的畫面。</p>
+
+      <div class="term-box">
+        <div class="term-original">Qadosh<br>聖潔</div>
+        <div class="term-desc">字根的意思是「<strong>切開、分別出來</strong>」。所以聖潔的第一層意思，不是「道德上很完美」，而是「<strong>完全不同、被分別開來的那一位</strong>」。祂不是我們這一類裡最好的一個，祂根本不在這一類裡。道德的完全，是這份「絕對他者」的結果，不是它的定義。</div>
+      </div>
+
+      <p>關於聖潔，有一個細節很值得知道。以賽亞書第六章裡，撒拉弗彼此呼喊：「聖哉！聖哉！聖哉！」——連續三次。</p>
+
+      <p>希伯來文沒有像英文那樣的比較級和最高級。要表達「最」，方法就是<strong>重複</strong>。說兩次是加強，說三次就是極致。而在整本聖經裡，<strong>只有「聖潔」這一個屬性，被這樣三重重複過。</strong>沒有「慈哉、慈哉、慈哉」，也沒有「義哉、義哉、義哉」。</p>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">Chesed<br>慈愛</div>
+        <div class="term-desc">這是舊約裡最難翻譯的一個字，沒有任何一種語言有完全對應的詞。它不是一般的愛（ahavah），而是<strong>「盟約中的信實之愛」</strong>——一種因為立過約、所以無論如何都不撤回的恩慈。英文譯者試過 lovingkindness、steadfast love、mercy，每一種都只抓到一部分。<br><br>中文的「慈愛」抓住了溫度，卻少了那份「約」的硬度。<strong>chesed 不是一時的心軟，而是一種咬著牙也要守住的愛。</strong></div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Tsedeq<br>公義</div>
+        <div class="term-desc">這個字最容易被華人讀者誤解。我們一聽「公義」，直覺想到的是「依法判罪、該罰就罰」。但希伯來文的公義，重心在於<strong>「使關係恢復到它應有的狀態」</strong>。<br><br>證據就在聖經自己的用法裡：舊約中「公義」常常與「拯救」並列出現——「除了我以外，再沒有公義的神，又有救主」（賽四五 21）。在希伯來的思維裡，<strong>公義與拯救不是對立的，而是同一件事的兩面。</strong></div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Emunah<br>信實</div>
+        <div class="term-desc">這個字的字根，和我們每次禱告最後說的「<strong>阿們</strong>」是同一個。原意是「穩固、可靠、支撐得住」。<br><br>它的具體畫面，是一隻手臂穩穩地托住嬰孩——出埃及記十七章那一幕，摩西的手發沉，亞倫和戶珥扶著他的手「穩住」，用的就是這個字根。<br><br>所以「信實」的畫面不是抽象的守信，而是<strong>「你可以整個人靠上去，而它不會塌」</strong>。</div>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>中文</th>
+            <th>原文</th>
+            <th>底下的畫面</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">聖潔</td>
+            <td>Qadosh</td>
+            <td>被切開、分別出來——完全的他者</td>
+          </tr>
+          <tr>
+            <td class="src">慈愛</td>
+            <td>Chesed</td>
+            <td>盟約裡不撤回的恩慈——說了就算數的愛</td>
+          </tr>
+          <tr>
+            <td class="src">公義</td>
+            <td>Tsedeq</td>
+            <td>使一切回到應有的位置——不只判罪，更是修復</td>
+          </tr>
+          <tr>
+            <td class="src">信實</td>
+            <td>Emunah</td>
+            <td>穩穩托住、不會塌——「阿們」的同源字</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        把四個畫面連起來讀，你會得到一個完全不同的感受：<br><br>那位<strong>完全超越、與一切受造截然不同</strong>的（聖潔），<br>用一種<strong>立了約就不撤回</strong>的愛（慈愛），<br>要把一切<strong>破碎的關係修復到它應有的樣子</strong>（公義），<br>而且這一切<strong>穩固到你可以把整個人的重量壓上去</strong>（信實）。<br><br>這不是四條抽象的教義，這是一位可以倚靠的位格。
+      </div>
+
+      <p>那麼，那個「赦免」與「必追討」的矛盾，最後是怎麼解開的？下一篇，我們去看四者匯合的那一點。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">四樣屬性，在一個地方交會</h2>
+      <p class="card-hook">「慈愛和誠實彼此相遇；公義和平安彼此相親」</p>
+    </div>
+    <div class="card-body">
+
+      <p>詩篇八十五篇有一節經文，歷代神學家反覆引用，稱它為「四屬性的相會」：</p>
+
+      <div class="big-quote">
+        慈愛和誠實彼此相遇，<br>公義和平安彼此相親
+        <cite>— 詩篇 八十五篇十節</cite>
+      </div>
+
+      <p>中世紀的講道傳統，據此發展出一個很有名的寓意故事。故事說，神有四個女兒——慈愛、真理、公義、平安。當人類墮落之後，她們在神面前爭論起來。</p>
+
+      <p>慈愛說：一定要救他，他已經夠慘了。<br>公義說：不可以。犯了罪就要承擔後果，否則律法算什麼？<br>真理站在公義這一邊：所說的話必須算數，不能有例外。<br>平安站在慈愛這一邊：若不饒恕，關係永遠無法恢復。</p>
+
+      <p>兩兩對立，僵持不下。故事的結局是：這場爭論，最後由聖子的到來解開——祂使四位姊妹在十字架前彼此親嘴。</p>
+
+      <div class="highlight">
+        <strong>這個故事雖然是寓意，但它抓住了真正的難題</strong>
+        我們常以為饒恕是一件簡單的事——不追究就好了嘛。<br><br>但只要你想過受害者的立場，就會知道「算了」從來不是解答。<strong>如果所有的惡最後都可以「算了」，那所有的受害者就都白受了。</strong>一位不追討的神，對曾經被踐踏的人來說，不是慈愛，是失職。<br><br>所以出埃及記三十四章那句「萬不以有罪的為無罪」，不是慈愛的例外條款，它是慈愛能夠成立的前提。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那麼解答在哪裡？羅馬書第三章，是整本聖經處理這個張力最密集的一段。保羅說，神設立耶穌作挽回祭——為什麼？</p>
+
+      <div class="scripture">
+        <p class="scripture-text">好在今時顯明他的義，使人知道他自己為義，也稱信耶穌的人為義</p>
+        <p class="scripture-ref">羅馬書 三章二十六節</p>
+      </div>
+
+      <p>請把這句話的兩半分開讀：</p>
+
+      <p><strong>「他自己為義」</strong>——罪被完整地處理了，沒有打折、沒有通融、沒有睜一隻眼閉一隻眼。公義完全滿足。</p>
+
+      <p><strong>「也稱信耶穌的人為義」</strong>——同時，罪人被赦免了、被接納了、被算為義。慈愛完全成就。</p>
+
+      <p>這兩件事同時成立，而且是在同一個事件裡成立的。這是十字架獨一無二的地方：<strong>它不是慈愛戰勝了公義，也不是公義向慈愛讓步，而是兩者在同一點上都得到了完全的滿足。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        法官若當庭釋放一個明顯有罪的人，我們不會說他慈愛，我們會說他瀆職。但如果這位法官宣判之後，脫下法袍，走下來替被告付清了全部的罰款——那才是公義與慈愛同時成立。<br><br>而十字架比這個比喻還要更進一步：付代價的不是「另一個人」，是神自己。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>理解了這一層，約翰壹書一章九節那句我們背得很熟的經文，讀起來就完全不同了：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們若認自己的罪，神是信實的，是公義的，必要赦免我們的罪，洗淨我們一切的不義</p>
+        <p class="scripture-ref">約翰壹書 一章九節</p>
+      </div>
+
+      <p>你注意到那個措辭有多驚人嗎？</p>
+
+      <p>赦免的理由，經文給的<strong>不是</strong>「神是慈愛的」——那是我們預期的答案。它給的是：「神是<strong>信實的</strong>，是<strong>公義的</strong>。」</p>
+
+      <div class="highlight">
+        <strong>為什麼公義會成為赦免的理由？</strong>
+        因為債已經付清了。<br><br>如果一筆債已經被人代償，那麼債主再去向原債務人追討，就不是公義，是不義。<strong>所以在十字架之後，赦免不是通融，赦免是公義的執行。</strong><br><br>而「信實」在這裡的意思是：祂說過的，祂就會做到。你認罪，祂赦免——這不是看祂當天心情，這是祂立過的約。<br><br>這節經文之所以有力，正是因為它不把你的赦免建立在「神今天願不願意心軟」上，而是建立在祂的公義與信實上。<strong>那是比心軟牢固得多的東西。</strong>
+      </div>
+
+      <p>把整個救恩攤開來看，四樣德性各自站在一個不可取代的位置上：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">聖潔 · 為什麼需要救恩</span>
+          若沒有那份絕對的聖潔，罪就只是「不太好的行為」，而不是一道真實的隔絕。是聖潔讓我們看見問題有多嚴重。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">公義 · 為什麼不能一筆勾銷</span>
+          罪必須被處理，不能被忽略。這保證了所有的不公，最終都會有交代。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">慈愛 · 為什麼祂願意付代價</span>
+          沒有任何外力逼祂這樣做。祂完全可以照著公義了結一切。祂沒有——這是 chesed。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">信實 · 為什麼你可以安心</span>
+          這份救恩不會因為你明天又跌倒而失效。「我們縱然失信，他仍是可信的，因為他不能背乎自己。」（提後二 13）
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後我想指出一件事，它常被忽略，卻很重要。</p>
+
+      <p>聖經從來沒有叫我們效法神的全能、全知、無所不在——那些屬性本來就不可能傳遞給受造者。但聖經一再叫我們效法祂的<strong>品格</strong>：</p>
+
+      <p>「你們要聖潔，因為我是聖潔的。」「你們要慈悲，像你們的父慈悲一樣。」「行公義，好憐憫，存謙卑的心，與你的神同行。」</p>
+
+      <p>換句話說：<strong>神的能力是我們倚靠的對象，神的德性是我們效法的方向。</strong>搞混這兩者，是很多屬靈追求走偏的起點——有人拼命想擁有能力，卻不在品格上下功夫。而聖經的重點，從來是後者。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你可以把整個重量，靠上去</h2>
+      <p class="card-hook">寫給那個心裡有個聲音說「祂大概已經對你失望了」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶利米哀歌是聖經裡最沉重的一卷書。它寫於耶路撒冷被毀之後——聖殿燒了，城牆倒了，百姓被擄，遍地是死屍。作者在廢墟中一句一句地哀哭。</p>
+
+      <p>然後，在全書最黑的正中央，第三章，他忽然轉了一個彎：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們不至消滅，是出於耶和華諸般的慈愛；是因他的憐憫不致斷絕。每早晨，這都是新的；你的誠實極其廣大！</p>
+        <p class="scripture-ref">耶利米哀歌 三章二十二至二十三節</p>
+      </div>
+
+      <p>「每早晨，這都是新的。」——這句話我們常常印在明信片上，配上溫暖的晨光。但你要記得它原本的位置：<strong>它是在一片焦土上寫下來的。</strong></p>
+
+      <p>作者不是因為情況好轉才這樣說。他四周什麼都沒有恢復。他之所以能這樣說，是因為他把眼光從「我的處境」移到了「祂的品格」上。<strong>處境會變，品格不會。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>而在日常的軟弱裡，保羅給了我們一句非常具體的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神是信實的，必不叫你們受試探過於所能受的；在受試探的時候，總要給你們開一條出路，叫你們能忍受得住</p>
+        <p class="scripture-ref">哥林多前書 十章十三節</p>
+      </div>
+
+      <p>注意這節經文的邏輯順序。它不是先說「你會撐得住」，而是先說<strong>「神是信實的」</strong>。你能撐住的理由，不在你的意志力，而在祂的品格。</p>
+
+      <p>還有那句「總要給你們開一條出路」——原文的「出路」是一個具體的詞，指山谷中的隘口，一條在看似無路的地形裡被打開的通道。<strong>不是把山移走，是在山裡開一條路。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        回到第一篇。我說過，我對神品格的想像，很多是從別的地方偷來的——從嚴厲的權威，從讓我受傷的關係，從那些讓我學會「要先夠好才會被接納」的經驗。<br><br>所以我心裡常常有一個聲音說：祂大概已經對你失望了。你這次真的做得太差了。<br><br>而我現在會做一件事：<strong>拿出埃及記三十四章跟那個聲音對質。</strong><br><br>因為那段話是神親口說的，而且——請記得那個時機——祂是在百姓造了金牛犢之後說的。祂在人最不配的那一刻，宣告自己「有憐憫、有恩典、不輕易發怒、有豐盛的慈愛和誠實」。<br><br>所以心裡那個聲音不是祂的。<strong>祂親口說過祂是誰，而祂說的跟那個聲音不一樣。</strong>
+      </div>
+
+      <div class="big-quote">
+        耶和華，耶和華，<br>是有憐憫有恩典的神，<br>不輕易發怒，<br>並有豐盛的慈愛和誠實
+        <cite>— 出埃及記 三十四章六節</cite>
+      </div>
+
+      <p>聖潔——所以祂值得你全然的敬畏。<br>慈愛——所以你可以坦然地靠近。<br>公義——所以你受過的委屈，終究會有交代。<br>信實——所以以上三樣，明天依然算數。</p>
+
+      <p>願你今天就把那個一直自己扛著的重量，整個放上去。因為那四根柱子，撐得住。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖潔 · 慈愛 · 公義 · 信實 · Threads Series
+</footer>
+
+</body>
+</html>

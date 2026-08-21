@@ -201,108 +201,6 @@
             letter-spacing: 1px;
         }
 
-        /* ── 單題閱讀模式 ── */
-        .reader-screen {
-            display: none;
-            flex: 1;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .reader-screen.active {
-            display: flex;
-        }
-        .reader-header {
-            background: white;
-            border-bottom: 1px solid rgba(26,18,8,0.15);
-            padding: 8px 24px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
-        }
-        .reader-header .q-num {
-            font-family: 'Cinzel', serif;
-            font-size: 10px;
-            color: var(--gold);
-            letter-spacing: 2px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .reader-header .q-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--ink);
-            line-height: 1.4;
-        }
-        .reader-iframe {
-            flex: 1;
-            border: none;
-            background: var(--parchment);
-        }
-        .reader-bottom-nav {
-            background: rgba(26, 18, 8, 0.97);
-            border-top: 1px solid rgba(201,168,76,0.25);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 24px;
-            flex-shrink: 0;
-        }
-        @media (max-width: 600px) {
-            .reader-header { padding: 14px 16px 10px; }
-            .reader-header .q-title { font-size: 14px; }
-        }
-
-        /* ── 底部導航按鈕 ── */
-        .bottom-nav {
-            background: rgba(26, 18, 8, 0.97);
-            border-top: 1px solid rgba(201,168,76,0.25);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 24px;
-            flex-shrink: 0;
-        }
-        .bottom-nav.hidden { display: none; }
-
-        .nav-btn {
-            background: transparent;
-            border: 1px solid rgba(201,168,76,0.45);
-            color: var(--parchment);
-            font-family: 'Noto Serif TC', serif;
-            font-size: 12px;
-            letter-spacing: 1px;
-            padding: 7px 18px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        .nav-btn:hover:not(:disabled) {
-            background: rgba(201,168,76,0.15);
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-        .nav-btn:disabled {
-            opacity: 0.25;
-            cursor: default;
-        }
-        .nav-btn.home-btn {
-            border-color: rgba(201,168,76,0.6);
-            color: var(--gold);
-        }
-        .nav-btn.home-btn:hover {
-            background: rgba(201,168,76,0.2);
-        }
-        .nav-pos {
-            color: rgba(247,240,227,0.35);
-            font-size: 11px;
-            letter-spacing: 1px;
-            min-width: 90px;
-            text-align: center;
-        }
-
         /* ── 手機響應式 ── */
         @media (max-width: 600px) {
             .main-nav { justify-content: flex-start; overflow-x: auto; }
@@ -312,15 +210,13 @@
             .content-area { padding: 24px 16px; }
             .welcome-screen h1 { font-size: 24px; }
             .chapter-cards { grid-template-columns: 1fr; }
-            .nav-btn { font-size: 11px; padding: 6px 12px; }
-            .nav-pos { min-width: 60px; font-size: 10px; }
         }
     </style>
 </head>
 <body>
 
     <!-- 大主題 Tab -->
-    <nav class="main-nav" id="main-nav-bar">
+    <nav class="main-nav">
         <div class="nav-tab active" data-chapter="home">初信造就</div>
         <div class="nav-tab" data-chapter="ch1">Chapter 1 從罪人到聖徒</div>
         <div class="nav-tab" data-chapter="ch2">Chapter 2 三合一的神</div>
@@ -338,25 +234,7 @@
     </div>
 
     <!-- 內容 -->
-    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-
-        <!-- 閱讀模式（單題 iframe） -->
-        <div class="reader-screen" id="reader-screen">
-            <div class="reader-header">
-                <div class="q-num" id="reader-num"></div>
-                <div class="q-title" id="reader-title"></div>
-            </div>
-            <iframe class="reader-iframe" id="reader-iframe" src="about:blank"></iframe>
-            <div class="reader-bottom-nav">
-                <button class="nav-btn" id="reader-btn-prev" onclick="navigateQ(-1)" disabled>← 上一題</button>
-                <button class="nav-btn home-btn" onclick="closeReader()">⌂ 回列表</button>
-                <span class="nav-pos" id="reader-pos"></span>
-                <button class="nav-btn" id="reader-btn-next" onclick="navigateQ(1)" disabled>下一題 →</button>
-            </div>
-        </div>
-
-        <!-- 一般內容區 -->
-        <main class="content-area" id="content-area">
+    <main class="content-area" id="content-area">
 
         <!-- 首頁 -->
         <div class="welcome-screen" id="welcome-screen">
@@ -396,16 +274,6 @@
         </div>
 
     </main>
-
-    </div><!-- end flex wrapper -->
-
-    <!-- 底部導航 -->
-    <div class="bottom-nav hidden" id="bottom-nav">
-        <button class="nav-btn" id="btn-prev" onclick="navigateSub(-1)" disabled>← 上一節</button>
-        <button class="nav-btn home-btn" onclick="switchChapter('home')">⌂ 回首頁</button>
-        <span class="nav-pos" id="nav-pos"></span>
-        <button class="nav-btn" id="btn-next" onclick="navigateSub(1)" disabled>下一節 →</button>
-    </div>
 
     <script>
     // ── 資料結構：章節 → 中主題 → 小主題 ──
@@ -949,7 +817,7 @@
 		{
 		  num: '73',
 		  title: '「彌賽亞」或「耶穌」意思是甚麼？',
-		  desc: '「彌賽亞」是希伯來字，「耶穌」是希臘字，發音不同，意義卻相同。 意思是「受膏者」或「受膏君」。 因為神以聖靈和能力膏主耶穌，立祂為中保 —— 先知、祭司、君主（路四 17～19；徒十 36～43）。',
+		  desc: '「彌賽亞」是希伯來字，「基督」是希臘字，發音不同，意義卻相同。 意思是「受膏者」或「受膏君」。 因為神以聖靈和能力膏主耶穌，立祂為中保 —— 先知、祭司、君主（路四 17～19；徒十 36～43）。',
 		  href: 'q73.html'
 		},
 		{
@@ -993,7 +861,7 @@
 	  		{
 		  num: '80',
 		  title: '耶穌為甚麼必須被釘於十字架？',
-		  desc: '耶穌被釘十字架是神的預言（徒二：23），為要親身擔當我們的罪混血、捨命（彼前二：24；賽五三：4～6），也要藉著死與復活來敗壞魔鬼（來二：14）。',
+		  desc: '耶穌被釘十字架是神的預言（徒二：23），為要親身擔當我們的罪，流血、捨命（彼前二：24；賽五三：4～6），也要藉著死與復活來敗壞魔鬼（來二：14）。',
 		  href: 'q80.html'
 		},
 		{
@@ -1017,7 +885,7 @@
 		{
 		  num: '84',
 		  title: '耶穌復活，與我們有甚麼關係？',
-		  desc: '耶穌復活，與基督徒靈命的開始、發展、以及登峰造極，都有重要的關係：<br>一、奇妙的重生 —— 重生、得救、被稱為義，地位上的成聖（彼前一 3～4；釋十 9；四 25；林前六 11）；<br>二、超然的割禮 —— 不是人手所行的割禮，乃是脫去肉體情慾的割禮（西二 11～12）；<br>三、「基督」的生活 —— 基督在裡面活著，比律法之下的生活，遠勝千倍（加二 19～20；弗三 17；西一 27）；<br>四、莫大的能力 —— 勝過各種困難、失望、痛苦、危險的力量（林後四 8～10）；<br>五、榮耀的指望 —— 更美的復活，或奇妙的變化（林前十五 50～54）。',
+		  desc: '耶穌復活，與基督徒靈命的開始、發展、以及登峰造極，都有重要的關係：<br>一、奇妙的重生 —— 重生、得救、被稱為義，地位上的成聖（彼前一 3～4；羅十 9；羅四 25；林前六 11）；<br>二、超然的割禮 —— 不是人手所行的割禮，乃是脫去肉體情慾的割禮（西二 11～12）；<br>三、「基督」的生活 —— 基督在裡面活著，比律法之下的生活，遠勝千倍（加二 19～20；弗三 17；西一 27）；<br>四、莫大的能力 —— 勝過各種困難、失望、痛苦、危險的力量（林後四 8～10）；<br>五、榮耀的指望 —— 更美的復活，或奇妙的變化（林前十五 50～54）。',
 		  href: 'q84.html'
 		},
 		{
@@ -1121,7 +989,7 @@
 		{
 		  num: '100',
 		  title: '受聖靈的洗是不是必須說方言？',
-		  desc: '受聖靈的洗可以說說方言為絕對的憑據（徒十：46、47、十九：6）。保羅說：「我們要用方言禱告，也要用悟性禱告，方言禱告為主，悟性禱告為輔（林前十四：14、15），在教會中可以禁止說方言（林前十四：39）」。凡能說方言者，不一定是證明是被聖靈充滿，但藉著方言禱告可立即被聖靈充滿。因為不少是人為學來的方言，不具有造就之功效。',
+		  desc: '受聖靈的洗可以說說方言為絕對的憑據（徒十：46、47、十九：6）。保羅說：「我們要用方言禱告，也要用悟性禱告，方言禱告為主，悟性禱告為輔（林前十四：14、15），在教會中不可以禁止說方言（林前十四 39）」。凡能說方言者，不一定是證明是被聖靈充滿，但藉著方言禱告可立即被聖靈充滿。因為不少是人為學來的方言，不具有造就之功效。',
 		  href: 'q100.html'
 		},
 		{
@@ -1353,7 +1221,7 @@
 		{
 		  num: '136',
 		  title: '聖徒當怎樣使用自己的財富？',
-		  desc: '聖徒當記得他所有的一切，都是從天父來的。 天父所賜的財富，不是給聖徒驕養自己，必須按天父的心意去使用。 除了自己合宜的費用以外，聖徒當將財富，分配為下列的用途：<br>一、奉獻給神，為神的教會和神的工作（特別是傳福音的工作）之用，教會要有十一當納之項目，幫助全教會都能納十一或十一以上。<br>二、購濟窮人，特別是那些貧苦無助的人。 聖徒應當趁機會施捨，盡所能施捨，繼續不斷地施捨，但要透過教會而行之，不可自己施捨。',
+		  desc: '聖徒當記得他所有的一切，都是從天父來的。 天父所賜的財富，不是給聖徒驕養自己，必須按天父的心意去使用。 除了自己合宜的費用以外，聖徒當將財富，分配為下列的用途：<br>一、奉獻給神，為神的教會和神的工作（特別是傳福音的工作）之用，教會要有十一當納之項目，幫助全教會都能納十一或十一以上。<br>二、賙濟窮人，特別是那些貧苦無助的人。 聖徒應當趁機會施捨，盡所能施捨，繼續不斷地施捨，但要透過教會而行之，不可自己施捨。',
 		  href: 'q136.html'
 		},
 		{
@@ -1365,7 +1233,7 @@
 		{
 		  num: '138',
 		  title: '信徒幫補之功用如何？',
-		  desc: '一、購濟窮人是為神的憐憫，不單是由於自己的體恤；<br>二、鼓勵不足的信徒納上十一之後，再以信徒幫補補回。<br>三、救濟與傳福音必須分開，在這事上須求主賜智慧，不可自作聰明。',
+		  desc: '一、賙濟窮人是為神的憐憫，不單是由於自己的體恤；<br>二、鼓勵不足的信徒納上十一之後，再以信徒幫補補回。<br>三、救濟與傳福音必須分開，在這事上須求主賜智慧，不可自作聰明。',
 		  href: 'q138.html'
 		},
 	  ],
@@ -1378,7 +1246,7 @@
 		},
 		{
 		  num: '140',
-		  title: '在「主禱文」意思是主所教的禱告文，還是主自己的禱告文？',
+		  title: '「主禱文」意思是主所教的禱告文，還是主自己的禱告文？',
 		  desc: '「主禱文」意思是主所教的禱告文，不是主自己的禱告文，這是歷代教會的說法，聖經裏沒有這個名稱。',
 		  href: 'q140.html'
 		},
@@ -1409,13 +1277,13 @@
 		{
 		  num: '145',
 		  title: '聖經教訓我們怎樣禱告？',
-		  desc: '應當奉主的名禱告（約十四 13、十六 23～24），迫切禱告（羅十二 13；路十一 6～8），常常禱告（路廿一 36），儆醒禱告（太廿六 41；彼前四 7）不住禱告（帖前五 17）。 以上的禱告，以方言禱告為主，悟性的禱告為輔（林前十四：15）。<br>〔註：奉主的名禱告是向父禱告的，父是我們禱告的對象，有人禱告說：「奉你自己的名祈求」，與主的話不合。〕',
+		  desc: '應當奉主的名禱告（約十四 13、十六 23～24），迫切禱告（羅十二 12；路十一 5～8），常常禱告（路廿一 36），儆醒禱告（太廿六 41；彼前四 7），不住禱告（帖前五 17）。 以上的禱告，以方言禱告為主，悟性的禱告為輔（林前十四：15）。<br>〔註：奉主的名禱告是向父禱告的，父是我們禱告的對象，有人禱告說：「奉你自己的名祈求」，與主的話不合。〕',
 		  href: 'q145.html'
 		},
 		{
 		  num: '146',
 		  title: '「奉主耶穌的名祈求」是甚麼意思？',
-		  desc: '我們重生屬主的人照主所教導的，奉主耶穌的名向父祈求，父必因主耶穌的名成就我們所祈求的，賜我們所需要的，這是世人不可獲得的權利。 另一方面，這權利是不容濫用的，若是濫用，就有損無益了；因此，聖徒必須體會「奉主名祈求」的意思。 簡單說來，「奉主耶穌的名祈求」，就是「用主耶穌的名義祈求」，既然用主耶穌的名義祈求，那祈求的人，必須是「住在主裏面」的人，他所祈求的，也必須是主耶穌所喜悅的事。<br>〔註：住在主裏面有二意：一為得救屬主。二為行主所或遵主所命的。〕',
+		  desc: '我們重生屬主的人照主所教導的，奉主耶穌的名向父祈求，父必因主耶穌的名成就我們所祈求的，賜我們所需要的，這是世人不可獲得的權利。 另一方面，這權利是不容濫用的，若是濫用，就有損無益了；因此，聖徒必須體會「奉主名祈求」的意思。 簡單說來，「奉主耶穌的名祈求」，就是「用主耶穌的名義祈求」，既然用主耶穌的名義祈求，那祈求的人，必須是「住在主裏面」的人，他所祈求的，也必須是主耶穌所喜悅的事。<br>〔註：住在主裏面有二意：一為得救屬主。二為行主所行，遵主所命的。〕',
 		  href: 'q146.html'
 		},
 		{
@@ -1466,14 +1334,14 @@
 		},
 		{
 		  num: '154',
-		  title: '那麼，教會是不是應當舉行神醫佈道工作嗎？',
-		  desc: '教會應當舉行神醫佈道工作，以彰顯神的全能：一、主耶穌和祂的使徒門所行是以傳道為首，以醫病為輔；二、神醫醫病，在聖靈認為必要時，是用來證實福音，不是當作福音；三、神醫傳道必須著重在病與罪的關係，還沒有信主的病人，帶領信主之後才能為他作醫病的禱告。',
+		  title: '那麼，教會是不是應當舉行神醫佈道工作？',
+		  desc: '教會應當舉行神醫佈道工作，以彰顯神的全能：一、主耶穌和祂的使徒們所行是以傳道為首，以醫病為輔；二、神醫醫病，在聖靈認為必要時，是用來證實福音，不是當作福音；三、神醫傳道必須著重在病與罪的關係，還沒有信主的病人，帶領信主之後才能為他作醫病的禱告。',
 		  href: 'q154.html'
 		},
 		{
 		  num: '155',
 		  title: '聖經不是有「神醫」之真理麼？',
-		  desc: '是的，聖經有「神醫」之真理，是不可推毀磨滅的；但聖經中對於「神醫」之真理是對神的兒女們講的，決不是向不信的人講的。',
+		  desc: '是的，聖經有「神醫」之真理，是不可摧毀磨滅的；但聖經中對於「神醫」之真理是對神的兒女們講的，決不是向不信的人講的。',
 		  href: 'q155.html'
 		},
 		{
@@ -1505,7 +1373,7 @@
 	  		{
 		  num: '160',
 		  title: '通行於今日教會的異端、旁門、左道大約有幾？',
-		  desc: '一、不信派 —— 不信一部分聖經上的話，或不信神蹟，不信福音真理等（此派人士已大量地滲透各派教會之中）；<br>二、基督復臨安息日會 —— 拘泥聖經字句，謬解預言，將猶太教與基督教混合，律法與恩典，新約與舊約沒有分清楚；<br>三、耶穌基督末世聖徒教會 —— 又名「摩門會」，否認聖經所示有關基督的神性，以及「將來世界」的教義，適應屬肉體「基督徒」的口味，高舉摩門書與聖經平等；<br>四、守望台 —— 另名「耶和華見證人」，否認基督的神性、救贖、復活、再來，以及地獄或永刑、靈魂永存、未來天國等聖經要道；<br>五、天主教 —— 拜馬利亞及使徒們之雕像，可以拜祖先，公然犯上第二條誡命。<br>〔註：以上所舉，係犖犖大者，另有其他，請參閱書末參放書。〕',
+		  desc: '一、不信派 —— 不信一部分聖經上的話，或不信神蹟，不信福音真理等（此派人士已大量地滲透各派教會之中）；<br>二、基督復臨安息日會 —— 拘泥聖經字句，謬解預言，將猶太教與基督教混合，律法與恩典，新約與舊約沒有分清楚；<br>三、耶穌基督末世聖徒教會 —— 又名「摩門會」，否認聖經所示有關基督的神性，以及「將來世界」的教義，適應屬肉體「基督徒」的口味，高舉摩門書與聖經平等；<br>四、守望台 —— 另名「耶和華見證人」，否認基督的神性、救贖、復活、再來，以及地獄或永刑、靈魂永存、未來天國等聖經要道；<br>五、天主教 —— 拜馬利亞及使徒們之雕像，可以拜祖先，公然犯上第二條誡命。<br>〔註：以上所舉，係犖犖大者，另有其他，請參閱書末參考書。〕',
 		  href: 'q160.html'
 		},
 		{
@@ -1523,7 +1391,7 @@
 		{
 		  num: '163',
 		  title: '為甚麼我們的教會沒有「守安息日」？',
-		  desc: '一、因為安息日是神與以色列人中間的證據（結廿 20）。在聖經中神多次責備以色列人干犯安息日，卻未曾一次責備外邦人不守安息日；<br>二、安息日是基督的影兒（西二 19；參來四：9）另一個安息日 —— 主日是為新約之教會而設立；<br>三、使徒們和長老們聚會商議，交給外邦教會遵守的條規，並未提到安息日問題（徒十五 22～29、十六 4）而是七日的第一日。<br>四、古教父的著作，證明新約教會以七日的第一日為休息集會之日，並非由天主教教皇開始。而且聖經上也記載有此習慣（徒廿 5～12；林前十六 2）。新約聖經未言以主日代替安息日，也未曾勸告外邦信徒謹守安息日，顯見基督徒對主日的態度，並不是以律法為根據的。<br>〔註：古教父遺書中論主日的證據如下：',
+		  desc: '一、因為安息日是神與以色列人中間的證據（結廿 20）。在聖經中神多次責備以色列人干犯安息日，卻未曾一次責備外邦人不守安息日；<br>二、安息日是基督的影兒（西二 16～17；參來四 9）另一個安息日 —— 主日是為新約之教會而設立；<br>三、使徒們和長老們聚會商議，交給外邦教會遵守的條規，並未提到安息日問題（徒十五 22～29、十六 4）而是七日的第一日。<br>四、古教父的著作，證明新約教會以七日的第一日為休息集會之日，並非由天主教教皇開始。而且聖經上也記載有此習慣（徒廿 5～12；林前十六 2）。新約聖經未言以主日代替安息日，也未曾勸告外邦信徒謹守安息日，顯見基督徒對主日的態度，並不是以律法為根據的。<br>〔註：古教父遺書中論主日的證據如下：<br>1. 巴拿巴說：「我們遵守第八日為歡樂日，在那一天耶穌曾復活，顯現以後就升天。」；<br>2. 使徒遺訓第十四段有：「既然在主日聚集，就擘餅、祝謝……」等語；<br>3. 遮斯丁曾論到日曜日的會集及禮拜秩序，在他的對話錄中，也曾表揚第八日；<br>4. 主後一七〇年後，撒狄的監督米利透，曾著「主日論」一書；<br>5. 主後一七一年，哥林多的丟尼修，稱日曜日為主日，以後這名詞就極其通行了；<br>6. 特土良是第一個提及主日休息的作者。〕',
 		  href: 'q163.html'
 		},
 		{
@@ -1543,13 +1411,13 @@
 		{
 		  num: '166',
 		  title: '聖徒對家庭，應盡甚麼本分？',
-		  desc: '一、力除邪風陋俗（書廿四 15；徒十五 28～29）；<br>二、實行靈性教育，以身作則（伯一 5；徒十六 24）；<br>三、注意教育家庭的婚姻問題（申七 1～6；太十九 1～12；林前七章）。',
+		  desc: '一、力除邪風陋俗（書廿四 15；徒十五 28～29）；<br>二、實行靈性教育，以身作則（伯一 5；徒十六 31～34）；<br>三、注意教育家庭的婚姻問題（申七 1～6；太十九 1～12；林前七章）。',
 		  href: 'q166.html'
 		},
 		{
 		  num: '167',
 		  title: '聖徒在婚喪喜慶方面，當注意甚麼事？',
-		  desc: '一、不可與不信的人通婚（林後六 14～18；參申七 1～4）；<br>二、有喪喜事時，不得過分鋪張，無論錢財如何豐富，切不可任意花費，或作無意義的開支；<br>三、不可撥雜迷信的事體，如自己未甚熟識，應請教牧師、傳道師、或熱心的長老；<br>四、應採用教會儀式。<br>五、應事先通知教會負責人。',
+		  desc: '一、不可與不信的人通婚（林後六 14～18；參申七 1～4）；<br>二、有喪喜事時，不得過分鋪張，無論錢財如何豐富，切不可任意花費，或作無意義的開支；<br>三、不可摻雜迷信的事體，如自己未甚熟識，應請教牧師、傳道師、或熱心的長老；<br>四、應採用教會儀式。<br>五、應事先通知教會負責人。',
 		  href: 'q167.html'
 		},
 		{
@@ -1573,7 +1441,7 @@
 		{
 		  num: '171',
 		  title: '聖徒對國家有甚麼本分？',
-		  desc: '聖徒雖為天國國民，仍有地上的國籍，正如在自己的家中應當孝敬父母，在神的家中應當盡心敬愛天父一般。 聖徒對國家的責任，照聖經所說：<br>一、作良好公民（羅十三 1～8；彼前二 13～17）；<br>二、為國為民祈禱（提前二 1～3；參但九 3～19；尼一 4～11）；<br>三、愛國愛民（尼二 3～8；斯四 15～17）；<br>四、照神的旨意參加教國或建國的工作（尼三、四章）。',
+		  desc: '聖徒雖為天國國民，仍有地上的國籍，正如在自己的家中應當孝敬父母，在神的家中應當盡心敬愛天父一般。 聖徒對國家的責任，照聖經所說：<br>一、作良好公民（羅十三 1～8；彼前二 13～17）；<br>二、為國為民祈禱（提前二 1～3；參但九 3～19；尼一 4～11）；<br>三、愛國愛民（尼二 3～8；斯四 15～17）；<br>四、照神的旨意參加救國或建國的工作（尼三、四章）。',
 		  href: 'q171.html'
 		},
 		{
@@ -1794,119 +1662,6 @@
     // ── 狀態 ──
     let currentChapter = 'home';
 
-    // ── 全書扁平化（跨章節）小主題清單 ──
-    const chapterOrder = ['ch1', 'ch2', 'ch3', 'app'];
-    let globalSubs = []; // { key, label, range, chapterId, gIdx }
-    let globalSubIdx = 0;
-
-    function buildGlobalSubs() {
-        globalSubs = [];
-        chapterOrder.forEach(chId => {
-            structure[chId].groups.forEach((g, gIdx) => {
-                g.subs.forEach(s => {
-                    globalSubs.push({ key: s.key, label: s.label, range: s.range, chapterId: chId, gIdx });
-                });
-            });
-        });
-    }
-    buildGlobalSubs(); // 頁面載入時立即建立
-
-    // ── 按 index 切換（可跨章節）──
-    function navigateSub(delta) {
-        const newIdx = globalSubIdx + delta;
-        if (newIdx < 0 || newIdx >= globalSubs.length) return;
-        globalSubIdx = newIdx;
-        const sub = globalSubs[globalSubIdx];
-
-        if (sub.chapterId !== currentChapter) {
-            currentChapter = sub.chapterId;
-            document.querySelectorAll('.nav-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.chapter === currentChapter);
-            });
-            _setupChapterUI(currentChapter);
-        }
-
-        const midSel = document.getElementById('mid-select');
-        midSel.value = sub.gIdx;
-        fillSubSelect(currentChapter, sub.gIdx);
-        document.getElementById('sub-select').value = sub.key;
-
-        loadPosts(sub.key, sub.label, sub.range);
-        updateNavButtons();
-        setHash(currentChapter + '/' + sub.key);
-    }
-
-    // ── 更新底部按鈕 ──
-    function updateNavButtons() {
-        document.getElementById('btn-prev').disabled = globalSubIdx <= 0;
-        document.getElementById('btn-next').disabled = globalSubIdx >= globalSubs.length - 1;
-        const sub = globalSubs[globalSubIdx];
-        const chLabel = { ch1: 'Ch.1', ch2: 'Ch.2', ch3: 'Ch.3', app: 'App.' };
-        document.getElementById('nav-pos').textContent =
-            (chLabel[sub.chapterId] || '') + '　' + (globalSubIdx + 1) + ' / ' + globalSubs.length;
-    }
-
-    // ── 章節 UI 初始化（不影響 globalSubIdx）──
-    function _setupChapterUI(chapterId) {
-        const ch = structure[chapterId];
-        document.getElementById('sub-nav').classList.remove('hidden');
-        document.getElementById('bottom-nav').classList.remove('hidden');
-        document.getElementById('welcome-screen').style.display = 'none';
-        document.getElementById('list-screen').style.display = 'block';
-
-        const midSel = document.getElementById('mid-select');
-        midSel.innerHTML = '';
-        ch.groups.forEach((g, i) => {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.textContent = g.label;
-            midSel.appendChild(opt);
-        });
-        fillSubSelect(chapterId, 0);
-    }
-
-    let _fromPop = false;
-
-    function setHash(hash) {
-        if (_fromPop) return;
-        history.pushState({ hash }, '', hash ? '#' + hash : '#');
-    }
-
-    // ── 瀏覽器上一頁／下一頁 ──
-    window.addEventListener('popstate', () => {
-        _fromPop = true;
-        const state = readHash();
-        if (state.type === 'reader') {
-            const idx = allQuestions.findIndex(q => q.href === state.href);
-            if (idx !== -1) { currentQIdx = idx; _showReader(); }
-        } else if (state.type === 'chapter' && structure[state.chapterId]) {
-            currentChapter = state.chapterId;
-            document.querySelectorAll('.nav-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.chapter === state.chapterId);
-            });
-            document.getElementById('reader-screen').classList.remove('active');
-            document.getElementById('main-nav-bar').style.display = '';
-            showChapter(state.chapterId, state.subKey);
-        } else {
-            currentChapter = 'home';
-            document.querySelectorAll('.nav-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.chapter === 'home');
-            });
-            document.getElementById('reader-screen').classList.remove('active');
-            document.getElementById('main-nav-bar').style.display = '';
-            showHome();
-        }
-        _fromPop = false;
-    });
-
-    function readHash() {
-        const h = location.hash.slice(1); // 去掉 #
-        if (!h || h === 'home') return { type: 'home' };
-        if (h.startsWith('q/')) return { type: 'reader', href: h.slice(2) };
-        const parts = h.split('/');
-        return { type: 'chapter', chapterId: parts[0], subKey: parts[1] || null };
-    }
-
     // ── 初始化 ──
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', () => switchChapter(tab.dataset.chapter));
@@ -1918,11 +1673,13 @@
 
     function switchChapter(chapterId) {
         currentChapter = chapterId;
+
+        // Tab 高亮
         document.querySelectorAll('.nav-tab').forEach(t => {
             t.classList.toggle('active', t.dataset.chapter === chapterId);
         });
+
         if (chapterId === 'home') {
-            setHash('home');
             showHome();
         } else {
             showChapter(chapterId);
@@ -1931,30 +1688,36 @@
 
     function showHome() {
         document.getElementById('sub-nav').classList.add('hidden');
-        document.getElementById('bottom-nav').classList.add('hidden');
-        document.getElementById('reader-screen').classList.remove('active');
-        document.getElementById('main-nav-bar').style.display = '';
         document.getElementById('welcome-screen').style.display = 'block';
         document.getElementById('list-screen').style.display = 'none';
-        document.getElementById('content-area').style.display = '';
         document.getElementById('content-area').scrollTop = 0;
-        setHash('home');
     }
 
-    function showChapter(chapterId, subKey) {
-        _setupChapterUI(chapterId);
-        globalSubIdx = subKey
-            ? globalSubs.findIndex(s => s.key === subKey)
-            : globalSubs.findIndex(s => s.chapterId === chapterId);
-        if (globalSubIdx === -1) globalSubIdx = globalSubs.findIndex(s => s.chapterId === chapterId);
-        const sub = globalSubs[globalSubIdx];
-        document.getElementById('mid-select').value = sub.gIdx;
-        fillSubSelect(chapterId, sub.gIdx);
-        document.getElementById('sub-select').value = sub.key;
-        loadPosts(sub.key, sub.label, sub.range);
-        updateNavButtons();
-        document.getElementById('content-area').scrollTop = 0;
-        setHash(chapterId + '/' + sub.key);
+    function showChapter(chapterId) {
+        const ch = structure[chapterId];
+        const subNav = document.getElementById('sub-nav');
+        subNav.classList.remove('hidden');
+
+        // 填充中主題
+        const midSel = document.getElementById('mid-select');
+        midSel.innerHTML = '';
+        ch.groups.forEach((g, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = g.label;
+            midSel.appendChild(opt);
+        });
+
+        // 填充小主題（預設第一個中主題）
+        fillSubSelect(chapterId, 0);
+
+        // 隱藏首頁，顯示列表
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('list-screen').style.display = 'block';
+
+        // 載入預設：第一個中主題第一個小主題
+        const firstSub = ch.groups[0].subs[0];
+        loadPosts(firstSub.key, firstSub.label, firstSub.range);
     }
 
     function fillSubSelect(chapterId, midIdx) {
@@ -1972,26 +1735,22 @@
     function onMidChange() {
         const midIdx = parseInt(document.getElementById('mid-select').value);
         fillSubSelect(currentChapter, midIdx);
+        // 自動載入小主題第一個
         const firstSub = structure[currentChapter].groups[midIdx].subs[0];
-        globalSubIdx = globalSubs.findIndex(s => s.key === firstSub.key);
         loadPosts(firstSub.key, firstSub.label, firstSub.range);
-        updateNavButtons();
-        setHash(currentChapter + '/' + firstSub.key);
     }
 
     function onSubChange() {
         const key = document.getElementById('sub-select').value;
         if (!key) return;
+        // 直接從 sub-select 的 selectedOption 拿 label/range
         const sel = document.getElementById('sub-select');
         const optText = sel.options[sel.selectedIndex].textContent;
+        // optText 格式是 "label　range"，用全形空格切
         const parts = optText.split('　');
         const label = parts[0] || key;
         const range = parts[1] || '';
-        const idx = globalSubs.findIndex(s => s.key === key);
-        if (idx !== -1) globalSubIdx = idx;
         loadPosts(key, label, range);
-        updateNavButtons();
-        setHash(currentChapter + '/' + key);
     }
 
     function loadPosts(key, title, range) {
@@ -2002,125 +1761,19 @@
         if (!posts[key] || posts[key].length === 0) {
             list.innerHTML = '<p style="color:var(--smoke); padding:20px 0;">（此主題內容尚未建立）</p>';
         } else {
-            list.innerHTML = posts[key].map(p => `
-                <div class="post-card">
-                    <span class="post-num">${p.num}</span>
-                    <div class="post-body">
-                        <div class="post-title">${p.title}</div>
-                        ${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
-                        <span class="post-more" onclick="openReader('${p.href}')">閱讀全文 →</span>
-                    </div>
-                </div>
-            `).join('');
+			list.innerHTML = posts[key].map(p => `
+				<div class="post-card">
+					<span class="post-num">${p.num}</span>
+					<div class="post-body">
+						<div class="post-title">${p.title}</div>
+						${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
+						<a href="${p.href}" class="post-more">閱讀全文 →</a>
+					</div>
+				</div>
+			`).join('');
         }
         document.getElementById('content-area').scrollTop = 0;
     }
-    // ── 全書題目扁平清單（for 閱讀模式上下題）──
-    let allQuestions = []; // { num, title, href }
-
-    function buildAllQuestions() {
-        allQuestions = [];
-        const seen = new Set();
-        chapterOrder.forEach(chId => {
-            structure[chId].groups.forEach(g => {
-                g.subs.forEach(s => {
-                    if (posts[s.key]) {
-                        posts[s.key].forEach(p => {
-                            if (!seen.has(p.href)) {
-                                seen.add(p.href);
-                                allQuestions.push({ num: p.num, title: p.title, href: p.href });
-                            }
-                        });
-                    }
-                });
-            });
-        });
-    }
-    buildAllQuestions();
-
-    let currentQIdx = 0;
-
-    function openReader(href) {
-        const idx = allQuestions.findIndex(q => q.href === href);
-        if (idx === -1) { window.open(href, '_blank'); return; }
-        currentQIdx = idx;
-        _showReader();
-    }
-
-    function _showReader() {
-        const q = allQuestions[currentQIdx];
-        document.getElementById('reader-num').textContent = '第 ' + q.num + ' 問';
-        document.getElementById('reader-title').textContent = q.title;
-        document.getElementById('reader-iframe').src = q.href;
-        document.getElementById('reader-pos').textContent = (currentQIdx + 1) + ' / ' + allQuestions.length;
-        document.getElementById('reader-btn-prev').disabled = currentQIdx <= 0;
-        document.getElementById('reader-btn-next').disabled = currentQIdx >= allQuestions.length - 1;
-
-        document.getElementById('reader-screen').classList.add('active');
-        document.getElementById('content-area').style.display = 'none';
-        document.getElementById('bottom-nav').classList.add('hidden');
-        document.getElementById('sub-nav').classList.add('hidden');
-        document.getElementById('main-nav-bar').style.display = 'none';
-        setHash('q/' + q.href);
-    }
-
-    function navigateQ(delta) {
-        const newIdx = currentQIdx + delta;
-        if (newIdx < 0 || newIdx >= allQuestions.length) return;
-        currentQIdx = newIdx;
-        _showReader();
-    }
-
-    function closeReader() {
-        document.getElementById('reader-screen').classList.remove('active');
-        document.getElementById('content-area').style.display = '';
-        document.getElementById('main-nav-bar').style.display = '';
-        if (currentChapter !== 'home') {
-            document.getElementById('sub-nav').classList.remove('hidden');
-            document.getElementById('bottom-nav').classList.remove('hidden');
-            const sub = globalSubs[globalSubIdx];
-            setHash(currentChapter + '/' + sub.key);
-        } else {
-            setHash('home');
-        }
-    }
-
-    // ── 頁面載入時從 hash 還原狀態 ──
-    (function restoreFromHash() {
-        const state = readHash();
-        if (state.type === 'reader') {
-            // 先初始化所有資料再開閱讀模式
-            const idx = allQuestions.findIndex(q => q.href === state.href);
-            if (idx !== -1) {
-                currentQIdx = idx;
-                // 找到這題屬於哪個章節/小主題，讓 closeReader 能正確回去
-                outer: for (const chId of chapterOrder) {
-                    for (const g of structure[chId].groups) {
-                        for (const s of g.subs) {
-                            if (posts[s.key] && posts[s.key].some(p => p.href === state.href)) {
-                                currentChapter = chId;
-                                globalSubIdx = globalSubs.findIndex(gs => gs.key === s.key);
-                                break outer;
-                            }
-                        }
-                    }
-                }
-                _showReader();
-                return;
-            }
-        }
-        if (state.type === 'chapter' && structure[state.chapterId]) {
-            currentChapter = state.chapterId;
-            document.querySelectorAll('.nav-tab').forEach(t => {
-                t.classList.toggle('active', t.dataset.chapter === state.chapterId);
-            });
-            showChapter(state.chapterId, state.subKey);
-            return;
-        }
-        // 預設首頁
-        showHome();
-    })();
-
     </script>
 </body>
 </html>

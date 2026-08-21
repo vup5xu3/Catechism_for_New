@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>彌賽亞 · 受膏者 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1><span>受膏</span>的那一位</h1>
+  <p class="subtitle">彌賽亞、基督——先知、祭司、君主，都在祂一人身上</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「耶穌基督」不是姓名</h2>
+      <p class="card-hook">我信了好幾年，才知道「基督」是一個職稱</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>說出來有點不好意思：我信主的頭幾年，一直以為「耶穌」是名，「基督」是姓。</p>
+
+      <p>就像「王小明」那樣——耶穌·基督。</p>
+
+      <p>後來我才知道，這個誤會不只我有，而且它會實際影響一個人對信仰的理解。</p>
+
+      <div class="highlight">
+        <strong>因為「基督」不是姓，是一個職稱</strong>
+        它的意思是「<strong>受膏者</strong>」。<br><br>所以「耶穌基督」的意思，其實是：<strong>「耶穌，那位受膏者」</strong>——就像我們說「李醫師」、「陳老師」那樣，前面是名字，後面是身分。<br><br>而這件事一旦弄清楚，很多經文的讀法就改變了。<br><br>「你是<strong>基督</strong>」——那不是在叫祂的名字，那是在<strong>認定祂的職分</strong>。
+      </div>
+
+      <p>而「膏」這件事，也是我後來才理解的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫒</span>
+        在古代以色列，「膏立」是一個很具體的儀式：<strong>把橄欖油倒在那個人的頭上。</strong><br><br>撒母耳膏掃羅的時候，「拿瓶膏油倒在掃羅的頭上」；膏大衛的時候，「就用角裡的膏油，在他諸兄中膏了他」。<br><br>油會順著頭髮流下來，流到臉上、流到衣領上。詩篇一三三篇形容那個畫面：「這好比那貴重的油澆在亞倫的頭上，流到鬍鬚，又流到他的衣襟。」<br><br>那是一個<strong>看得見、摸得到、洗不掉一整天</strong>的記號。<br><br>它的意思是：<strong>這個人，從今天起，被分別出來了。</strong>
+      </div>
+
+      <p>而聖經說，神以聖靈和能力膏了主耶穌。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚：受膏是什麼意思？受膏的有哪三種職分？而它們為什麼會全部集中在一個人身上？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">拿撒勒會堂裡，祂讀了一段經文然後坐下</h2>
+      <p class="card-hook">「今天這經應驗在你們耳中了」</p>
+    </div>
+    <div class="card-body">
+
+      <p>路加福音第四章，主耶穌回到祂長大的地方——拿撒勒。</p>
+
+      <p>照祂平常的規矩，安息日進了會堂，站起來要念聖經。有人把以賽亞的書交給祂，祂展開書卷，找到一處，念了這樣一段：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">主的靈在我身上，因為他用膏膏我，叫我傳福音給貧窮的人；差遣我報告：被擄的得釋放，瞎眼的得看見，叫那受壓制的得自由，報告神悅納人的禧年</p>
+        <p class="scripture-ref">路加福音 四章十八至十九節</p>
+      </div>
+
+      <p>然後——經文記下了一連串很細的動作：</p>
+
+      <p>「於是把書捲起來，交還執事，就坐下。<strong>會堂裡的人都定睛看他。</strong>」</p>
+
+      <div class="highlight">
+        <strong>那個沉默的空檔</strong>
+        當時的規矩是：讀經時站著，講解時坐下。<br><br>所以祂捲起書卷、交還執事、坐下——這一連串動作，等於在說「我要開始講解了」。<br><br>而全場定睛看祂。那是一個安靜的、所有人都在等的時刻。<br><br>然後祂說了第一句話：<br><br><strong>「今天這經應驗在你們耳中了。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        這句話的分量，很難誇大。<br><br>祂沒有講解那段經文的歷史背景，沒有分析文法，沒有引用哪位拉比的說法。<br><br>祂說的是：<strong>這段經文講的是我。而它，今天成了。</strong><br><br>會堂裡坐的，是看著祂長大的鄰居。他們說：「這不是約瑟的兒子嗎？」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而祂所讀的那段經文，開頭第一句就是：「<strong>主的靈在我身上，因為他用膏膏我。</strong>」</p>
+
+      <p>——祂讀的，正是一段關於「受膏」的經文。</p>
+
+      <div class="highlight">
+        <strong>而那段經文接下來列的，是受膏者要做的事</strong>
+        <strong>傳福音給貧窮的人</strong>——這是先知的工作，宣告神的話。<br><strong>報告被擄的得釋放、受壓制的得自由</strong>——這是君王的權柄，只有掌權者能釋放囚犯。<br><strong>報告神悅納人的禧年</strong>——而禧年的宣告，是由<strong>祭司</strong>在贖罪日吹角開始的。<br><br>三個職分的影子，都在這一段裡。
+      </div>
+
+      <p>而彼得後來在哥尼流家中傳道時，用一句話總結了這件事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神怎樣以聖靈和能力膏拿撒勒人耶穌，這都是你們知道的。他周流四方，行善事，醫好凡被魔鬼壓制的人，因為神與他同在</p>
+        <p class="scripture-ref">使徒行傳 十章三十八節</p>
+      </div>
+
+      <p>那麼，「受膏」的三個職分究竟是什麼？下一篇，我們一個一個看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">受膏者：先知、祭司、君主</h2>
+      <p class="card-hook">三個職分，一位中保</p>
+    </div>
+    <div class="card-body">
+
+      <p>先把名稱理清楚。</p>
+
+      <div class="highlight">
+        <strong>「彌賽亞」與「基督」——兩種語言，同一個意思</strong>
+        <strong>「彌賽亞」是希伯來字</strong>（Mashiach），<strong>「基督」是希臘字</strong>（Christos）。<br><br>發音不同，意義卻完全相同——都是「<strong>受膏者</strong>」或「<strong>受膏君</strong>」。<br><br>約翰福音第一章有一節，正好把這兩個詞並列了：安得烈找著他的哥哥西門，對他說「我們遇見<strong>彌賽亞</strong>了」——然後約翰立刻加了一句註解：「<strong>彌賽亞繙出來就是基督。</strong>」<br><br>（至於「耶穌」這個名字的意思，是另一件事，我們下一篇專門談。）
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而神以聖靈和能力膏主耶穌，立祂為<strong>中保</strong>——就是那位站在神與人中間的。而這個中保的職分，具體展開為三個：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">先知 · 從神那裡，把話帶給人</span>
+          先知的方向是<strong>由上而下</strong>：代表神向人說話。<br>摩西預言：「耶和華你的神要從你們弟兄中間給你興起一位先知，像我。」<br>而主耶穌不只<strong>傳達</strong>神的話——約翰說祂就是<strong>「道」</strong>。祂不是帶來訊息的人，祂本身就是那個訊息。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">祭司 · 從人這裡，把人帶到神面前</span>
+          祭司的方向是<strong>由下而上</strong>：代表人到神面前，獻祭、代求。<br>而祂與一切祭司的差別在於：<strong>他們獻上牲畜，祂獻上自己。</strong><br>而且祂如今「長遠活著，替他們祈求」——祂的代求沒有停過。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">君主 · 掌權、治理、保護</span>
+          君王的方向是<strong>由上而下的治理</strong>。<br>「他要作雅各家的王，直到永遠；他的國也沒有窮盡。」<br>而祂的王權，最終要在再來的時候完全彰顯。
+        </div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔺</span>
+        三個職分，剛好對應了人與神之間的三種需要：<br><br><strong>我不認識神</strong>——需要一位<strong>先知</strong>來告訴我。<br><strong>我的罪隔絕了我</strong>——需要一位<strong>祭司</strong>來處理。<br><strong>我無力管理自己的生命</strong>——需要一位<strong>君王</strong>來治理。<br><br>而這三種需要，是同時存在的。所以救主必須同時是這三者。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這裡有一件事，在舊約的框架裡是不可能的：<strong>三個職分，從來不集中在同一個人身上。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>人物</th>
+            <th>身分</th>
+            <th>越界的結果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">掃羅</td>
+            <td>王</td>
+            <td>因等不到撒母耳而擅自獻祭，被宣告「你的國必不長久」</td>
+          </tr>
+          <tr>
+            <td class="src">烏西雅</td>
+            <td>王</td>
+            <td>進殿要在香壇上燒香，額上立時長了大痲瘋，直到死日都住在別的宮裡</td>
+          </tr>
+          <tr>
+            <td class="src">大衛</td>
+            <td>王、也是詩人先知</td>
+            <td>他從未擅自進入聖所獻祭。他把約櫃運回耶路撒冷時，甚至因程序不合而出過事</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>王不可以做祭司的事。這是律法嚴格的界線。</strong>
+        而在基督身上，這三個職分卻全部合一。<br><br>這件事本身，就在說明祂的身分——<strong>祂不是舊約體系裡的另一位受膏者，祂是那個體系所指向的那一位。</strong><br><br>而希伯來書處理這件事的方式很精彩：它引用詩篇一一〇篇「你是照著<strong>麥基洗德的等次</strong>永遠為祭司」。<br><br>麥基洗德是誰？創世記記載，他是「撒冷王，又是至高神的祭司」——<strong>舊約中唯一同時具備王與祭司雙重身分的人物</strong>，而且他出現在利未支派設立之前。<br><br>所以基督的祭司職分，不屬於利未的系統。<strong>祂是另一個等次的。</strong>
+      </div>
+
+      <p>下一篇，我們回到「膏」這個動作本身——因為那個動作的細節，藏著很深的意義。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">為什麼是「油」？</h2>
+      <p class="card-hook">而祂受膏的那一刻，用的不是油</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Mashach<br>膏抹（動詞）</div>
+        <div class="term-desc">字面意思是「<strong>塗抹、擦上</strong>」。名詞形 mashiach 就是「被塗抹的那一位」——彌賽亞。<br><br>而它的希臘文對應詞是 chriō（膏抹），名詞形 Christos——基督。<br><br><strong>兩個詞在字面上完全對應，只是語言不同。</strong></div>
+      </div>
+
+      <p>那麼，為什麼用油？聖經裡的膏油，有幾層意義：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 分別為聖</span>
+          出埃及記三十章記載了聖膏油的配方——沒藥、肉桂、菖蒲、桂皮，加上橄欖油。而神特別吩咐：這膏油是聖的，<strong>不可倒在別人的身上，也不可按這方子配製</strong>。違者要從民中剪除。<br><strong>那個油，只有一個用途。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 授予職分與權柄</span>
+          膏立是一個公開的、具有法律效力的儀式。膏了之後，那個人的身分就改變了——大衛被膏之後，經文說「從這日起，耶和華的靈就大大感動大衛」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 象徵聖靈</span>
+          這是最關鍵的一層。<strong>油在聖經中，一貫是聖靈的象徵。</strong>金燈臺要用橄欖油點著；撒迦利亞書的異象裡，兩棵橄欖樹供應金燈臺的油，天使的解釋是：「不是倚靠勢力，不是倚靠才能，乃是倚靠我的靈。」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這帶出一個很重要的觀察</strong>
+        主耶穌受膏的時候，<strong>沒有人在祂頭上倒油。</strong><br><br>祂受膏的時刻，是在約旦河——<strong>祂從水裡上來，天忽然為祂開了，聖靈彷彿鴿子降下，落在祂身上。</strong><br><br>而祂在拿撒勒會堂讀的那一句正是：「<strong>主的靈在我身上，因為他用膏膏我。</strong>」<br><br>——油是象徵，而祂領受的是<strong>本體</strong>。彼得說得很準確：「神怎樣以<strong>聖靈和能力</strong>膏拿撒勒人耶穌。」<br><br>從影兒到形體，這裡又是一次。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而約旦河受洗那一幕，還有一個很值得注意的細節：<strong>三個職分的印證，同時出現在那一刻。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一刻發生的事</th>
+            <th>意義</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">聖靈降下</td>
+            <td>受膏——祂被正式膏立，開始公開的職事</td>
+          </tr>
+          <tr>
+            <td class="src">「這是我的愛子」</td>
+            <td>引自詩篇二篇——那是一篇<strong>登基詩</strong>：「我已經立我的君在錫安我的聖山上了……你是我的兒子。」指向<strong>君王</strong>的身分</td>
+          </tr>
+          <tr>
+            <td class="src">「我所喜悅的」</td>
+            <td>引自以賽亞書四十二章——那是<strong>受苦僕人</strong>之歌的開頭：「看哪，我的僕人……我所喜悅的，我已將我的靈賜給他。」指向<strong>祭司</strong>的獻上</td>
+          </tr>
+          <tr>
+            <td class="src">在曠野受試探後<br>開始傳道</td>
+            <td>「天國近了，你們應當悔改」——<strong>先知</strong>的宣告</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        父在那一刻說的那句話，<strong>把兩處舊約經文接在了一起</strong>：<br><br>一處是<strong>君王</strong>的登基詩（詩二），一處是<strong>受苦僕人</strong>之歌（賽四二）。<br><br>而這兩個形象，正是當時猶太人分不開的那兩半——他們只要君王，不要受苦的僕人。<br><br>而父在祂職事的起點，就同時宣告了這兩者。<br><br><strong>祂是王，而祂要走僕人的路。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後補一個很動人的細節。</p>
+
+      <p>主耶穌在世的時候，其實有人用真的香膏膏過祂——在受難週，伯大尼的馬利亞打破一個玉瓶，把極貴的真哪噠香膏澆在祂頭上。</p>
+
+      <p>當時有人責備她浪費。而主說了一句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">她在我身上作的是一件美事……她將這香膏澆在我身上，是為我安葬做的
+        </p>
+        <p class="scripture-ref">馬太福音 二十六章十至十二節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏺</span>
+        整本福音書裡，唯一一次有人真正用香膏膏了這位「受膏者」——<strong>而那次膏抹，是為了安葬。</strong><br><br>別的王受膏，是為了登基。<br><br>這位王受膏，是為了下到墳墓裡。<br><br>而主說：「我實在告訴你們，普天之下，無論在甚麼地方傳這福音，也要述說這女人所行的，作個紀念。」
+      </div>
+
+      <p>下一篇，我們談這三個職分，今天對我們意味著什麼。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">三個職分，對應我三種困境</h2>
+      <p class="card-hook">而我常常只要其中一個</p>
+    </div>
+    <div class="card-body">
+
+      <p>我發現一件事：<strong>大部分人在信仰裡，只接受其中一兩個職分。</strong></p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">只要祭司的人</span>
+          我要赦免、要平安、要出事的時候有人可以求。<br>但我不太想聽祂說什麼（先知），也不太想讓祂管我的生活（君王）。<br><strong>這會變成一種「保險型」的信仰。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">只要先知的人</span>
+          我喜歡祂的教導，我覺得那些道理很深、很有智慧。<br>但我不覺得自己需要被赦免（祭司），也不打算交出決定權（君王）。<br><strong>這會變成一種「思想型」的信仰。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">只要君王的人</span>
+          我要祂掌權，我要祂為我開路、為我爭戰、讓我的事順利。<br>但我不太讀祂的話（先知），也不太處理自己的罪（祭司）。<br><strong>這會變成一種「求勝型」的信仰。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而三個少了任何一個，都會出問題</strong>
+        <strong>沒有先知</strong>——你會照自己的想像認識祂。那個版本，遲早會失真。<br><strong>沒有祭司</strong>——你會活在罪的重擔或自義裡，兩者都不通。<br><strong>沒有君王</strong>——你會發現自己還是那個做主的人，而信仰只是加在旁邊的一項服務。<br><br>那位受膏者，是<strong>一整位</strong>。你不能只挑其中一個職分來接受。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而我想特別談「君王」這一項，因為它是最常被略過的。</p>
+
+      <p>「基督」這個稱號，字面就帶著王權——受膏君。而受膏的動作，在舊約最典型的用法，就是<strong>立王</strong>。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👑</span>
+        我後來想通一件事：<strong>「耶穌」和「基督」這兩個稱呼，指向兩種不同的關係。</strong><br><br><strong>耶穌</strong>——是全人類唯一的救主，救我們脫離永死。這是<strong>恩典</strong>。<br><br><strong>基督</strong>——是王。而王，是要管教的。<br><br>而面對一位王，我們唯一該有的回應，就是<strong>順服</strong>。<br><br>這兩者不衝突：正因為祂先救了我，我才願意讓祂管；也正因為祂是王，祂的救才不只是免除刑罰，更是把我帶進祂的治理。
+      </div>
+
+      <div class="highlight">
+        <strong>而「管教」在聖經裡，是恩慈的記號</strong>
+        希伯來書說：「因為主所愛的，他必管教，又鞭打凡所收納的兒子……<strong>焉有兒子不被父親管教的呢？</strong>」<br><br>而下一句更重：「管教原是眾子所共受的；你們若不受管教，就是私子，不是兒子了。」<br><br>——被管教，是身分的證明。<br><br>所以當生命中出現那些讓我們不舒服的修剪時，那不一定是懲罰。<strong>那可能正是那位王在做祂該做的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而三個職分合在一起，其實構成了一個完整的救恩：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>職分</th>
+            <th>解決的問題</th>
+            <th>對我的意義</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">先知</td>
+            <td>無知——我不認識神</td>
+            <td>我可以透過祂認識神。<strong>不必再猜。</strong></td>
+          </tr>
+          <tr>
+            <td class="src">祭司</td>
+            <td>罪——我與神隔絕</td>
+            <td>祂已經獻上自己，而且此刻仍在為我代求。<strong>不必再怕。</strong></td>
+          </tr>
+          <tr>
+            <td class="src">君主</td>
+            <td>混亂——我管不好自己</td>
+            <td>祂掌權、祂治理、祂管教。<strong>不必再自己撐。</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這三樣，也正是舊約以色列一直缺的</strong>
+        他們有先知，但先知會死；<br>他們有祭司，但祭司自己也需要贖罪；<br>他們有王，但王會敗壞。<br><br>整部舊約歷史，就是這三個職分不斷失敗的記錄。<br><br>而每一次失敗，都在加深同一個渴望：<strong>有沒有一位，是不會倒的？</strong><br><br>然後，在拿撒勒的會堂裡，有一個人念完那段經文，坐下，說：<br><br>「今天這經應驗在你們耳中了。」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你也是受膏的</h2>
+      <p class="card-hook">寫給那個覺得自己只是個普通人的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>最後這一篇，我想說一件可能會讓你意外的事。</p>
+
+      <p>「受膏」這件事，不只發生在祂身上。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們從那聖者受了恩膏，並且知道這一切的事</p>
+        <p class="scripture-ref">約翰壹書 二章二十節</p>
+      </div>
+
+      <p>約翰對一般的信徒說：<strong>你們受了恩膏。</strong></p>
+
+      <p>而保羅也說：「那在基督裡堅固我們和你們，並且<strong>膏我們</strong>的就是神。」</p>
+
+      <div class="highlight">
+        <strong>而「基督徒」這個稱呼本身，就是這個意思</strong>
+        Christianos——字面是「<strong>屬基督的人</strong>」、「基督黨的人」。<br><br>而「基督」是「受膏者」。<br><br>所以「基督徒」的字面，接近：<strong>屬於那位受膏者的人</strong>。<br><br>而彼得前書說得更完整：「惟有你們是被揀選的族類，是<strong>有君尊的祭司</strong>，是聖潔的國度，是屬神的子民。」<br><br>——君尊（王）、祭司。這兩個在舊約嚴格分開的身分，如今被放在了信徒身上。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫒</span>
+        當然，我們的「受膏」和祂的不一樣。<br><br>祂是<strong>那一位</strong>受膏者，是本源；我們是<strong>因為在祂裡面</strong>，才分享了那份恩膏。<br><br>就像油從亞倫的頭上流下來，流到鬍鬚，又流到衣襟——<strong>那是同一份油，只是流下來了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這件事的實際意義是什麼？</p>
+
+      <p>我想，至少是這三件：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">你被分別出來了</span>
+          膏抹的第一層意義是「分別為聖」。<br><strong>你不是隨機的、可有可無的、湊數的一個人。</strong>你被指名、被分別、被放在一個位置上。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">你有一份職事</span>
+          膏抹的第二層意義是授予職分。<br>而每一個信徒都有一份——「按著各人所得的恩賜彼此服事，作神百般恩賜的好管家」。<br><strong>沒有人是觀眾。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">你有聖靈的同在</span>
+          膏抹的第三層意義是聖靈。<br>而這一項，是前兩項的能力來源。<strong>不是倚靠勢力，不是倚靠才能，乃是倚靠我的靈。</strong>
+        </div>
+      </div>
+
+      <div class="big-quote">
+        主的靈在我身上，<br>因為他用膏膏我
+        <cite>— 路加福音 四章十八節</cite>
+      </div>
+
+      <p>回到我開頭那個誤會——以為「基督」是姓。</p>
+
+      <p>我現在覺得，那個誤會其實有一個很大的代價：<strong>它讓「基督」變成了一個沒有內容的音節。</strong></p>
+
+      <p>而一旦知道它是「受膏者」，很多事情就活了起來：</p>
+
+      <p>祂是那位<strong>先知</strong>——所以我讀祂的話，不是讀一位智者的語錄，是聽神親自說話。</p>
+
+      <p>祂是那位<strong>祭司</strong>——所以我來到神面前，不是憑自己的資格，是憑祂的獻上；而且此刻，祂仍在為我代求。</p>
+
+      <p>祂是那位<strong>君主</strong>——所以我不是自己在撐；而祂的管教，是我作兒子的憑據。</p>
+
+      <p>而那位受膏者，把祂所領受的那份膏，也分給了你。</p>
+
+      <p>願你今天，活得像一個被分別出來的人。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  受膏的那一位 · Threads Series
+</footer>
+
+</body>
+</html>

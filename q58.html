@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>對舊約律法的態度 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>影兒與<span>形體</span></h1>
+  <p class="subtitle">舊約律法，基督徒到底該怎麼讀？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">每次讀到利未記，我就卡住了</h2>
+      <p class="card-hook">一年讀經計畫，通常死在二月中旬</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我試過好幾次一年讀完聖經。而每一次陣亡的地點，都驚人地一致——<strong>利未記。</strong></p>
+
+      <p>創世記很好看，故事精彩。出埃及記前半也很好看，紅海、十災、西奈山。然後會幕的規格開始出現，柱子幾根、幔子幾肘、鉤子用什麼材質……我開始加速。等進到利未記，講到哪些動物可以吃、哪些不可以，皮膚上的斑點該怎麼判斷，房屋長了霉該怎麼處理——</p>
+
+      <p>我通常就在那裡默默把書合上了。</p>
+
+      <div class="highlight">
+        <strong>而卡住我的，其實不是內容枯燥</strong>
+        真正讓我讀不下去的，是一個沒有解決的問題：<strong>這些跟我有什麼關係？</strong><br><br>我不獻祭、不住帳棚、不需要判斷房屋的霉。那我讀這些做什麼？當成古代文獻欣賞嗎？可是聖經說「聖經都是神所默示的，於教訓、督責、使人歸正、教導人學義都是有益的」——「都是」，那應該包括利未記十三章的皮膚病條例吧？
+      </div>
+
+      <p>更麻煩的是，我發現周圍的人處理這件事，往往是走兩個極端。</p>
+
+      <p>一種是<strong>全部丟掉</strong>：「那是舊約，過去了。」於是整個舊約變成了一段可以跳過的前情提要，只留幾節勵志的經文拿來背。</p>
+
+      <p>另一種是<strong>選擇性撿回來</strong>：這條要守，那條不用；而標準是什麼，往往說不清楚。你若追問「為什麼這條要守那條不用」，得到的答案常常繞不出來。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📚</span>
+        這就像面對一本厚厚的、上一代留下來的家族手札。<br><br>全部丟掉，你會失去根；全部照做，你會活得很荒謬（裡面搞不好寫著怎麼餵馬）。<br><br>真正的難題是：<strong>你得有一套方法，知道哪些是精神、哪些是當年的做法。</strong>
+      </div>
+
+      <p>後來我發現，聖經自己就給了這套方法。而且不只給了原則，還親自示範了怎麼用。</p>
+
+      <p>接下來這幾篇，我想陪你把這套方法整理出來。整理完之後，你再翻開利未記，感覺會很不一樣。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅給了一個關於「影子」的比方</h2>
+      <p class="card-hook">影子不是假的——但你不會跟影子握手</p>
+    </div>
+    <div class="card-body">
+
+      <p>歌羅西教會當時出了一個問題：有人要求信徒必須遵守飲食條例、必須守節期、月朔、安息日，否則就不夠屬靈。</p>
+
+      <p>保羅的回應，我認為是整本新約處理舊約律法最精準的一句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">所以，不拘在飲食上，或節期、月朔、安息日，都不可讓人論斷你們。這些原是後事的影兒，那形體卻是基督</p>
+        <p class="scripture-ref">歌羅西書 二章十六至十七節</p>
+      </div>
+
+      <p>希伯來書用了幾乎一樣的說法：「律法既是將來美事的影兒，不是本物的真像。」</p>
+
+      <div class="highlight">
+        <strong>「影兒」這個比方，好在哪裡？</strong>
+        因為它同時說了兩件事，而這兩件事缺一不可：<br><br><strong>第一，影子是真的。</strong>影子不是幻覺、不是錯誤、不是騙局。有影子，就一定有一個真實的物體在那裡。舊約律法不是神一時興起的規定，它是被真實之物投射出來的。<br><br><strong>第二，影子不是本體。</strong>你不會對著影子說話，不會跟影子握手，不會抱著影子取暖。當那個人本人走進房間，你不會繼續盯著牆上的影子看。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌇</span>
+        想像你在等一個很久沒見的朋友。他還沒轉過街角，但夕陽把他的影子先投在牆上了。<br><br>你看見那個影子，會很興奮——因為那個影子告訴你，<strong>他真的來了，而且就在附近。</strong>影子的輪廓甚至能讓你認出是他：那個身形、那個走路的姿態。<br><br>可是當他本人真的走過來，站在你面前——<strong>這時候如果你還盯著牆看，那才是荒謬的。</strong>
+      </div>
+
+      <p>而這正是歌羅西教會的問題。基督已經來了，他們卻還在爭論影子的細節。</p>
+
+      <div class="card-divider"></div>
+
+      <p>不過我想特別強調保羅的分寸感，因為這一點很容易被忽略。</p>
+
+      <p>他沒有說「那些都是垃圾」，他沒有說「舊約錯了」。他用的字是<strong>「影兒」</strong>——這是一個充滿敬意的詞。他承認那些條例的真實性與功能，只是把它們放回了正確的位置。</p>
+
+      <div class="highlight">
+        <strong>兩種錯誤，剛好相反</strong>
+        <strong>把影子當本體</strong>——這是歌羅西教會的錯誤，也是律法主義。人抓著細則不放，卻沒有認出那位已經站在面前的。<br><br><strong>把影子當垃圾</strong>——這是另一種錯誤。以為既然本體來了，影子就毫無價值，於是整個舊約被丟掉。可是影子的輪廓，正是幫助我們認出本體的線索。<strong>不讀舊約的祭祀條例，你對十字架的理解會薄很多。</strong>
+      </div>
+
+      <p>所以正確的態度是第三種：<strong>從影子去認識形體，然後在形體面前，讓影子退到它該在的位置。</strong></p>
+
+      <p>那麼具體怎麼做？基督徒面對舊約律法，該有哪些原則？下一篇，我們把四個原則排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四個原則</h2>
+      <p class="card-hook">一套可以實際拿來用的讀法</p>
+    </div>
+    <div class="card-body">
+
+      <p>基督徒對舊約律法，應有的態度可以歸納成四點。這四點是有順序的——後面三點，都建立在第一點上。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 應當分別形體與影兒</span>
+          先問：這一段所投射的那個「本物的真像」是什麼？（西二 16～17；來十 1）<br>看見形體，影子的意義才會顯出來。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 採取原則，放棄細則</span>
+          每一條律法背後，都有一個原則。細則是那個原則在當時處境下的具體做法。<br><strong>原則永遠有效，細則屬於那個時代。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 從消極吩咐，進到積極行動</span>
+          舊約多說「不可」，新約要我們往前一步：不只是不做壞事，更要在聖靈的感動引導下，切實地行善。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 新約的要求，甚至超過舊約</span>
+          讀一次登山寶訓就知道了。而且——若不是聖靈的帶領、若不是聖靈所賜的能力和恩賜，這些是做不到的。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>我們把第二點展開，因為它是實際操作時最常用到的一點。</p>
+
+      <p>教材舉的例子很好：<strong>利未記十一到十五章的潔淨條例。</strong></p>
+
+      <p>那幾章講的是什麼？哪些走獸可以吃、哪些不可以；產婦潔淨的日數；大痲瘋的辨識與隔離；房屋長霉怎麼處理；各種身體排出物造成的不潔與潔淨程序。密密麻麻，全是細節。</p>
+
+      <p>而這一大段的結論句，出現在十一章的最後：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我是耶和華你們的神；所以你們要成為聖潔，因為我是聖潔的
+        </p>
+        <p class="scripture-ref">利未記 十一章四十四至四十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>看見那個結構了嗎</strong>
+        <strong>細則：</strong>不可吃這個、不可碰那個、要隔離幾天、要怎樣洗滌。<br><strong>原則：</strong>「你們要成為聖潔，因為我是聖潔的。」<br><br>細則是<strong>手段</strong>，原則是<strong>目的</strong>。<br><br>而神自己把目的寫在那裡了，就在那一大堆細節的結尾。祂沒有讓我們去猜。
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>那麼，基督徒該怎麼應用？</p>
+
+      <p><strong>基督徒應該追求聖潔——這是原則，永遠有效。</strong></p>
+
+      <p><strong>但不當呆板地禁戒食物——這是細則，已經完成了它的任務。</strong></p>
+
+      <p>這不是我們自己推的，新約說得很明白。保羅提到末世的一個徵兆是有人「禁戒食物」，並說「凡神所造的物都是好的，若感謝著領受，就沒有一樣可棄的」。他也說：「在潔淨的人，凡物都潔淨。」</p>
+
+      <p>而主耶穌自己就作了結論。祂說「從外面進去的不能污穢人，惟有從裡面出來的乃能污穢人」，馬可福音在這句話後面加了一個編者的註解：「這是說，各樣的食物都是潔淨的。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        我覺得這是整件事最漂亮的地方：<strong>原則不但沒有被廢掉，反而被推得更深了。</strong><br><br>舊約的潔淨條例，教導的是「有些東西會污穢你，要小心分別」。<br>主耶穌說：對，這個原則完全正確——只是真正的污染源不在餐桌上，<strong>在你心裡。</strong><br><br>細則退場，原則升級。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>把這個方法整理成一個可以操作的流程，大概是這樣：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>步驟</th>
+            <th>要問的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">第一步</td>
+            <td>這段經文，投射的形體是什麼？它指向基督的哪一面？</td>
+          </tr>
+          <tr>
+            <td class="src">第二步</td>
+            <td>這條規定背後的<strong>原則</strong>是什麼？（很多時候，經文自己會說。）</td>
+          </tr>
+          <tr>
+            <td class="src">第三步</td>
+            <td>新約有沒有針對這件事說過話？（新約的解釋，優先於我的推論。）</td>
+          </tr>
+          <tr>
+            <td class="src">第四步</td>
+            <td>這個原則，在聖靈的引導下，今天要我<strong>積極地</strong>做什麼？</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>第三步特別重要。很多爭論之所以卡住，是因為跳過了它——直接從舊約條文推到今天的應用，中間沒有經過新約。而新約已經替我們處理過很多條了。</p>
+
+      <p>下一篇，我們回到原文，看看「影兒」和「形體」這兩個字，還藏著什麼。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「形體」那個字，其實是「身體」</h2>
+      <p class="card-hook">保羅選字選得極準</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Skia<br>影兒</div>
+        <div class="term-desc">「影子」。這個字在希臘文裡帶有「輪廓、素描、草圖」的意味。它不是「假的」，而是<strong>「尚未填滿的真實」</strong>——像建築師的線稿，線稿完全準確，只是還沒有實體。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Sōma<br>形體</div>
+        <div class="term-desc">中文譯作「形體」，但原文其實就是<strong>「身體」</strong>那個字。<br><br>保羅大可以用「實體」（hypostasis）之類比較抽象的哲學詞，但他選了 sōma。這個選擇非常精準——因為投下這道影子的，不是一個抽象概念，<strong>是一個有血有肉的人。</strong>「那形體卻是基督。」</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👤</span>
+        影子沒有厚度、沒有溫度、沒有五官。它能告訴你一個人的輪廓，但你無法從影子知道他長什麼樣子、聲音如何、眼神怎樣。<br><br>整本舊約律法，就是那道影子——它精準地畫出了一個輪廓：需要有人代贖、需要流血、需要一位大祭司、需要一隻無瑕疵的羔羊、需要潔淨。<br><br>然後那個 sōma 走進了歷史。<strong>輪廓，有了臉。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>希伯來書用的另一組詞，把這件事說得更細：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">律法既是將來美事的影兒，不是本物的真像，總不能藉著每年常獻一樣的祭物叫那近前來的人得以完全</p>
+        <p class="scripture-ref">希伯來書 十章一節</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Eikōn<br>真像</div>
+        <div class="term-desc">「本物的真像」用的是 eikōn——就是創世記「神的形像」那個字。它指的不是複製品，而是<strong>真實的顯現</strong>。<br><br>希伯來書的對比是：律法是 skia（影子），基督是 eikōn（真像）。而作者用來證明的論據很實際——<strong>「每年常獻」</strong>。如果那些祭真的解決了問題，就不必年年重複了。重複本身，就證明了它是影子。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        影子的三個特徵，正好對應舊約律法的三個限制：<br><br><strong>影子沒有實質</strong>——所以「公牛和山羊的血斷不能除罪」。<br><strong>影子隨光源而變</strong>——所以那些條例有它的時代性。<br><strong>影子總是先出現</strong>——所以它有預告的功能，而預告一旦應驗，就完成了任務。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看那些影子具體投出了什麼輪廓。這一段我覺得是讀舊約最有意思的部分：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>影兒（舊約）</th>
+            <th>形體（基督）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">逾越節的羔羊<br>血塗門框</td>
+            <td>「我們逾越節的羔羊基督已經被殺獻祭了」（林前五 7）。施洗約翰指著祂說：「看哪，神的羔羊。」</td>
+          </tr>
+          <tr>
+            <td class="src">大祭司<br>一年一次進至聖所</td>
+            <td>「基督……只一次進入聖所，成了永遠贖罪的事」（來九 12）。從「年年」到「一次永遠」。</td>
+          </tr>
+          <tr>
+            <td class="src">會幕<br>神住在百姓中間</td>
+            <td>「道成了肉身，住在我們中間」——那個「住」，原文就是「支搭帳棚」。</td>
+          </tr>
+          <tr>
+            <td class="src">至聖所的幔子<br>阻隔人與神</td>
+            <td>主斷氣時，殿裡的幔子從上到下裂為兩半。希伯來書說那幔子「就是他的身體」。</td>
+          </tr>
+          <tr>
+            <td class="src">安息日<br>七日的安息</td>
+            <td>「凡勞苦擔重擔的人，可以到我這裡來，我就使你們得安息。」真實的安息在基督裡。</td>
+          </tr>
+          <tr>
+            <td class="src">銅蛇<br>舉起來，望的就活</td>
+            <td>「摩西在曠野怎樣舉蛇，人子也必照樣被舉起來。」（約三 14）這是主自己作的解釋。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        當你這樣讀舊約，利未記就不再枯燥了。<br><br>那些獻祭的細節——祭牲必須無殘疾、必須按手在牠頭上、血必須灑在壇上——每一項都在畫一道輪廓。而你已經知道那個輪廓最後填進去的是誰。<br><br><strong>讀影子的樂趣，在於你已經見過本人。</strong>
+      </div>
+
+      <p>下一篇，我們處理第三和第四個原則——從「不可」到「要愛」，以及新約那個高得驚人的標準。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">從「不可殺人」到「要愛人」</h2>
+      <p class="card-hook">底線與方向，是兩種完全不同的活法</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三個原則說：要從舊約律法的消極吩咐，進到新約由聖靈感動引導的積極行動。</p>
+
+      <p>這句話聽起來很教科書，但它描述的其實是一個非常具體的人生差別。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏥</span>
+        想像兩位醫生。<br><br>第一位的標準是：<strong>不要出醫療糾紛。</strong>他很小心，該做的檢查都做，該簽的同意書都簽。他從來沒有被告過。<br><br>第二位的標準是：<strong>要把這個病人治好。</strong>他也做那些檢查、簽那些文件——但那些對他而言只是最低要求，他的心思在別的地方。<br><br>兩個人做的事有很大的重疊，但他們是兩種醫生。<strong>而躺在床上的人，感覺得出來。</strong>
+      </div>
+
+      <p>「不可殺人」是第一種。它是底線——不去做，就算達標。</p>
+
+      <p>而新約說「要愛人」。這是第二種。它是方向——<strong>沒有「達標」的那一天</strong>，只有走得更遠的那一天。</p>
+
+      <div class="highlight">
+        <strong>一個人可以一輩子不殺人，卻從來沒有愛過任何人</strong>
+        他完全守住了第六誡的字面。在任何法庭上，他都是清白的。<br><br>可是主耶穌把這條誡命一路推到底：不只不可殺人，連向弟兄動怒都不行；不只不可動怒，還要愛你的仇敵，為逼迫你的禱告。<br><br>從「不要奪去人的命」，走到「要為那想奪你命的人禱告」——<strong>這已經不是同一個量級的要求了。</strong>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>把十誡逐條從「消極」推到「積極」，會看見一幅很清楚的圖：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>消極的底線</th>
+            <th>積極的方向</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">不可有別的神</td>
+            <td>盡心、盡性、盡意愛主你的神</td>
+          </tr>
+          <tr>
+            <td class="src">不可妄稱神的名</td>
+            <td>尊祂的名為聖，榮耀祂的名</td>
+          </tr>
+          <tr>
+            <td class="src">不可殺人</td>
+            <td>愛人如己，甚至愛仇敵，為逼迫你的禱告</td>
+          </tr>
+          <tr>
+            <td class="src">不可姦淫</td>
+            <td>保守自己與別人的貞潔，用聖潔尊貴守著自己的身體</td>
+          </tr>
+          <tr>
+            <td class="src">不可偷盜</td>
+            <td>「總要勞力，親手做正經事，就可有餘，分給那缺少的人」（弗四 28）——從不拿，到有得給</td>
+          </tr>
+          <tr>
+            <td class="src">不可作假見證</td>
+            <td>用愛心說誠實話，作忠實的見證者</td>
+          </tr>
+          <tr>
+            <td class="src">不可貪心</td>
+            <td>「有衣有食，就當知足」——從不貪，到滿足</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>你注意到以弗所書那一節了嗎？我覺得那是整張表裡最精彩的一條。</p>
+
+      <p>「不可偷盜」的積極版本，保羅寫的不是「要誠實」——那還是同一個層次。他寫的是：<strong>去工作，賺到有餘，然後分給缺乏的人。</strong></p>
+
+      <p>從「拿別人的」，到「不拿別人的」，再到「<strong>把自己的給出去</strong>」。這是一個完整的一百八十度轉向。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第四個原則，是這一切的關鍵，也是最誠實的一句：<strong>新約的要求，甚至超過舊約。</strong></p>
+
+      <p>馬太福音第五到七章的登山寶訓，把標準推到了一個地步——「你們要完全，像你們的天父完全一樣。」</p>
+
+      <div class="highlight">
+        <strong>而教材那句話說得非常實在</strong>
+        「<strong>若不是聖靈的帶領和聖靈所賜的能力和恩賜，是做不到的。</strong>」<br><br>這句話很重要，因為它防止了兩種誤讀：<br><br>一種是覺得新約比較輕鬆——讀完登山寶訓就知道不是。<br>另一種是咬牙硬撐——把登山寶訓當成一份自我要求清單，然後在挫敗中耗盡自己。<br><br>正確的讀法是第三種：<strong>登山寶訓的高度，本身就是在告訴你，你需要聖靈。</strong>它不是要你更用力，它是要你抬頭。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛰️</span>
+        如果有人給你一張地圖，上面標示的目的地在海拔八千公尺——那張地圖不是在羞辱你，也不是在期待你穿著拖鞋走上去。<br><br>它是在告訴你：<strong>這趟路，你需要裝備、需要嚮導、需要氧氣。</strong><br><br>而神給的，正是這三樣：祂的話、祂的靈、祂的恩賜。
+      </div>
+
+      <p>所以這四個原則，最後是收在同一個地方的。分別形體與影兒，是為了看見基督；取原則放細則，是為了抓住神的心意；從消極到積極，是為了往前走；而新約更高的要求，是為了讓我們知道——<strong>這條路，不是靠自己走的。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">下次讀到利未記，別急著跳過</h2>
+      <p class="card-hook">寫給那個一年讀經計畫又陣亡的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我現在讀利未記的方式，和以前不一樣了。</p>
+
+      <p>以前我讀那些獻祭條例，只覺得繁瑣。現在我會停下來注意一些細節——祭牲必須是「沒有殘疾的」；獻祭的人必須<strong>親手按在祭牲頭上</strong>；血必須灑在壇的四邊。</p>
+
+      <p>「親手按在牠頭上」這個動作，我想了很久。那不是遠遠地交出去，那是要你走過去、把手放上去、感覺到那個生命的體溫，然後看著牠因你而死。</p>
+
+      <div class="highlight">
+        <strong>那道影子，把輪廓畫得非常清楚</strong>
+        <strong>要有一個無瑕疵的</strong>——因為有瑕疵的，救不了別人。<br><strong>要親手按上去</strong>——因為代贖不是一件抽象的交易，它必須被承認、被領受。<br><strong>要流血</strong>——因為「若不流血，罪就不得赦免」。<br><br>而每年、每月、每天，這些祭都要重複一次又一次。那份重複本身，就是一個沒有說出口的嘆息：<strong>還沒有完。</strong><br><br>直到有一天，有一位在十字架上說：「成了。」
+      </div>
+
+      <p>從那天起，那道影子完成了它的工作。</p>
+
+      <div class="card-divider"></div>
+
+      <p>所以，回到最開始那個問題：舊約律法跟我有什麼關係？</p>
+
+      <p>我現在會這樣回答：</p>
+
+      <p><strong>它讓我看見形體。</strong>沒有讀過利未記的人，會覺得十字架只是一件很慘的事；讀過利未記的人，會知道那是幾千年來所有祭壇上的血，終於流到了盡頭。</p>
+
+      <p><strong>它讓我看見神的心意。</strong>細則會過去，但那個「你們要成為聖潔，因為我是聖潔的」，一個字都沒有改變。</p>
+
+      <p><strong>它讓我知道自己需要什麼。</strong>因為新約的標準只有更高，而那個高度會逼我承認：我需要聖靈，不是需要更強的意志力。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        影子和本體之間，其實沒有衝突。<br><br>當你認識了那個人，回頭再看牆上那道影子，你不會覺得它多餘。你會覺得——<strong>原來早在他轉過街角之前，牆上就已經有他的形狀了。</strong>
+      </div>
+
+      <div class="big-quote">
+        這些原是後事的影兒，<br>那形體卻是基督
+        <cite>— 歌羅西書 二章十七節</cite>
+      </div>
+
+      <p>願你下一次翻到利未記的時候，不急著跳過。</p>
+
+      <p>慢一點讀。因為每一頁的字裡行間，都有一道影子；而你已經認得那個影子的主人了。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  影兒與形體 · Threads Series
+</footer>
+
+</body>
+</html>

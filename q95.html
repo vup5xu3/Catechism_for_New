@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>怎樣知道聖靈是神 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>三條<span>路徑</span></h1>
+  <p class="subtitle">怎樣知道聖靈是神？稱呼、位格、工作</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「你怎麼知道？」</h2>
+      <p class="card-hook">這個問題，值得被好好回答</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>上一題我們談過那個誤解：把聖靈當成一種能力。</p>
+
+      <p>而如果有人接著問：<strong>「那你怎麼知道聖靈是神？」</strong>——這是一個很合理的問題。</p>
+
+      <div class="highlight">
+        <strong>而聖經回答這個問題的方式，很有系統</strong>
+        它不是靠一節「聖靈是神」的宣告句——那樣的句子，聖經其實沒有直接寫。<br><br>它用的是<strong>三條路徑</strong>：<br><br><strong>稱呼</strong>——祂被怎麼稱呼。<br><strong>位格</strong>——祂具備什麼。<br><strong>工作</strong>——祂做什麼。<br><br>而這三條路徑，最後匯到同一個結論。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔎</span>
+        我覺得這個方法本身就很值得學。<br><br>它有點像辨認一個人的身分：<br><br>不是靠他自己說一句「我是某某」，<br>而是看<strong>別人怎麼稱呼他、他具備什麼、他能做什麼</strong>。<br><br>三樣對上了，身分就清楚了。
+      </div>
+
+      <p>接下來這幾篇，我們一條一條走。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">彼得那句話，把等號畫上去了</h2>
+      <p class="card-hook">前一句說聖靈，後一句直接說神</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第五章，是聖經裡把這件事說得最直接的一處。</p>
+
+      <p>亞拿尼亞賣了田產，私自留下幾分，把餘下的拿來放在使徒腳前，卻說那是全部。</p>
+
+      <p>而彼得的責備，分成兩句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">亞拿尼亞！為甚麼撒但充滿了你的心，叫你欺哄聖靈……你不是欺哄人，是欺哄神了
+        </p>
+        <p class="scripture-ref">使徒行傳 五章三至四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>兩句話，同一件事</strong>
+        「叫你<strong>欺哄聖靈</strong>」——第一句。<br>「你不是欺哄人，<strong>是欺哄神了</strong>」——第二句。<br><br>同一個行為，先被稱為「欺哄聖靈」，再被稱為「欺哄神」。<br><br>——<strong>這是聖經自己把等號畫上去的。</strong><br><br>而彼得不是在做神學推論。他是在現場責備一個人，語氣是急的。<br><br>那種脫口而出的用法，反而最能反映一個人心裡真正的認知。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而這一段還有一個細節：那件事的後果。<br><br>亞拿尼亞聽見這話，「就仆倒，斷了氣」。三小時後他的妻子進來，同樣的結局。<br><br>而經文說：「<strong>全教會和聽見這事的人都甚懼怕。</strong>」<br><br>——那份懼怕，本身就是一種見證：<strong>那不是一件冒犯了「某種能力」的事。</strong>
+      </div>
+
+      <p>那麼，三條路徑各是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">稱呼、位格、工作</h2>
+      <p class="card-hook">三條路徑，同一個結論</p>
+    </div>
+    <div class="card-body">
+
+      <p>怎樣知道聖靈是神？聖經給了三條路徑：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、祂接受神的稱呼</span>
+          舊約說「耶和華說」的話，新約引用時說是「聖靈說」的。<br>（賽六 8～9；徒廿八 25～26；耶卅一 31～34；來十 15；林後三 17；徒五 3、4）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、祂有神的位格</span>
+          無所不在、無所不知、永遠——這些只屬於神的屬性，聖靈都具備。<br>（詩一三九 7～10；創一 2；伯廿六 13；林前二 9～11；來九 14）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、祂作神的工作</span>
+          創造、賜生命、稱義、默示聖經、分賜恩賜——這些只有神能做的事，聖經歸給聖靈。<br>（伯卅三 4；詩一〇四 30；林前六 11；彼後一 21；徒一 16；路十二 11～12；徒廿 28；林前十二 8～11）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第一條路徑——<strong>祂接受神的稱呼</strong>——證據方式最有力，因為它是<strong>新約引用舊約時的用字</strong>。</p>
+
+      <div class="highlight">
+        <strong>那個模式是這樣的</strong>
+        以賽亞書第六章，先知看見主坐在寶座上，然後聽見<strong>主的聲音</strong>說：「我可以差遣誰呢？」並且吩咐他去對百姓說那段「你們聽是要聽見，卻不明白」的話。<br><br>——說話的，經文明說是<strong>耶和華</strong>。<br><br>而保羅在使徒行傳二十八章引用這同一段時，說的是：<br><br>「<strong>聖靈</strong>藉先知以賽亞向你們祖宗所說的話是不錯的。」<br><br>——同一段話。舊約說是耶和華說的，新約說是<strong>聖靈</strong>說的。
+      </div>
+
+      <div class="highlight">
+        <strong>而希伯來書也用了同樣的方式</strong>
+        耶利米書三十一章那個新約的應許：「<strong>耶和華說</strong>：那些日子以後，我與以色列家所立的約乃是這樣……」<br><br>而希伯來書十章引用它時，說的是：<br><br>「<strong>聖靈</strong>也對我們作見證；因為他既已說過……」<br><br>——同樣的模式。<br><br>而這種引用方式的分量在於：<strong>那不是一個論證，那是一個不假思索的用法。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二條路徑——<strong>祂有神的位格</strong>——指的是那些<strong>只屬於神的屬性</strong>。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>屬性</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">無所不在</td>
+            <td>「我往哪裡去躲避<strong>你的靈</strong>？我往哪裡逃、躲避你的面？我若升到天上，你在那裡；我若在陰間下榻，你也在那裡。」（詩一三九 7～10）</td>
+          </tr>
+          <tr>
+            <td class="src">無所不知</td>
+            <td>「只有神藉著<strong>聖靈</strong>向我們顯明了，因為聖靈<strong>參透萬事，就是神深奧的事也參透了</strong>。」（林前二 9～11）</td>
+          </tr>
+          <tr>
+            <td class="src">永遠</td>
+            <td>「何況基督藉著<strong>永遠的靈</strong>，將自己無瑕無疵獻給神。」（來九 14）</td>
+          </tr>
+          <tr>
+            <td class="src">參與創造</td>
+            <td>「<strong>神的靈</strong>運行在水面上。」（創一 2）「藉他的靈使天有妝飾。」（伯廿六 13）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而詩篇一三九篇那一段，特別有分量</strong>
+        因為那整段是在描述<strong>神的無所不在</strong>——我們在別處看過那張「空間地圖」：最高處、最深處、最遠處、最隱密處。<br><br>而那段的開頭問的是：「我往哪裡去躲避<strong>你的靈</strong>？」<br><br>——大衛把「你的靈」與「你的面」並列著問。<br><br>而「無所不在」這個屬性，是<strong>不可能屬於受造者</strong>的。
+      </div>
+
+      <p>下一篇，我們看第三條路徑——祂所作的工作。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那些「只有神能做」的事</h2>
+      <p class="card-hook">而聖經把它們歸給聖靈</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三條路徑，是列出那些<strong>在聖經裡專屬於神的工作</strong>，然後看聖經把它們歸給誰。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>工作</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">創造</td>
+            <td>「<strong>神的靈</strong>造我；全能者的氣使我得生。」（伯卅三 4）</td>
+          </tr>
+          <tr>
+            <td class="src">賜生命 · 更新地面</td>
+            <td>「你發出<strong>你的靈</strong>，牠們便受造；你使地面更換為新。」（詩一〇四 30）</td>
+          </tr>
+          <tr>
+            <td class="src">洗淨 · 成聖 · 稱義</td>
+            <td>「但如今你們奉主耶穌基督的名，並藉著<strong>我們神的靈</strong>，已經洗淨，成聖，稱義了。」（林前六 11）</td>
+          </tr>
+          <tr>
+            <td class="src">默示聖經</td>
+            <td>「因為預言從來沒有出於人意的，乃是人被<strong>聖靈</strong>感動，說出神的話來。」（彼後一 21）<br>「<strong>聖靈</strong>藉大衛的口，在聖經上預言……」（徒一 16）</td>
+          </tr>
+          <tr>
+            <td class="src">在受審時賜言語</td>
+            <td>「因為正在那時候，<strong>聖靈</strong>要指教你們當說的話。」（路十二 11～12）</td>
+          </tr>
+          <tr>
+            <td class="src">設立監督 · 牧養教會</td>
+            <td>「<strong>聖靈</strong>立你們作全群的監督，你們就當為自己謹慎……牧養神的教會。」（徒廿 28）</td>
+          </tr>
+          <tr>
+            <td class="src">分賜恩賜</td>
+            <td>「這一切都是這位聖靈所運行、<strong>隨己意</strong>分給各人的。」（林前十二 8～11）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        這張表裡，<strong>每一項在聖經的框架中，都只有神能做</strong>。<br><br><strong>創造</strong>——只有神能 bara。<br><strong>稱義</strong>——只有被得罪的那一位能宣告赦免。<br><strong>默示聖經</strong>——那是神的話的來源。<br><strong>分賜恩賜</strong>——而且是「<strong>隨己意</strong>」，那是主權的語言。<br><br>而使徒行傳二十章那一節特別值得注意：<br><br>「<strong>聖靈</strong>立你們作全群的監督……牧養<strong>神的教會</strong>，就是他用<strong>自己的血</strong>所買來的。」<br><br>——同一節裡，聖靈設立、神的教會、用自己的血買來。<strong>三者連在一起。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而還有一節，是把「主」這個稱號直接用在聖靈身上的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">主就是那靈；主的靈在哪裡，那裡就得以自由
+        </p>
+        <p class="scripture-ref">哥林多後書 三章十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而這一節的上下文，是保羅在講摩西臉上的帕子：「但他們的心地剛硬……<strong>但他們的心幾時歸向主，帕子就幾時除去了</strong>。主就是那靈。」<br><br>而下一節說：「我們眾人既然敞著臉得以看見主的榮光……如同從<strong>主的靈</strong>變成的。」<br><br>——保羅在這幾節裡，「主」與「那靈」是交替使用的。<br><br>而「主」（Kyrios）這個字，我們談過：<strong>七十士譯本正是用它來翻譯耶和華的名。</strong>
+      </div>
+
+      <p>下一篇，我們談這件事的實際意義。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">如果祂是神，那有幾件事就改變了</h2>
+      <p class="card-hook">這不是一個教義細節</p>
+    </div>
+    <div class="card-body">
+
+      <p>「聖靈是神」——這句話如果只停在認知層面，那它只是一條要背的教義。</p>
+
+      <p>而它其實會改變幾件很實際的事。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 那位住在你裡面的，是神自己</span>
+          「豈不知你們的身子就是<strong>聖靈的殿</strong>嗎？」（林前六 19）<br><br>而如果聖靈是神——那麼「內住」這件事的重量就完全不同了。<br><br><strong>不是一份神給的東西住在你裡面。是神自己。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 你的禱告有一位神在翻譯</span>
+          「聖靈親自用說不出來的歎息替我們禱告。」（羅八 26）<br><br>而下一節說：「鑒察人心的，<strong>曉得聖靈的意思</strong>，因為聖靈照著神的旨意替聖徒祈求。」<br><br>——那是神向神的祈求。<strong>中間不會失真。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 敬畏有了根據</span>
+          亞拿尼亞那件事之所以嚴重，正是因為這一點。<br><br>「不要叫神的聖靈擔憂」——如果那只是一種能量，這句話沒有分量。<br><br><strong>而如果那是神——那份提醒就完全不一樣了。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 你在孤單時並不孤單</span>
+          這是最實際的一項。<br><br>「叫他<strong>永遠</strong>與你們同在……他常與你們同在，也要<strong>在你們裡面</strong>。」<br><br>——那位無所不在的，此刻在你裡面。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第一項，保羅是拿來當作生活的理由的</strong>
+        哥林多前書六章那句「你們的身子就是聖靈的殿」，上下文是在講聖潔的生活。<br><br>而保羅的論證方式不是「這樣不好」，是：<br><br>「豈不知你們的身子就是聖靈的殿嗎？這聖靈是從神而來，住在你們裡頭的；<strong>並且你們不是自己的人，因為你們是重價買來的。所以，要在你們的身子上榮耀神。</strong>」<br><br>——理由是<strong>「裡面住著誰」</strong>。<br><br>那不是一條規定，那是一個關於場所性質的事實。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而還有一件事值得注意：<strong>聖靈是神，而祂選擇了一種很不張揚的工作方式。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        主自己說：「他不是憑自己說的……他要<strong>榮耀我</strong>。」<br><br>——那位是神的，卻把注意力引向另一位。<br><br>而這件事本身，就是那份「三合一」的展現：<strong>子榮耀父，靈榮耀子。</strong><br><br>而這也提供了一個很實用的辨別：<strong>凡把焦點引向聖靈自己、引向某種現象、引向某個人的——都與聖靈自己的工作方式不合。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而這也是為什麼，聖靈的工作常常是「不被注意」的</strong>
+        祂提醒你想起一句經文。<br>祂在你要說出一句傷人的話之前，讓你停了半秒。<br>祂讓你在讀某一段時，忽然刺到心裡。<br>祂讓你在做一個決定時，心裡不平安。<br><br>——這些都不壯觀。<br><br>但那是神在做的事。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那位無所不在的，選擇住在你裡面</h2>
+      <p class="card-hook">寫給那個覺得自己不夠格的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>三條路徑走完了。而我想把它們收在一個很小的地方。</p>
+
+      <div class="highlight">
+        <strong>把兩節經文放在一起讀</strong>
+        <strong>詩篇一三九篇</strong>：「我往哪裡去躲避你的靈？……我若升到天上，你在那裡；我若在陰間下榻，你也在那裡。」<br><br><strong>哥林多前書六章</strong>：「豈不知你們的身子就是<strong>聖靈的殿</strong>嗎？」<br><br>——同一位。<br><br>那位充滿天地、無處不在、連陰間都不例外的——<br><br><strong>選擇住在你這裡。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        而所羅門在獻殿那天說的那句話，我想再引一次：<br><br>「<strong>神果真住在地上嗎？看哪，天和天上的天尚且不足你居住的，何況我所建的這殿呢？</strong>」<br><br>他建了當時世界上最華美的建築，而他說：這裡裝不下。<br><br>而如今，那位住進了你。<br><br>——不是因為你這個殿夠格。<br><br><strong>而是因為祂願意。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己不夠格——覺得自己這個「殿」太破舊、太亂、不配——</p>
+
+      <div class="highlight">
+        <strong>那個順序，值得記得</strong>
+        以弗所書說：「你們既<strong>聽見</strong>真理的道……既<strong>然信他</strong>，就受了所應許的<strong>聖靈為印記</strong>。」<br><br>——先信，就受了印記。<br><br>不是「先整理好，祂才進來」。<br><br>而是<strong>祂進來了，然後開始整理。</strong><br><br>就像那些預備的工作，本來就是屋主自己在做的。
+      </div>
+
+      <div class="big-quote">
+        主就是那靈；<br>主的靈在哪裡，<br>那裡就得以自由
+        <cite>— 哥林多後書 三章十七節</cite>
+      </div>
+
+      <p>怎樣知道聖靈是神？</p>
+
+      <p><strong>因為祂接受神的稱呼</strong>——舊約說是耶和華說的，新約說是聖靈說的。</p>
+
+      <p><strong>因為祂有神的位格</strong>——無所不在、無所不知、永遠。</p>
+
+      <p><strong>因為祂作神的工作</strong>——創造、賜生命、稱義、默示聖經、隨己意分賜恩賜。</p>
+
+      <p>而這一切的實際意義是：</p>
+
+      <p>此刻在你裡面的那一位，<strong>是神自己。</strong></p>
+
+      <p>而「主的靈在哪裡，那裡就得以自由」。</p>
+
+      <p>願你今天，就住在那份自由裡。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖靈是神 · Threads Series
+</footer>
+
+</body>
+</html>

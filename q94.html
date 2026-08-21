@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>對聖靈的誤解 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>一個常見的<span>誤解</span></h1>
+  <p class="subtitle">把「祂」當成「它」——而這個誤解，代價不小</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「今天很有能力」</h2>
+      <p class="card-hook">那句話，藏著一個我沒察覺的假設</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>聚會結束後，常會聽到這樣的對話：</p>
+
+      <p>「今天很有能力。」<br>「今天比較沒有感覺。」<br>「那個講員很有恩膏。」</p>
+
+      <p>我以前也這樣說，說得很自然。</p>
+
+      <div class="highlight">
+        <strong>直到有一天我意識到那些話的句型</strong>
+        「有能力」、「沒感覺」、「有恩膏」——<br><br>這些全部是<strong>在描述一種「量」</strong>。<br><br>多一點、少一點、今天有、今天沒有。<br><br>而那個句型底下，其實藏著一個假設：<strong>聖靈是某種可以多可以少的東西。</strong>
+      </div>
+
+      <p>而這正是這一題所指出的誤解：</p>
+
+      <div class="big-quote">
+        信徒中有人以為聖靈只是<br>一種屬靈的能力，或神的靈氣，<br>不知道聖靈是有位格的，<br>是主，是神。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔌</span>
+        我後來想到一個很直接的檢查方式：<strong>把「聖靈」換成「主耶穌」，看那句話還通不通。</strong><br><br>「今天主耶穌很有能力」——聽起來就怪了。<br>「那個講員很有主耶穌」——完全不通。<br><br>而如果同一個句型套在聖父或聖子身上會顯得奇怪，<strong>那它套在聖靈身上，大概也有問題。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這個誤解——它從哪裡來，會造成什麼，以及怎麼調回來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">行邪術的西門，拿錢來買</h2>
+      <p class="card-hook">而他的錯誤，就是這個誤解的極致版本</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第八章，記載了一件很值得研究的事。</p>
+
+      <p>撒瑪利亞城裡有一個行邪術的，名叫西門。他行法術，叫城裡的人驚奇，眾人都聽從他，說：「這人就是那稱為神的大能者。」</p>
+
+      <p>而腓利在那裡傳福音之後，經文說：<strong>「西門自己也信了。」</strong>而且受了洗，常與腓利在一處。</p>
+
+      <div class="highlight">
+        <strong>然後彼得和約翰來了</strong>
+        他們按手在那些人身上，那些人就受了聖靈。<br><br>而西門看見這件事之後，做了一件事：<br><br>「<strong>就拿錢給使徒</strong>，說：把這權柄也給我，叫我手按著誰，誰就可以受聖靈。」<br><br>——他要買。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💰</span>
+        而這件事最值得注意的地方是：<strong>西門的邏輯，其實很一致。</strong><br><br>他原本是行法術的。在那個世界裡，能力就是一種<strong>可以取得、可以操作、可以交易的東西</strong>。<br><br>而他看見一個更強的能力，於是他做了那個世界裡合理的事：<strong>出價。</strong><br><br>——他不是在褻瀆。他只是<strong>用他原本的框架，在理解一件新的事。</strong><br><br>而那個框架就是：<strong>這是「它」，不是「祂」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而彼得的回應，重到有點驚人：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你的銀子和你一同滅亡吧！因你想神的恩賜是可以用錢買的
+        </p>
+        <p class="scripture-ref">使徒行傳 八章二十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>為什麼反應這麼強烈？</strong>
+        因為那個提議，本質上是把神當成了一件商品。<br><br>而彼得接著說：「你在這道上無分無關，<strong>因為在神面前，你的心不正</strong>。」<br><br>——注意，彼得沒有說「你的做法不對」。<br><br>他說的是：<strong>「你的心不正。」</strong><br><br>那個誤解不是技術問題，是心的問題。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        而這件事在今天的樣子，未必是拿錢買。<br><br>它可能是：<br><br>用某種方法、某種姿勢、某種操作，來「取得」更多。<br>把某位有恩賜的人當成能力的來源。<br>把聚會當成一個「充電站」——去了就有，不去就沒有。<br><br>——那些都是同一個框架的變形：<strong>把祂當成一種可以取得的東西。</strong>
+      </div>
+
+      <p>那麼，這個誤解具體是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">誤解的內容，與它的代價</h2>
+      <p class="card-hook">不知道祂是有位格的，是主，是神</p>
+    </div>
+    <div class="card-body">
+
+      <p>這個誤解，教材說得很直接：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">誤解的內容</span>
+          有人以為聖靈只是<strong>一種屬靈的能力</strong>，或<strong>神的靈氣</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">被漏掉的三件事</span>
+          不知道聖靈<strong>是有位格的</strong>；<br>不知道聖靈<strong>是主</strong>；<br>不知道聖靈<strong>是神</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「有位格」這三個字，需要說清楚，因為它是關鍵。</p>
+
+      <div class="highlight">
+        <strong>「有位格」是什麼意思？</strong>
+        簡單說：<strong>是一個「祂」，不是一個「它」。</strong><br><br>而位格的基本標記，聖經在聖靈身上全部具備：<br><br><strong>有理智</strong>——「聖靈參透萬事，就是神深奧的事也參透了。」（林前二 10～11）<br><strong>有情感</strong>——「不要叫神的聖靈<strong>擔憂</strong>。」（弗四 30）<br><strong>有意志</strong>——「這一切都是這位聖靈所運行、<strong>隨己意</strong>分給各人的。」（林前十二 11）<br><br>——理智、情感、意志。<strong>這三樣，能力沒有。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚡</span>
+        電力有能量，但電力不會「隨己意」決定要給誰多少。<br><br>而哥林多前書十二章十一節那句「<strong>隨己意分給各人</strong>」，把這件事說死了。<br><br>——分配恩賜的，是一位有意志的。<br><br>而這也解釋了為什麼我們不能「取得更多」：<strong>那不是一個取用的問題，是一位在分配。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這個誤解的<strong>代價</strong>是什麼？我想至少有四項：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>把祂當成「它」</th>
+            <th>結果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">會想「取得更多」</td>
+            <td>信仰變成一種<strong>追求體驗的努力</strong>——追感動、追現象、追某種狀態。而那條路會越走越渴。</td>
+          </tr>
+          <tr>
+            <td class="src">會用感覺判斷</td>
+            <td>有感覺＝有聖靈，沒感覺＝沒有。<br>——而這會讓人在乾旱的日子裡以為自己被丟下了。</td>
+          </tr>
+          <tr>
+            <td class="src">會失去敬畏</td>
+            <td>對一種能力，人不會有敬畏。而聖經說：<strong>祂可以被欺哄、被褻瀆、會擔憂。</strong></td>
+          </tr>
+          <tr>
+            <td class="src">會失去關係</td>
+            <td>這是最大的損失。<br>——你不會對一股力量說話，<strong>而祂本來是「被召到你旁邊來的那一位」。</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第二項，我想多說一句</strong>
+        因為它造成的傷害，很實際。<br><br>一個把聖靈理解成「感覺」的人，在心裡枯乾的日子裡，會下一個很傷的結論：<strong>「聖靈離開我了。」</strong><br><br>而聖經說的是：「叫他<strong>永遠</strong>與你們同在。」<br>「你們既然受了他的<strong>印記</strong>，等候得贖的日子來到。」<br><br>——「印記」是一個所有權的記號。<strong>它不會因為你今天心情平淡而失效。</strong>
+      </div>
+
+      <p>那麼，怎麼調整回來？下一篇，我們看聖經自己的用詞。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">誤解從哪裡來？從那些「像」的比喻</h2>
+      <p class="card-hook">而比喻的問題，是它們容易被當成定義</p>
+    </div>
+    <div class="card-body">
+
+      <p>這個誤解不是憑空來的。它其實有一個很自然的來源：<strong>聖經自己用了很多「非位格」的意象來描述聖靈。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>意象</th>
+            <th>經文</th>
+            <th>它強調的是</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">風</td>
+            <td>「風隨著意思吹……凡從聖靈生的，也是如此。」（約三 8）</td>
+            <td>自由、不受人操控</td>
+          </tr>
+          <tr>
+            <td class="src">水</td>
+            <td>「從他腹中要流出活水的江河來……耶穌這話是指著信他之人要受聖靈說的。」（約七 38～39）</td>
+            <td>供應、湧流、解渴</td>
+          </tr>
+          <tr>
+            <td class="src">火</td>
+            <td>「他要用聖靈與火給你們施洗。」（太三 11）</td>
+            <td>潔淨、熬煉、熱切</td>
+          </tr>
+          <tr>
+            <td class="src">油</td>
+            <td>膏抹的意象——「神怎樣以聖靈和能力膏拿撒勒人耶穌。」</td>
+            <td>分別為聖、授職</td>
+          </tr>
+          <tr>
+            <td class="src">鴿子</td>
+            <td>「聖靈降臨在他身上，形狀彷彿鴿子。」（路三 22）</td>
+            <td>溫柔、純潔</td>
+          </tr>
+          <tr>
+            <td class="src">印記 · 憑據</td>
+            <td>「受了所應許的聖靈為印記……這聖靈是我們得基業的憑據。」（弗一 13～14）</td>
+            <td>所有權、保證</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        這六個意象，沒有一個是「人」。<br><br>風、水、火、油、鴿子、印記——<strong>全部是東西或現象。</strong><br><br>所以難怪人會往「它」的方向理解。<br><br>而問題出在哪裡？<br><br><strong>出在把「比喻」當成了「定義」。</strong><br><br>——這正是我們在三合一那一題談過的同一個問題：<strong>比喻只能借一點光，不能拿來下定義。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而值得注意的是：<strong>聖經對聖父、聖子，也用過非位格的意象。</strong><br><br>神被稱為「<strong>磐石</strong>」、「<strong>盾牌</strong>」、「<strong>烈火</strong>」、「<strong>高臺</strong>」。<br><br>主耶穌自稱是「<strong>門</strong>」、「<strong>道路</strong>」、「<strong>葡萄樹</strong>」、「<strong>生命的糧</strong>」。<br><br>——而沒有人因此以為父是一塊石頭，或子是一扇門。<br><br>那為什麼在聖靈這裡，我們會混淆？<br><br>大概是因為：<strong>父與子的位格，我們有其他明確的參照（父、子、人的樣式）；而聖靈，我們只剩下那些意象。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>所以，要調回來，方法是<strong>去看聖經用在聖靈身上的動詞</strong>。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">祂說話 · 祂差派</span>
+          「聖靈<strong>說</strong>：要為我分派巴拿巴和掃羅。」（徒十三 2）<br>「他們既被聖靈<strong>差遣</strong>。」（徒十三 4）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">祂禁止 · 祂不許</span>
+          「聖靈既然<strong>禁止</strong>他們在亞細亞講道……耶穌的靈卻<strong>不許</strong>。」（徒十六 6～7）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">祂教導 · 祂提醒 · 祂引導</span>
+          「他要將一切的事<strong>指教</strong>你們，並且要叫你們<strong>想起</strong>我對你們所說的一切話。」（約十四 26）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">祂作見證 · 祂榮耀基督</span>
+          「他要為我<strong>作見證</strong>。」（約十五 26）「他要<strong>榮耀我</strong>。」（約十六 14）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">祂為我們禱告</span>
+          「聖靈親自用說不出來的歎息<strong>替我們禱告</strong>。」（羅八 26）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        風不會禁止人去某個地方。<br>水不會提醒你想起什麼。<br>火不會替你禱告。<br><br>——<strong>這些動詞，只有位格做得到。</strong><br><br>所以調整的方法很簡單：<strong>讀聖經時，注意那些動詞。</strong><br><br>意象告訴你祂<strong>像什麼</strong>；動詞告訴你祂<strong>是誰</strong>。
+      </div>
+
+      <p>下一篇，我們談那個誤解最深的一層代價。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「銷滅聖靈的感動」，是一個關係的用語</h2>
+      <p class="card-hook">而這句話，只有在「祂」的框架裡才說得通</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經給信徒的幾個關於聖靈的吩咐，全部是<strong>關係的語言</strong>。這一點值得注意：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">不要銷滅聖靈的感動</span>
+          「不要銷滅聖靈的感動。」（帖前五 19）<br>原文那個字（sbennymi）是<strong>「熄滅」</strong>——用在火上。<br>而那個吩咐的意思是：<strong>當祂動工時，不要把它壓下去。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">不要叫聖靈擔憂</span>
+          「不要叫神的聖靈擔憂。」（弗四 30）<br>——這是<strong>情感的語言</strong>。<br>只有一位會擔憂。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">要被聖靈充滿</span>
+          「要被聖靈充滿。」（弗五 18）<br>原文是<strong>被動語態</strong>，而且是<strong>持續的時態</strong>——「要不斷地被充滿」。<br>不是「你去取得」，是<strong>「讓祂充滿」</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">不可欺哄、不可褻瀆</span>
+          「叫你欺哄聖靈？」（徒五 3）<br>「惟獨褻瀆聖靈，總不得赦免。」（太十二 31）<br>——<strong>這兩個動詞，對象只能是位格。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這四個吩咐，如果套在「一股能力」上，全部不通</strong>
+        你不能欺哄一股能力。<br>你不能讓一種力量擔憂。<br>「銷滅感動」對一股能量而言，也沒有意義。<br><br>——所以聖經給我們的吩咐本身，就在告訴我們祂是誰。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「要被聖靈充滿」那節的文法，特別值得說明，因為它糾正了一個常見的錯誤方向。</p>
+
+      <div class="term-box">
+        <div class="term-original">Plērousthe<br>要被充滿</div>
+        <div class="term-desc">以弗所書五章十八節。而這個動詞有三個特徵：<br><br><strong>被動語態</strong>——不是「你去充滿自己」，是「讓祂充滿你」。<br><strong>現在式</strong>——表示<strong>持續的、不斷的</strong>，不是一次完成的。<br><strong>命令語氣</strong>——這是一個吩咐，不是一個建議。<br><br>所以那句話的完整意思接近：<strong>「你們要持續地、不斷地讓聖靈充滿。」</strong></div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛵</span>
+        我想到帆船。<br><br>船不能製造風，也不能抓住風。<br><br>船能做的是：<strong>把帆張開。</strong><br><br>而張帆之後，走多快、往哪裡走——那是風決定的。<br><br>——這正是「被動語態」的意思：<strong>你負責張帆，祂負責吹。</strong><br><br>而如果一個人一直在想「我怎麼弄到更多的風」，他就搞錯了自己的角色。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而以弗所書那節的上下文，也很值得注意。</p>
+
+      <div class="highlight">
+        <strong>「不要醉酒……乃要被聖靈充滿」</strong>
+        保羅把這兩件事對比著講。<br><br>而那個對比的重點是什麼？<br><br><strong>兩者都是「被某樣東西掌管」。</strong><br><br>一個人喝醉了，他的言語、動作、判斷，都被酒精主導。<br><br>而「被聖靈充滿」，講的是同一種結構——<strong>被誰主導。</strong><br><br>而保羅接著列出的，是那個主導所產生的實際結果：<br><br>「當用詩章、頌詞、靈歌<strong>彼此對說</strong>」、「口唱心和地<strong>讚美主</strong>」、「<strong>凡事感謝</strong>」、「<strong>存敬畏基督的心，彼此順服</strong>」。<br><br>——注意那些全部是<strong>與人相處</strong>的事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        而以弗所書接下來那一整段，講的是<strong>夫妻、父母子女、主僕</strong>的關係。<br><br>所以「被聖靈充滿」的證據，保羅拿出來的不是某種現象，<strong>是你在家裡的樣子。</strong><br><br>——這一點很實際，也很不容易。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂不是你要取得的，是你要認識的</h2>
+      <p class="card-hook">寫給那個一直覺得自己「不夠」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一個很實際的地方。</p>
+
+      <div class="highlight">
+        <strong>因為這個誤解，最傷人的地方是它造成的疲累</strong>
+        如果聖靈是一種可以多可以少的能力，那信仰就會變成一場<strong>永無止盡的追求</strong>：<br><br>要更多的感動、更多的能力、更深的經歷、更強的恩膏。<br><br>而永遠不夠。<br><br>因為那個框架的本質，是<strong>「量」</strong>——而量是沒有盡頭的。<br><br>——所以一個人可以在教會裡很努力、很追求，卻越來越累、越來越空。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💧</span>
+        而換一個框架，那件事的性質就完全不同了。<br><br>一段關係，不是靠「取得更多」維持的。<br><br>你不會問「我今天要怎麼取得更多的家人」。<br><br>你會問的是：<strong>我今天有沒有花時間跟他們在一起。</strong><br><br>——而那，才是聖經給的方向。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>所以，那個調整很簡單，卻很根本：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">從「取得」到「順服」</span>
+          問題不是「我怎麼得到更多」，是<strong>「祂要我做什麼」</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">從「感覺」到「同在」</span>
+          「叫他<strong>永遠</strong>與你們同在」——那個同在，不隨感覺變動。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">從「使用」到「相處」</span>
+          你可以對祂說話。你可以問祂。<strong>你可以在做決定前，停下來聽一下。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">從「怕不夠」到「怕祂擔憂」</span>
+          這個轉變很關鍵。<br>前者的焦點在<strong>我夠不夠</strong>；後者的焦點在<strong>祂的心</strong>。
+        </div>
+      </div>
+
+      <div class="big-quote">
+        不要叫神的聖靈擔憂；<br>你們原是受了他的印記，<br>等候得贖的日子來到
+        <cite>— 以弗所書 四章三十節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節經文的後半句，是給那個怕自己不夠的人的</strong>
+        「你們原是<strong>受了他的印記</strong>，等候得贖的日子來到。」<br><br>——印記。<br><br>那是一個所有權的記號，在當時用於文件與貨物：蓋上了，就表示<strong>這屬於誰、而且不可被更動。</strong><br><br>所以那句「不要叫祂擔憂」，是說給<strong>已經被蓋了印的人</strong>聽的。<br><br>不是「小心，否則你會失去祂」。<br><br>是「<strong>你已經是祂的了——所以，不要讓祂難過。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那句「今天很有能力」。</p>
+
+      <p>我現在會盡量換一個說法。不是因為那句話有多嚴重，而是因為<strong>語言會反過來塑造我們的認知</strong>。</p>
+
+      <p>而我想記得的是：那不是一股力量在我身上多了一點。</p>
+
+      <p>是<strong>有一位</strong>，在我旁邊，也在我裡面。</p>
+
+      <p>祂會說話，會提醒，會攔阻，會為我禱告。</p>
+
+      <p>而祂也會，因為我而擔憂。</p>
+
+      <p>願你今天，記得祂是「祂」。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  對聖靈的誤解 · Threads Series
+</footer>
+
+</body>
+</html>

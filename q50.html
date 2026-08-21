@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人類看得見神嗎 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>看不見，卻<span>看見了</span></h1>
+  <p class="subtitle">聖經對這個問題，給了兩個相反的答案</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「只要讓我看一次，一次就好」</h2>
+      <p class="card-hook">我心裡同時住著渴望，和一份戒心</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我記得剛信主那幾年，心裡常常有一個很直接的願望：<strong>只要祂顯現一次就好。</strong>不用很久，一秒鐘也行。只要讓我親眼看見一次，我這輩子就再也不會懷疑了。</p>
+
+      <p>那個願望在我最軟弱的時候特別強烈。半夜睡不著的時候，我會想：如果現在房間裡出現一道光，如果有一個聲音叫我的名字，那我明天就可以起來面對一切了。我不是要神蹟表演，我只是想要一個確據——一個可以拿在手上、不會再流失的確據。</p>
+
+      <div class="highlight">
+        <strong>可是同時，我心裡還有另一種聲音</strong>
+        每次聽到有人說「我看見神了」、「神親自向我顯現，站在我床邊」、「我親眼看見祂的樣子」——我心裡不但沒有羨慕，反而立刻升起一份戒心。<br><br>我說不出為什麼，但那份不安是真的。我一方面渴望看見，一方面又對「聲稱看見了」的人有所警覺。這兩種心情長期在我裡面打架，而我一直沒有把它們理清楚。
+      </div>
+
+      <p>後來我開始認真讀聖經在這件事上到底怎麼說。而我讀到的第一個發現，讓我愣了一下——<strong>聖經對「人類看得見神嗎」這個問題，給了兩個看起來完全相反的答案。</strong></p>
+
+      <p>一邊說：「從來沒有人看見神。」而且說得非常斬釘截鐵，甚至說祂是「人未曾看見、也是不能看見的」。</p>
+
+      <p>另一邊卻說：「清心的人有福了，因為他們必得見神。」約伯說「我必在肉體之外得見神」。詩人說「我必在義中見你的面」。啟示錄說祂的僕人「也要見他的面」。</p>
+
+      <p>一開始我以為這是矛盾。但後來我明白了：<strong>這不是矛盾，這是兩個不同層次的答案。而把這兩層分清楚，剛好就解開了我心裡那場打了很多年的架。</strong></p>
+
+      <p>接下來這幾篇，我想陪你把這件事弄清楚。我們會先去西奈山上，看一個人開口求了那個我們都想求的請求——「求你顯出你的榮耀給我看」。而神的回答，出乎意料地溫柔。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「求你顯出你的榮耀給我看」</h2>
+      <p class="card-hook">摩西問了我們都想問的那句，而神說：你不能看見我的面</p>
+    </div>
+    <div class="card-body">
+
+      <p>出埃及記三十三章，是整本聖經裡最私密的一段對話之一。</p>
+
+      <p>那時金牛犢的事剛過去，百姓才犯了大罪，摩西為他們苦苦代求。神應許仍要與他們同去。而就在這個時刻，摩西開口求了一件他自己的事——不是為百姓求，是為他自己求。他說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">求你顯出你的榮耀給我看</p>
+        <p class="scripture-ref">出埃及記 三十三章十八節</p>
+      </div>
+
+      <p>我很喜歡這一句，因為它太誠實了。摩西已經在燒著的荊棘前站過，已經看過紅海分開，已經在雲柱火柱下走了幾個月，已經「與神面對面說話」。可是他還想要更多。他心裡那個「讓我看見」的渴望，跟我半夜睡不著時的那個渴望，其實是同一個。</p>
+
+      <p>而神的回答分成兩半。前半句聽起來像是拒絕：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你不能看見我的面，因為人見我的面不能存活</p>
+        <p class="scripture-ref">出埃及記 三十三章二十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>請注意祂用的詞</strong>
+        神說的是「<strong>不能</strong>」，不是「不肯」。這中間的差別很大。祂沒有說「我不願意讓你看」，祂說的是「你承受不住」。那份榮耀不是被鎖起來的獎品，而是一種會使人喪命的強度。<br><br>這就像我們無法直視正午的太陽——不是太陽藏起來了，是我們的眼睛不是為那個亮度造的。
+      </div>
+
+      <p>但回答的後半句，才是我覺得真正動人的地方。神沒有就這樣結束對話，祂做了一個安排：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪨</span>
+        「我要將你放在磐石穴中，用我的手遮掩你，等我過去，然後我要將我的手收回，你就得見我的背，卻不得見我的面。」<br><br>你看見這個畫面裡的體貼了嗎？<strong>祂親手遮住摩西，等最強的那道榮耀過去，才把手收回。</strong>祂沒有拒絕這個請求，祂調整了方式——祂讓摩西在承受得住的範圍內，看到最多。
+      </div>
+
+      <p>而「你就得見我的背」這句話，藏著一個極美的神學。因為那個譯作「背」的希伯來字，指的是「後面、之後」——摩西所看見的，其實是神<strong>經過之後所留下的榮耀痕跡</strong>。</p>
+
+      <p>這件事我後來想了很久。因為它太貼近我們真實的經驗了：<strong>我們往往不是在事情發生的當下看見神，而是在事情過去之後，回頭看，才忽然明白祂當時在做什麼。</strong>當下我們只看見混亂；多年以後回望，才看見那是一條被引導的路。</p>
+
+      <div class="card-divider"></div>
+
+      <p>可是另一方面，聖經裡又有幾個人，明明說自己看見了。</p>
+
+      <p>以賽亞說：「我又看見主坐在高高的寶座上」，然後他的反應是：「禍哉！我滅亡了！因為我是嘴唇不潔的人……又因我眼見大君王萬軍之耶和華。」他不是興奮，他以為自己要死了。</p>
+
+      <p>雅各在雅博渡口與人摔跤一夜之後，給那地方起名叫毘努伊勒，意思是「神的面」。他說：「我面對面見了神，<strong>我的性命仍得保全</strong>。」——你聽他的語氣，他是驚訝自己居然還活著。</p>
+
+      <p>基甸見了耶和華的使者，第一個反應是喊：「哀哉！主耶和華啊，我不好了，因為我覿面看見耶和華的使者。」</p>
+
+      <div class="highlight">
+        <strong>這些反應有一個共同點</strong>
+        每一個「看見」的人，第一個反應都不是喜樂，而是<strong>覺得自己活不了</strong>。這件事本身就告訴我們：聖經所講的「看見神」，跟我們想像的那種「看一眼就安心了」，完全不是同一回事。<br><br>我們以為看見神會讓我們得著確據；聖經記載的是，看見神會讓人先意識到自己該死。
+      </div>
+
+      <p>所以，聖經兩邊都說了：說不能看見，也說有人看見了；說看見會死，也說清心的人必得見神。這到底怎麼放在一起？下一篇，我們正面破這個題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩個答案都是真的，因為問的不是同一件事</h2>
+      <p class="card-hook">「看見」有三種，混在一起就會出大問題</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經對這個問題的回答，確實是相反的兩方面。我們先把兩邊的經文都攤開來，一邊都不刪。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、人不能看見神</span>
+          「從來沒有人看見神。」（約一 18）「他是那可稱頌、獨有權能的萬王之王、萬主之主，就是那獨一不死、住在人不能靠近的光裡，是人未曾看見、也是不能看見的。」（提前六 15～16）<br><strong>在今世，從來沒有人憑肉眼看見過神。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、人能看見神</span>
+          「清心的人有福了，因為他們必得見神。」（太五 8）「我這皮肉滅絕之後，我必在肉體之外得見神。」（伯十九 26）「至於我，我必在義中見你的面；我醒了的時候，得見你的形像，就心滿意足了。」（詩十七 15）「也要見他的面。」（啟廿二 3～4）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>解開的關鍵，在於一件很簡單卻常被忽略的事：<strong>中文的「看見」是一個詞，但聖經所講的「看見」，其實有三種不同的性質。</strong>把它們分開，兩邊的經文就完全不衝突了。</p>
+
+      <div class="term-box">
+        <div class="term-original">第一種<br>肉眼之見</div>
+        <div class="term-desc">用身體的眼睛，看見一個可見的對象。<strong>在今世，這是不可能的。</strong>這正是約翰福音一章十八節和提摩太前書六章十六節所斷然否定的。神是靈，不受空間限制，也不是一個可以被光線反射的物體。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">第二種<br>屬靈的眼光</div>
+        <div class="term-desc">在今世，一切屬神的人，憑著屬靈的眼光，可以看見神、認識神。這是真實的「看見」——不是想像，不是自我暗示，而是心中的眼睛被照明（弗一 18）。「清心的人必得見神」，講的正是這一層。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">第三種<br>面對面之見</div>
+        <div class="term-desc">將來的事。「我們如今彷彿對著鏡子觀看，模糊不清，到那時，就要面對面了。」（林前十三 12）「也要見他的面。」（啟廿二 4）這是永恆裡的實況，不是今世的經驗。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>三層一分開，經文就全部對上了</strong>
+        「從來沒有人看見神」——講的是<strong>第一種</strong>。<br>「清心的人必得見神」——講的是<strong>第二種</strong>，以及最終的第三種。<br>「我必在肉體之外得見神」——約伯自己就把時間點講清楚了：是在皮肉滅絕之後，屬於<strong>第三種</strong>。<br>「也要見他的面」——啟示錄的場景是新耶路撒冷，明確是<strong>第三種</strong>。<br><br>兩邊都是真的。它們只是在回答不同層次的問題。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這個區分，帶出一條極其重要、也極其實用的判準——它正好回答了我在第一篇提到的那份戒心：</p>
+
+      <div class="big-quote">
+        既然在今世沒有人能憑肉眼看見神，<br>那麼凡是可以憑肉眼看見的「神」，<br>就都不是真神。
+      </div>
+
+      <p>這一點必須說得清楚。主張「今世可以用肉眼看見神」的說法，是一個嚴重的錯誤——它不但違背聖經明確的宣告，更打開了一道危險的門：因為凡是肉眼可以看見的，就是可以被塑造、被展示、被冒充的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔍</span>
+        想想第二條誡命為什麼那麼嚴厲：「不可為自己雕刻偶像，也不可做甚麼形像彷彿上天、下地和地底下、水中的百物。」神禁止的不是藝術，而是<strong>把那位不可見的，變成一個可見的東西</strong>。因為一旦祂變成可見的，祂就可以被我掌控、被我擺放、被我用來交換我想要的東西。<br><br>凡看得見的，就管得動。這就是偶像的邏輯。
+      </div>
+
+      <p>所以，當有人聲稱自己親眼看見了神的形貌，我們心裡那份不安是有根據的。聖經自己給了我們這道防線。</p>
+
+      <p>不過，如果故事停在這裡，那就太冷了——我們只得到一句「不可能」。所以我們得看下去。因為約翰福音一章十八節那節經文，其實只讀了一半。它的下半句，把整扇門打開了。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「看見」這個字，原文比中文寬得多</h2>
+      <p class="card-hook">還有那節被我們讀了一半的經文</p>
+    </div>
+    <div class="card-body">
+
+      <p>先看希伯來文。舊約裡「看見」最常用的字是 <strong>רָאָה（ra'ah）</strong>，而它的語意範圍比中文的「看見」寬闊很多。</p>
+
+      <div class="term-box">
+        <div class="term-original">Ra'ah<br>希伯來文</div>
+        <div class="term-desc">它可以指視覺的看見，但也常常指「察覺、領悟、經歷、體會」。所以詩人說「你們要嘗嘗主恩的滋味，便知道他是美善」——那種「知道」，在希伯來的語感裡就是一種「看見」。<strong>ra'ah 常常等於「親身經歷到」，而不只是「目光接觸到」。</strong></div>
+      </div>
+
+      <p>這一點很關鍵。當希伯來人說「我看見神」的時候，他可能指的是「我經歷到了神」，而不是「我的視網膜上出現了神的影像」。中文一個「見」字，把這些層次全部壓平了。</p>
+
+      <p>再回到摩西的那段對話。神說「你就得見我的背，卻不得見我的面」——這裡的「面」與「背」，在希伯來文裡都不只是身體部位：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>原文</th>
+            <th>字面意思</th>
+            <th>神學含義</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">Panim<br>面</td>
+            <td>臉、面前</td>
+            <td>代表位格的正面、完全的自我、毫無遮蔽的臨在。「見祂的面」＝完全、直接、無中介的相見。</td>
+          </tr>
+          <tr>
+            <td class="src">Achor<br>背</td>
+            <td>後面、之後</td>
+            <td>代表已經過去的作為所留下的痕跡。「見祂的背」＝在祂經過之後，看見祂走過的軌跡。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-divider"></div>
+
+      <p>接著看新約的希臘文。這裡的用字更精細：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>希臘文</th>
+            <th>語意</th>
+            <th>出現的地方</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">Horaō</td>
+            <td>一般性的「看見」，包含身體的視覺。</td>
+            <td>「從來沒有人<strong>看見</strong>神」——約一 18 用的正是這個字。</td>
+          </tr>
+          <tr>
+            <td class="src">Theaomai</td>
+            <td>凝視、細看、注目觀察，帶有「看進去」的意味。</td>
+            <td>「我們也<strong>見過</strong>他的榮光」——約一 14。門徒不是瞥見，是長期凝視。</td>
+          </tr>
+          <tr>
+            <td class="src">Exēgeomai</td>
+            <td>解說、闡明、引導出來。英文「釋經學」（exegesis）就是從這個字來的。</td>
+            <td>約一 18 下半句的關鍵動詞——見下文。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>那節被讀了一半的經文</strong>
+        我們常常只引約翰福音一章十八節的前半句：「從來沒有人看見神。」但這節經文是一個完整的句子，它有下半句——而下半句才是重點：<br><br>「從來沒有人看見神，<strong>只有在父懷裡的獨生子將他表明出來。</strong>」<br><br>「表明出來」，用的就是 exēgeomai。它的意思不是「展示給你看」，而是<strong>「把祂解說出來、闡釋出來、引導出來」</strong>。<br><br>換句話說：那位不可見的神，並沒有留下一片空白。祂被<strong>解說</strong>了。而那位解說者，就是在父懷裡的獨生子。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        這就像一部沒有人讀得懂的古文獻——不是因為它藏起來了，而是因為沒有人有那個語言能力。然後有一個人出現了，他不但通曉那個語言，他本身就出自那個世界。他不是拿一本字典來猜，他是把它<strong>講出來</strong>給你聽。而他講的每一句，都準確無誤。
+      </div>
+
+      <p>所以聖經的邏輯是這樣的：<strong>關上一扇門（肉眼不能見），同時開了另一扇門（藉著基督可以認識）。</strong>而這第二扇門，正是我們下一篇要走進去的地方。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">藉著基督——那扇被打開的門</h2>
+      <p class="card-hook">「人看見了我，就是看見了父」</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們之所以能夠看見神、認識神，聖經給的答案非常集中：<strong>都是藉著基督。</strong>這不是一條途徑之一，而是那一條途徑。</p>
+
+      <p>最直接的一段，出現在最後的晚餐。腓力對主說了一句話——那句話，其實就是摩西在西奈山上那個請求的翻版：「求主將父顯給我們看，我們就知足了。」</p>
+
+      <p>主耶穌的回答，不是「不可以」，而是一句帶著淡淡遺憾的反問：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">腓力，我與你們同在這樣長久，你還不認識我嗎？人看見了我，就是看見了父</p>
+        <p class="scripture-ref">約翰福音 十四章九節</p>
+      </div>
+
+      <p>你體會一下這裡的張力：腓力想要的是一場顯現，是一道光、一個異象。而主的回答等於是說——<strong>你要找的那位，這三年來每天跟你一起吃飯、一起趕路、一起在船上過夜。你一直在看，只是你沒有認出來。</strong></p>
+
+      <div class="highlight">
+        <strong>這是整件事的轉折點</strong>
+        腓力的問題不是視力不足，是<strong>認識不足</strong>。他天天用肉眼看見耶穌，卻沒有「看見」父。而反過來說，一個從未用肉眼見過耶穌的人（包括你和我），卻完全可以真實地認識祂。<br><br>所以「看見神」這件事，從來不是一個視覺問題。它是一個認識的問題、一個關係的問題。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>新約用了三個很精確的詞，來描述基督與那不可見之神的關係。這三個詞值得逐一細看：</p>
+
+      <div class="term-box">
+        <div class="term-original">Charaktēr<br>來一 3 · 真像</div>
+        <div class="term-desc">「他是神榮耀所發的光輝，是神本體的真像。」charaktēr 原指印章壓在蠟上留下的印痕——每一道紋路、每一個細節都完全對應，不是相似，是<strong>準確的對應</strong>。看那個印痕，就等於看見了那個印章。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Eikōn<br>西一 15 · 像</div>
+        <div class="term-desc">「愛子是那不能看見之神的像。」eikōn 不是「模仿品」，而是「真實的顯現」。經文的措辭本身就是答案：祂是<strong>那不能看見之神</strong>的<strong>像</strong>——同一句話裡，既承認了不可見，也宣告了可見。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Exēgeomai<br>約一 18 · 表明出來</div>
+        <div class="term-desc">「只有在父懷裡的獨生子將他表明出來。」如上一篇所說，這是「解說、闡明」。基督不是關於神的一份簡介，祂是那位神的完整表達。</div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>那麼「屬靈的眼光」具體是什麼？主耶穌給的條件是四個字：<strong>清心的人。</strong></p>
+
+      <p>「清心」原文的意思是「潔淨的、不摻雜的、單一的」。它的重點不是「毫無瑕疵、從無犯罪」——那樣的話沒有人有資格；它的重點在於<strong>不摻雜</strong>：動機是單一的，不是一邊要神、一邊留著後路。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        我覺得最好的比方是一面鏡子。一面乾淨的鏡子照得出影像；一面佈滿油污和刮痕的鏡子，就算光線一樣充足，也照不出什麼。<br><br>所以當我們覺得「看不見神」的時候，<strong>問題往往不在光源，而在鏡面。</strong>不是神隱藏了，是我心裡摻雜了太多東西——太多的算計、太多的保留、太多同時要抓住的別的東西。清心，就是把鏡面擦乾淨。
+      </div>
+
+      <p>而最後，我想回答一個問題：<strong>神為什麼不乾脆用肉眼可見的方式顯現一次，一次解決所有人的懷疑？</strong>聖經其實給了幾層回答：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 因為人承受不住</span>
+          「人見我的面不能存活。」以賽亞、雅各、基甸的反應都證實了這一點。這不是威嚇，這是物理性的實情——就像人不能直視太陽。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 因為肉眼之見不產生信心</span>
+          這一點最值得深思：以色列人親眼看見紅海分開、看見雲柱火柱、聽見西奈山的雷聲——然後不到四十天，他們造了一隻金牛犢。<strong>看見從來沒有解決過不信的問題。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 因為那會取消信心的本質</span>
+          「信就是所望之事的實底，是未見之事的確據。」（來十一 1）主對多馬說：「那沒有看見就信的有福了。」若一切都眼見了，信任這件事就失去了意義——而神要的，是關係，不是屈服。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 因為祂已經用更好的方式來了</span>
+          祂不是給我們一場遠遠的顯現，而是給了我們一個可以同桌吃飯的人。「道成了肉身，住在我們中間。」這比任何異象都更近。
+        </div>
+      </div>
+
+      <p>所以那個真正的問題，從來不是「我的眼睛夠不夠好」，而是「我認識祂嗎」。而在這件事上，你和腓力、和摩西，其實站在同一條起跑線上。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">等到那日，我們要見祂的面</h2>
+      <p class="card-hook">寫給那個仍在等待、仍然覺得看不見的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>約伯記十九章有一節經文，我每次讀都會停很久。</p>
+
+      <p>你要記得約伯說這句話的時候，人在哪裡：他坐在灰堆裡，全身長毒瘡，十個孩子都死了，三個朋友輪番指責他一定犯了什麼罪。他什麼都沒有了，什麼都看不見。而他在那個位置上說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我知道我的救贖主活著……我這皮肉滅絕之後，我必在肉體之外得見神。我自己要見他，親眼要看他，並不像外人</p>
+        <p class="scripture-ref">約伯記 十九章二十五至二十七節</p>
+      </div>
+
+      <p>「並不像外人」——原文的意思是「不是以陌生人的身分」。他不是要遠遠地圍觀，他要以一個被認得的人的身分，親自見祂。</p>
+
+      <p>在他人生最黑的時刻，他看不見任何東西。可是他知道一件事：<strong>總有一天，他會看見。</strong>而那個確信，撐住了他。</p>
+
+      <div class="card-divider"></div>
+
+      <p>聖經的最後一頁，就是這個應許兌現的地方。約翰看見新耶路撒冷，他記下了那個城裡最核心的一件事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">在城裡有神和羔羊的寶座；他的僕人都要事奉他，也要見他的面</p>
+        <p class="scripture-ref">啟示錄 二十二章三至四節</p>
+      </div>
+
+      <p>「也要見他的面。」——就是摩西求了卻不能得的那個「面」。摩西被放在磐石穴裡、被神的手遮住、只能看見背影的那一幕，在那日會有一個完整的結局。約翰壹書說得更明白：「我們必要像他，因為必得見他的真體。」</p>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        所以，回到我一開始那個半夜的願望——「只要讓我看一次就好」。<br><br>我現在會這樣回答自己：<strong>會的，會有那一次。而且不是一瞬間的一次，是永遠。</strong>只是不是現在，也不是用這雙眼睛。<br><br>而在那日來到之前，我並不是被留在黑暗裡。因為聖經說了，在今世，屬神的人憑著屬靈的眼光，是<strong>真的可以</strong>看見神、認識神的——而這一切，都是藉著基督。<br><br>所以你可以在祂的話語裡看見祂；可以在一個弟兄姊妹深夜為你禱告的臉上看見祂；可以在那些回頭一看才明白的安排裡，看見祂的背影。就像摩西一樣——在祂經過之後，才看見那榮耀的痕跡。
+      </div>
+
+      <div class="big-quote">
+        清心的人有福了，<br>因為他們必得見神
+        <cite>— 馬太福音 五章八節</cite>
+      </div>
+
+      <p>詩篇十七篇最後一節，是我心裡對這件事最溫暖的一句話。大衛說：「至於我，我必在義中見你的面；我醒了的時候，得見你的形像，就<strong>心滿意足</strong>了。」</p>
+
+      <p>「我醒了的時候」。這句話把現在的一切，都放進了一個更大的敘事裡——現在這一段，像是一場睡眠；而醒來的那一刻，會看見那張臉。</p>
+
+      <p>願你在還看不見的日子裡，仍然清心；也願你在醒來的那一天，心滿意足。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  看不見，卻看見了 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神的全能 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>在祂凡事<span>都能</span></h1>
+  <p class="subtitle">當「無所不能」遇上「我這件事」</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「我信祂能——可是……」</h2>
+      <p class="card-hook">那個沒說出口的「可是」，藏了很多年</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一件事我為它禱告了很多年。具體是什麼不重要，你心裡大概也有一件。我想說的是那個過程裡，最讓我不好受的部分——不是事情沒有改變，而是我發現，自己的禱告漸漸變成了一種很奇怪的語氣。</p>
+
+      <p>一開始我是滿有把握地求的：「主啊，祢是全能的神，這對祢來說一點都不難。」後來，同樣的句子開始變調：「主啊，祢是全能的……祢真的是全能的，對嗎？」再後來，我幾乎不太敢用「全能」這兩個字了，因為每說一次，就好像在心裡多戳一個洞。</p>
+
+      <div class="highlight">
+        <strong>一句很多人都在心裡說過的話</strong>
+        「我知道神什麼都能做，我只是不確定，祂願不願意為我做。」——「能」和「肯」之間，好像隔著一段我跨不過去的距離。我從來不敢懷疑祂的能力，可是我發現，我開始懷疑祂的心意。而後者，其實傷得更深。
+      </div>
+
+      <p>那段時間我讀到馬可福音裡一個麻風病人的故事，整個人被釘在那一頁。他來到耶穌面前，跪下懇求，說了一句我覺得極其誠實、也極其小心翼翼的話：「<strong>你若肯，必能叫我潔淨。</strong>」</p>
+
+      <p>你看他的用字順序。他沒有懷疑「能」——他很確定這位拿撒勒人有那個能力。他不確定的，是那個「肯」。在那個時代，麻風病人被逐出城外、被視為不潔、被人躲得遠遠的；他早已習慣了「就算有人做得到，也不會有人願意」。所以他把最重的那個字放在最前面：<strong>你若肯。</strong></p>
+
+      <p>我讀著讀著才明白，原來我的問題根本不是神學上的「全能是什麼」，而是心底那個沒說出口的不安。可是也就是在那一刻，我意識到我必須先把「全能」這件事弄清楚——因為如果我對祂的「能」有誤解，我對祂的「肯」也一定會誤解。</p>
+
+      <p>接下來這幾篇，我想陪你把「神的全能」這四個字，一層一層拆開來看。我們會回到撒拉在帳棚裡的那一聲笑，會走進希伯來文的一個古老名號，也會碰一碰哲學史上那道著名的難題。而最後，我們會回到麻風病人面前——去聽耶穌的回答。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">帳棚裡的那一聲笑</h2>
+      <p class="card-hook">一個九十歲的婦人，和一句被神聽見的苦笑</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經裡談「全能」最動人的一幕，不是在轟轟烈烈的紅海邊，而是在一個安靜的帳棚後面。</p>
+
+      <p>那天中午，亞伯拉罕在幔利橡樹下坐著，來了三位客旅。他趕緊預備飯食，撒拉在帳棚裡忙著和麵。就在這樣一個平凡的日常裡，客人說了一句話：「到明年這時候，撒拉必生一個兒子。」</p>
+
+      <p>撒拉在帳棚門後聽見了，她笑了。</p>
+
+      <p>我一直覺得，我們讀這一段時，太快就把撒拉的笑歸類為「不信」，然後匆匆翻過去。但你要體會一下她笑的重量：那一年她九十歲，亞伯拉罕一百歲。從神第一次應許他們要有後裔算起，已經過了二十五年。二十五年——足夠一個嬰孩長大成人、娶妻生子。她不是笑話神，她是笑自己：<strong>身體早已過了生育的年紀，這句話對她來說，聽起來像是一句遲到太久、已經沒有意義的安慰。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫖</span>
+        那不是嘲笑，比較像是一個人聽到一個太美好的消息時，那種苦澀的、下意識的笑——「拜託，別開這種玩笑了。」二十五年的等待，會把一個人的盼望磨得很薄。薄到聽見應許的時候，第一個反應不是雀躍，而是自我保護。
+      </div>
+
+      <p>然後，經文裡出現了那句話。它不是責備，而是一個問句——一個溫和卻直抵核心的問句：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶和華豈有難成的事嗎？</p>
+        <p class="scripture-ref">創世記 十八章十四節</p>
+      </div>
+
+      <p>這句話在希伯來文裡，那個譯作「難成」的字，帶著「太奇妙、太困難、超出能力範圍」的意思。而這整句是一個反問——它預設的答案是：沒有。沒有任何一件事，是超出耶和華能力範圍的。九十歲的身體不是障礙，二十五年的耽延不是失效。</p>
+
+      <div class="card-divider"></div>
+
+      <p>把這一幕記在心裡，我們再快轉一千八百年，到新約的另一個場景。</p>
+
+      <p>有一個少年的官來問主耶穌怎樣才能承受永生，最後憂憂愁愁地走了，因為他的產業很多。主耶穌對門徒說了那句有名的話：駱駝穿過針的眼，比財主進神的國還容易。門徒聽了「就分外希奇」，彼此說：「這樣誰能得救呢？」</p>
+
+      <p>注意門徒的反應。他們不是在問「這樣有錢人怎麼辦」，他們是在問「那還有誰有機會」。在他們的認知裡，財富是神賜福的記號——如果連蒙福的人都進不去，那一般人豈不是更沒指望？他們是被逼到了牆角。而主耶穌看著他們，說出了那句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">在人是不能，在神卻不然，因為神凡事都能</p>
+        <p class="scripture-ref">馬可福音 十章二十七節</p>
+      </div>
+
+      <p>這一節，是整本聖經對「全能」最直接的定義句之一。可是請你留意它出現的<strong>上下文</strong>——這句話不是在談移山填海，不是在談呼風喚雨。主耶穌搬出「神凡事都能」，是為了回答一個問題：<strong>一個不可能得救的人，怎麼可能得救？</strong></p>
+
+      <p>這個發現，改變了我對「全能」的整個理解方向。我一直以為全能是關於神能不能改變我的環境；但聖經把全能的鏡頭，對準了一件更難的事——改變一個人的心。而這正是下一篇要進入的核心。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">全能的兩個座標：使無變為有，使死人復活</h2>
+      <p class="card-hook">聖經沒有給全能一個抽象定義，它給了兩個具體動作</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果要我指出一節經文，說它是聖經給「全能」下的定義，我會選羅馬書第四章的這一句。保羅在講亞伯拉罕的信心時，用一個關係子句，描述了亞伯拉罕所信的是怎樣一位神：</p>
+
+      <div class="big-quote">
+        那叫死人復活、<br>使無變為有的神
+        <cite>— 羅馬書 四章十七節</cite>
+      </div>
+
+      <p>請注意，保羅在這裡沒有說「那無所不能的神」。他沒有給一個抽象的形容詞，他給了<strong>兩個具體的動作</strong>。而這兩個動作，正好標定了神的全能所涵蓋的兩個極端：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 使無變為有 —— 創造萬有</span>
+          從「什麼都沒有」的地方，叫出「有」來。這是創造。希伯來書說：「我們因著信，就知道諸世界是藉神話造成的；這樣，所看見的，並不是從顯然之物造出來的。」（來十一 3）神不是拿現成的材料加工，祂是從無到有。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 叫死人復活 —— 救贖罪人</span>
+          從「已經結束」的地方，重新叫出生命。這是救贖。保羅說：「你們死在過犯罪惡之中，他叫你們活過來。」（弗二 1、5）在神眼中，罪人的處境不是「虛弱」，是「死了」——而祂做的，不是搶救，是復活。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>你有沒有注意到，這兩件事的共同結構？<strong>它們的起點都是「零」。</strong></p>
+
+      <p>創造的起點是「無」——沒有材料、沒有前提、沒有半成品。救贖的起點是「死」——沒有生機、沒有可以配合的意志、沒有剩下一點可以拿來加分的功德。這兩件事，都不是「把不好的變好」，也不是「把弱的變強」，而是<strong>在絕對的零上面，重新開始。</strong></p>
+
+      <div class="highlight">
+        <strong>這對我們的意義是什麼</strong>
+        大部分時候，我們心裡對神能力的想像，其實是一種「加成」——我出七分力，求神補上那三分。但聖經所啟示的全能，運作的方式完全不是這樣。祂最擅長、也最常做的，是在「連一分都沒有」的地方動工。所以當你覺得自己已經一無所有、什麼籌碼都拿不出來的時候，你不是離祂的能力最遠，你恰恰是站在祂最常出手的那個位置上。
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        我們人所謂的「厲害」，通常是指有本事把手上的材料用到極致——好的廚師能把三樣食材做出一桌菜。但如果有一位，祂的廚房裡什麼都沒有，卻依然能擺出筵席，那祂就不是「比較厲害的廚師」，祂是完全不同層次的存在。使無變為有，就是這個意思。
+      </div>
+
+      <p>所以，回到那個麻風病人。當他說「你若肯，必能叫我潔淨」的時候，他其實已經摸到了門檻——他知道這位不是一個「醫術比較好的醫生」，而是一位可以在毀壞的地方重新造出潔淨的主。他唯一還沒把握的，是那個「肯」字。</p>
+
+      <p>而在我們談那個「肯」之前，得先把「全能」這個詞本身弄清楚。因為中文的「全能」兩個字，其實承載了一段很長的翻譯歷程——而這段歷程，也悄悄地改變了這個詞在我們腦中的形狀。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">從「以勒沙代」到「全能」——一個名號的變形記</h2>
+      <p class="card-hook">原文的重心是「掌權」，中文卻讀成了「能做任何事」</p>
+    </div>
+    <div class="card-body">
+
+      <p>神第一次以「全能」自稱，是在亞伯蘭九十九歲那年。經文說：「耶和華向他顯現，對他說：我是全能的神。」這裡的「全能的神」，希伯來文是 <strong>אֵל שַׁדַּי（El Shaddai）</strong>。</p>
+
+      <div class="term-box">
+        <div class="term-original">El Shaddai<br>希伯來文</div>
+        <div class="term-desc">El 是「神」。至於 Shaddai 的字源，學界至今沒有定論，而幾種主要說法各自都很有意思：可能來自 shadad（強大、制勝），指向壓倒性的力量；可能來自 shad（乳房），指向豐盛不絕的供應；也可能來自阿卡德語的 shadu（山），指向穩固不移的堅實。無論哪一種，重心都不是「什麼都做得到」這種抽象能力，而是<strong>「足夠」</strong>——祂夠強、夠豐盛、夠穩固。</div>
+      </div>
+
+      <p>這一點很值得玩味。當神要對一個等了二十四年還沒有兒子的老人自我介紹時，祂選的名號重心是：<strong>我夠。</strong>不是「我什麼都辦得到」，而是「你所缺的，在我這裡不缺」。</p>
+
+      <div class="card-divider"></div>
+
+      <p>接著，這個名號開始它的旅程。我把幾個關鍵版本整理出來，你會看見重心是怎麼一步步位移的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>語言／版本</th>
+            <th>用詞</th>
+            <th>語意重心</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">希伯來文<br>舊約</td>
+            <td>El Shaddai</td>
+            <td>「足夠的神」——夠強、夠供應、夠穩固。重心在「豐足與堅實」。</td>
+          </tr>
+          <tr>
+            <td class="src">七十士譯本<br>希臘文</td>
+            <td>Pantokrator</td>
+            <td>字面是「掌握一切者」（pan 一切 + krateo 掌握）。重心從「足夠」轉為<strong>「掌權」</strong>——祂握著萬有。</td>
+          </tr>
+          <tr>
+            <td class="src">新約<br>希臘文</td>
+            <td>Pantokrator</td>
+            <td>啟示錄稱主為「昔在、今在、以後永在的全能者」。在啟示錄的處境裡，這是對受逼迫信徒的宣告：不是羅馬掌權，是祂掌權。</td>
+          </tr>
+          <tr>
+            <td class="src">拉丁文<br>武加大譯本</td>
+            <td>Omnipotens</td>
+            <td>omni（全）+ potens（有能力的）。重心再次位移，從「掌握一切」變成<strong>「能做一切」</strong>——這是一個關鍵的轉折。</td>
+          </tr>
+          <tr>
+            <td class="src">中文<br>和合本</td>
+            <td>全能</td>
+            <td>承接拉丁傳統，「全」＋「能」。讀者的直覺理解是「任何事都做得到」，而不是「掌管萬有」。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        這段譯史裡有一個很關鍵的轉折點：從希臘文的 Pantokrator（掌握一切者）到拉丁文的 Omnipotens（能做一切者）。前者講的是<strong>關係與主權</strong>——萬有都在祂手中；後者講的是<strong>能力的範圍</strong>——祂的能力沒有上限。兩者都對，但重心不同。而正是後者這個「能做一切」的讀法，在中世紀直接催生了經院哲學那道著名的難題，也在我們心裡種下了一個微妙的誤會：把神的全能，想成一部無所不能卻不知道會不會為我啟動的機器。
+      </div>
+
+      <p>順帶一提，中文和合本在翻譯「在祂凡事都能」時，其實抓得很準。馬可福音那句原文直譯是「在神，一切事都是可能的」——它的焦點不在「神有多大力氣」，而在「在神那裡，可能性的疆界完全不一樣」。同一件事，在人的座標系裡是不可能的，換到神的座標系裡，它就是可能的。</p>
+
+      <p>那麼，這個「一切」到底有沒有邊界？神能不能造一塊自己搬不動的石頭？聖經自己說有幾件事神「不能」做，那又該怎麼理解？下一篇，我們正面走進這片最容易讓人絆倒的地帶。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">聖經說，有幾件事神「不能」</h2>
+      <p class="card-hook">而那些「不能」，恰恰是祂最完全的地方</p>
+    </div>
+    <div class="card-body">
+
+      <p>先處理那道有名的難題，因為它擋在很多人的路上：<strong>神能不能造一塊連祂自己都搬不動的石頭？</strong></p>
+
+      <p>這個問題設計得很精巧：你回答「能」，那祂就有一件事做不到（搬那塊石頭）；你回答「不能」，那祂就有一件事做不到（造那塊石頭）。無論怎麼答，全能都破功。</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>阿奎那對這類問題的處理，我認為是最乾淨的。他的論點大意是：全能是指凡「本身可能之事」，神都能行。而一個自相矛盾的敘述，<strong>根本不構成「一件事」</strong>——它只是把幾個詞湊在一起，聽起來像句子，實際上沒有指涉任何可能的實在。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔲</span>
+        這就像問：「你能不能畫一個四角形的圓？」你畫不出來，不是因為你手拙，而是因為「四角形的圓」根本不是一個圖形，它只是一串互相取消的字。同樣的，「連全能者都搬不動的東西」不是一個物件，它是一個在語言裡空轉的組合。神造不出它，不是能力有缺口，而是那裡根本沒有東西可造。
+      </div>
+
+      <p>換句話說：全能的意思不是「連邏輯上的廢話都能實現」，而是「凡真實可能的，沒有一樣攔得住祂」。</p>
+
+      <div class="card-divider"></div>
+
+      <p>不過，接下來這一點才真正重要——因為它不是哲學家的假想，而是聖經自己說的。<strong>聖經明明白白地指出，有幾件事，神不能做。</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">神不能說謊<br>多一 2；來六 18</div>
+        <div class="term-desc">「無謊言的神」、「藉這兩件不更改的事，神決不能說謊」。祂不是「選擇不說謊」，而是說謊這件事，與祂的本性根本不相容。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">神不能背乎自己<br>提後二 13</div>
+        <div class="term-desc">「我們縱然失信，他仍是可信的，因為他不能背乎自己。」注意這句的語境：這是安慰，不是警告。祂的不能，是我們的保障。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">神不能被惡試探<br>雅一 13</div>
+        <div class="term-desc">「因為神不能被惡試探，他也不試探人。」祂的本性中沒有任何一個可以被惡勾住的把手。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>這些「不能」，是缺陷還是完全？</strong>
+        關鍵在這裡：這幾件事，全部都是<strong>與神的本性相牴觸的事</strong>。所以這些「不能」，不是能力上的短缺，而是本性上的完全。一個人「不能」背叛他所愛的，我們不會說他軟弱，我們說他忠貞。神的能力，永遠與祂的本性一致——祂不會用祂的全能，去做違背祂自己的事。<br><br>而這一點，正好回答了第一篇裡那個「能」與「肯」的焦慮：<strong>祂的能力不是一股中性的、可能往任何方向去的力量。</strong>祂的全能，永遠是聖潔的全能、慈愛的全能、信實的全能。
+      </div>
+
+      <p>把這一切排開來看，神的全能其實有一個很清楚的層次：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">🌍 創造之能</span>
+          使無變為有。從虛空中呼喚出諸世界。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">🤲 護理之能</span>
+          「常用他權能的命令托住萬有」（來一 3）。加爾文特別強調，神的全能不是一股閒置備用的力量，而是此刻正在運行的、時時刻刻的看顧。連兩隻麻雀落在地上，都不在祂的看顧之外。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">✨ 神蹟之能</span>
+          在需要的時候，超越祂自己所設立的自然常規。神蹟不是違反祂的法則，而是那位定立法則者的自由。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✝️ 救贖之能</span>
+          叫死人復活。這是全能最艱難的一項工作——不是搬動一座山，是翻轉一顆已經死了的心。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">🕊️ 更新之能</span>
+          「看哪，我將一切都更新了。」（啟廿一 5）全能的最終指向，不是一場力量的展示，而是萬有的復原。
+        </div>
+      </div>
+
+      <p>最後我想留一個弔詭給你思想。若照著我們的直覺，全能者應該永遠以壓倒性的姿態出現。可是聖經卻把全能最極致的展現，放在一個完全相反的畫面裡——一個被釘在木頭上、動彈不得、看起來徹底無能為力的人身上。保羅說：「神的軟弱總比人強壯。」</p>
+
+      <p>那不是全能的失效，那是全能的自我克制。<strong>祂大有能力，卻選擇不用那能力保全自己，而用來拯救我們。</strong>一位「不能不做到」的神令人畏懼；一位「明明做得到，卻為你選擇了十字架」的神，才令人俯伏。</p>
+
+      <p>而這，正好把我們帶回那個麻風病人跪著的地方。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂能——而且，祂肯</h2>
+      <p class="card-hook">寫給那個還在等一個答案的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們回到第一篇那個場景。麻風病人跪在耶穌面前，把他最沒把握的那個字放在最前面：「<strong>你若肯</strong>，必能叫我潔淨。」</p>
+
+      <p>然後，經文記了一個動作，和一句回答。</p>
+
+      <p>那個動作是：<strong>耶穌伸手摸他。</strong>你要知道，按照律法，摸麻風病人的人會成為不潔淨的。而且以醫治而論，耶穌根本不需要碰他——祂曾經隔著空間醫好百夫長的僕人，一句話就夠了。祂大可以站在三步之外說一句話，效果完全一樣。</p>
+
+      <p>可是祂伸出了手。祂碰了那個已經很多年沒有被任何人碰過的身體。</p>
+
+      <p>然後祂說：「<strong>我肯，你潔淨了吧。</strong>」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌動了慈心，就伸手摸他，說：我肯，你潔淨了吧</p>
+        <p class="scripture-ref">馬可福音 一章四十一節</p>
+      </div>
+
+      <p>祂先回答的，是那個「肯」。這位全能者，在使用祂的能力之前，先讓那個人知道祂的心意。這就是為什麼，我們不能把神的全能，理解成一部功能強大但不知道會不會為我啟動的機器——因為聖經從來沒有把「能」和「肯」分開來講。</p>
+
+      <div class="card-divider"></div>
+
+      <p>那麼，那些至今還沒有改變的事呢？那件我求了很多年的事呢？</p>
+
+      <p>我想誠實地說：我不會告訴你「只要有信心，一切都會照你想的成就」。聖經沒有這樣應許，而且保羅自己三次求主挪去身上的刺，主的回答是「我的恩典夠你用的」。連保羅都有一根沒有被挪走的刺。</p>
+
+      <p>但聖經確實應許了一件更堅固的事：<strong>沒有任何一件事，能攔阻祂在你身上成就祂的美意。</strong>不是「祂會照我的劇本演」，而是「祂的劇本，沒有任何力量能改寫」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為我深信無論是死，是生……是現在的事，是將來的事，是高處的，是低處的，是別的受造之物，都不能叫我們與神的愛隔絕</p>
+        <p class="scripture-ref">羅馬書 八章三十八至三十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        如果你此刻正站在一個看起來什麼都沒有的地方——關係破了、身體壞了、路走到底了、心裡連禱告的力氣都快沒了——我想把第三篇那兩個座標，再放回你手上一次：<br><br>神最擅長的兩件事，是<strong>使無變為有</strong>，和<strong>叫死人復活</strong>。這兩件事的起點，都是零。<br><br>所以「什麼都沒有」，從來不是祂止步的地方。恰恰相反，那正是祂最常動工的地方。你手上沒有材料，不要緊——祂本來就不是靠材料工作的。
+      </div>
+
+      <div class="big-quote">
+        耶和華豈有難成的事嗎？
+        <cite>— 創世記 十八章十四節</cite>
+      </div>
+
+      <p>撒拉在帳棚裡笑的那一年，她九十歲。第二年，她抱著懷裡的嬰孩，給他取名叫以撒——意思是「他笑了」。同一個笑聲，一年之後，換了完全不同的意思。</p>
+
+      <p>願你也有這樣的一年。而在那一年來到之前，願你能安心地知道：祂能，而且，祂肯。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  在祂凡事都能 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>受埋葬的意義 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>那被<span>安葬</span>的一夜</h1>
+  <p class="subtitle">受埋葬有甚麼意義？——兩件事，一件關乎祂，一件關乎你</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">信經裡那一句，我從來沒想過</h2>
+      <p class="card-hook">「受死，埋葬」——為什麼要特別提埋葬？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>使徒信經裡有一句，我念了很多年，卻從來沒有停下來想過：</p>
+
+      <p>「……在本丟彼拉多手下受難，被釘於十字架，<strong>受死，埋葬</strong>；第三天從死人中復活。」</p>
+
+      <p>而有一天我忽然想到：<strong>為什麼要特別提「埋葬」？</strong></p>
+
+      <div class="highlight">
+        <strong>因為那看起來是一個多餘的細節</strong>
+        如果重點是「祂死了、然後復活了」——那中間那一句好像可以省略。<br><br>人死了之後被埋葬，不是理所當然的嗎？何必特別寫進信經裡？<br><br>而更讓我意外的是：<strong>保羅在哥林多前書總結福音的核心時，也把它列了進去。</strong><br><br>「我當日所領受又傳給你們的，第一，就是<strong>基督照聖經所說，為我們的罪死了，而且埋葬了；又照聖經所說，第三天復活了</strong>。」（林前十五 3～4）<br><br>——死了、<strong>埋葬了</strong>、復活了。<br><br>在他濃縮到最精簡的福音摘要裡，這一項沒有被省略。
+      </div>
+
+      <p>那麼，它為什麼重要？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪦</span>
+        我後來想通了第一層：<strong>埋葬，是死亡的公開證明。</strong><br><br>一個人昏迷，你不會埋葬他。<br>一個人重傷，你不會埋葬他。<br><br><strong>你埋葬一個人，是因為所有在場的人都確認了：他死了。</strong><br><br>而如果祂沒有真的死，那整件事就垮了——因為救恩的核心，是那個代死。
+      </div>
+
+      <p>而後來我發現，聖經給的第二個意義，比第一個更靠近我。</p>
+
+      <p>接下來這幾篇，我想陪你走進那三天。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">兩個一直沒有公開的人，在那天出面了</h2>
+      <p class="card-hook">而他們選在最危險的時候</p>
+    </div>
+    <div class="card-body">
+
+      <p>安葬那一段，有一個常被忽略的細節：<strong>出面收殮的那兩個人，之前都是暗中的門徒。</strong></p>
+
+      <div class="highlight">
+        <strong>亞利馬太的約瑟</strong>
+        經文對他的描述是：「有一個人名叫約瑟，是個議士，為人善良公義；<strong>眾人所謀所為，他並沒有附從。</strong>」<br><br>約翰福音補了一句：「<strong>是耶穌的門徒，只因怕猶太人，就暗暗地作門徒。</strong>」<br><br>——他是公會的議員。而公會，正是那個把主耶穌定罪的機構。<br><br>而馬可福音記下他做的事：「<strong>放膽</strong>進去見彼拉多，求耶穌的身體。」<br><br>「放膽」——那個字意味著他知道自己在冒險。
+      </div>
+
+      <div class="highlight">
+        <strong>尼哥底母</strong>
+        另一位。而約翰福音特別提醒讀者他是誰：「還有<strong>尼哥底母，就是先前夜裡去見耶穌的</strong>，帶著沒藥和沉香約有一百斤前來。」<br><br>——「先前夜裡去見耶穌的」。<br><br>約翰福音第三章那位，就是他。<strong>他當初是夜裡去的</strong>，因為不敢讓人看見。<br><br>而這一次，是在光天化日之下。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        我覺得這件事的時間點，很不可思議。<br><br>那是所有公開的門徒都逃走的時候。彼得已經三次不認主，其餘的四散了。<br><br><strong>而在那個所有人都退場的時刻，兩個一直躲著的人，站了出來。</strong><br><br>從「夜裡去見」，到「白天來收屍」。<br><br>而他們帶了「約有一百斤」的香料——那是一個極大的分量，接近王室的規格。<br><br>他們不是低調地做完就走。<strong>他們做得很隆重。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這一幕，正好應驗了七百年前的一句預言。</p>
+
+      <p>以賽亞書五十三章描述那位受苦的僕人時，說了一句在當時看來很奇怪的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他雖然未行強暴，口中也沒有詭詐，人還使他與惡人同埋；誰知死的時候與財主同葬</p>
+        <p class="scripture-ref">以賽亞書 五十三章九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「與惡人同埋」＋「與財主同葬」——兩個矛盾的敘述</strong>
+        按當時的慣例，被處決的犯人會被丟進亂葬崗。祂與兩個強盜同釘，理當「與惡人同埋」。<br><br>而經文說：「<strong>誰知</strong>死的時候與財主同葬。」<br><br>——那個「誰知」，帶著意外的語氣。<br><br>而馬太福音特別記了一句：「<strong>有一個財主，名叫約瑟</strong>，是耶利米的門徒……安放在自己的新墳墓裡，就是他鑿在磐石裡的。」<br><br>「有一個<strong>財主</strong>」——馬太用這個詞，顯然是有意識地扣住那節預言。
+      </div>
+
+      <p>那麼，埋葬的意義是什麼？下一篇，我們看聖經給的兩項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩項意義</h2>
+      <p class="card-hook">一件關乎祂，一件關乎你</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌被釘死後受埋葬，有兩項意義：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 表明主耶穌實在是死了</span>
+          「兵丁來了，先打斷……只是來到耶穌那裡，見他已經死了，就不打斷他的腿。惟有一個兵拿槍扎他的肋旁，隨即有<strong>血和水</strong>流出來。」（約十九 32～34）<br>「彼拉多詫異耶穌已經死了，便叫百夫長來，問他耶穌死了久不久。<strong>既從百夫長得知實情</strong>，就把耶穌的屍首賜給約瑟。」（可十五 43～45）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 使我們得以憑著信，藉著重生的洗，與祂一同埋葬</span>
+          「你們既受洗與他一同埋葬，也就在此與他一同復活。」（西二 12）<br>「所以，我們藉著洗禮歸入死，和他一同埋葬，原是叫我們一舉一動有新生的樣式，像基督藉著父的榮耀從死裡復活一樣。」（羅六 4）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>先看第一項。而這一項的證據，密集到不尋常。</p>
+
+      <div class="highlight">
+        <strong>聖經花了很多篇幅，證明祂真的死了</strong>
+        <strong>兵丁沒有打斷祂的腿</strong>——因為「見他已經死了」。而打斷腿是為了加速死亡；他們判斷不需要了。<br><br><strong>槍扎肋旁，血和水流出來</strong>——約翰特別記下這個細節，而且加了一句：「看見這事的那人就作見證……<strong>他知道自己所說的是真的</strong>，叫你們也可以信。」<br><br><strong>彼拉多詫異，並且查證</strong>——馬可記載，彼拉多對祂這麼快死了感到意外，特地叫百夫長來確認。<strong>而百夫長是專業人士。</strong><br><br><strong>裹屍布與香料</strong>——約一百斤的香料，加上細麻布層層纏裹。<br><br><strong>大石頭、封條、看守的兵</strong>——連祭司長都去求彼拉多派兵把守，「將石頭封住，又派兵看守」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔒</span>
+        我覺得最有意思的是最後那一項：<strong>那些防範措施，是反對者自己做的。</strong><br><br>他們的動機是防止門徒偷屍體。<br><br>而結果是：<strong>他們替後世留下了最強的證據</strong>——那座墳墓被官方查驗過、封住、有兵看守。<br><br>而三天後，那些措施全部失效了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項，是與你我直接相關的那一項。</p>
+
+      <div class="big-quote">
+        你們既受洗與他一同埋葬，<br>也就在此與他一同復活
+        <cite>— 歌羅西書 二章十二節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>洗禮的形狀，就是埋葬的形狀</strong>
+        羅馬書第六章用了非常具體的動作語言：<br><br>「我們藉著洗禮<strong>歸入死</strong>，和他<strong>一同埋葬</strong>……原是叫我們一舉一動有<strong>新生的樣式</strong>。」<br><br>——下去，是埋葬；上來，是復活。<br><br>而這個對應是刻意的：<strong>洗禮不只是一個入會儀式，它是一場「與祂同死同活」的實際歸入。</strong><br><br>所以那個「埋葬」的環節，在整件事裡不是可以省略的。<strong>因為若沒有埋葬，就沒有「舊人已經被了結」這回事。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚰️</span>
+        我後來想通一件事：<strong>埋葬所處理的，是「終結的確認」。</strong><br><br>一個人可能死了，卻還沒有被埋——那時候，事情還沒有真的告一段落。人還會守在旁邊、還會期待、還沒有放手。<br><br>而埋葬，是那個把土填上、把門關上、承認「這件事結束了」的動作。<br><br>所以「與祂一同埋葬」的意思是：<strong>那個舊人，不只是被判死了，而且被埋了。</strong><br><br>——不要再回去挖。
+      </div>
+
+      <p>下一篇，我們談那三天。因為那三天本身，也有它的意義。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">安息日那一天，祂安臥在墳墓裡</h2>
+      <p class="card-hook">而那個時間點，不是巧合</p>
+    </div>
+    <div class="card-body">
+
+      <p>把受難週那幾天排出來，會看見一個很有意思的結構：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>日子</th>
+            <th>發生的事</th>
+            <th>對應</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">預備日</td>
+            <td>被釘、斷氣、說「成了」、被安葬</td>
+            <td>工作完成</td>
+          </tr>
+          <tr>
+            <td class="src">安息日</td>
+            <td><strong>安臥在墳墓裡</strong></td>
+            <td><strong>安息</strong></td>
+          </tr>
+          <tr>
+            <td class="src">七日的第一日</td>
+            <td>復活</td>
+            <td>新的開始</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這個結構，與創世記第一週完全對應</strong>
+        創造：神做完了工 → 說「<strong>甚好</strong>」 → 第七日<strong>安息</strong>。<br><br>救贖：祂做完了工 → 說「<strong>成了</strong>」 → 安息日<strong>安臥在墳墓裡</strong>。<br><br>——我們在別處談過：安息（shavat）的意思不是「因累而停」，是「<strong>因成而停</strong>」。<br><br>而那個安息日，是整部救恩史裡最安靜的一天。<br><br>經文沒有記那一天發生了什麼。它只記了那些婦女「<strong>在安息日，便遵著誡命安息了</strong>」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌑</span>
+        我一直覺得那一天很難想像。<br><br>對當時的人而言，那是<strong>一切都結束了</strong>的一天。<br><br>他們不知道還有第三天。他們在守安息日，而心裡大概是空的。<br><br>而聖經對那一天幾乎沒有記載——那份沉默，本身就很有分量。<br><br><strong>那是一段等待，而等待的人並不知道自己在等待。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「第三天」這件事，也不是隨機的。主自己引用過一個舊約的預表：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">約拿三日三夜在大魚肚腹中，人子也要這樣三日三夜在地裡頭</p>
+        <p class="scripture-ref">馬太福音 十二章四十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而祂稱這件事為「<strong>約拿的神蹟</strong>」。<br><br>當時有文士和法利賽人來求神蹟看，而祂的回答是：「一個邪惡淫亂的世代求看神蹟，除了先知約拿的神蹟以外，再沒有神蹟給他們看。」<br><br>——祂等於是說：<strong>你們要的那個決定性的證據，就是這一個。</strong><br><br>而約拿在魚腹中的禱告，讀起來確實像是從死地發出的：「我遭遇患難求告耶和華，你就應允我；<strong>從陰間的深處呼求，你就俯聽我的聲音。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第二項意義的原文。羅馬書第六章那個「一同埋葬」，用字很特別：</p>
+
+      <div class="term-box">
+        <div class="term-original">Synthaptō<br>一同埋葬</div>
+        <div class="term-desc">由 syn（一同）＋ thaptō（埋葬）組成。<br><br>而保羅在羅馬書第六章一連用了好幾個 syn- 開頭的複合字：<br><br><strong>一同埋葬</strong>（syn-thaptō）<br><strong>一同栽種</strong>（sym-phytos，字面是「一同生長、長在一起」）<br><strong>同釘十字架</strong>（syn-stauroō）<br><strong>一同活過來</strong>（syn-zaō）<br><br>——四個「一同」。<br><br>保羅要說的是：<strong>你不是在旁邊觀看那件事，你是被算在裡面的。</strong></div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而「一同栽種」（symphytos）那個字，畫面特別美。<br><br>它的意思是「長在一起、癒合成一體」——像接枝之後，兩段木頭長成了一根。<br><br>而保羅接著說：「我們若在他死的形狀上與他<strong>聯合</strong>，也要在他復活的形狀上與他聯合。」<br><br>——那是一個「不可分開」的關係。<br><br><strong>而這就是為什麼「一同埋葬」是好消息：因為既然一同埋葬了，就必定一同復活。</strong>那是同一段接枝的兩端。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        歌羅西書那節的結構，也是同樣的邏輯：<br><br>「你們既受洗與他一同埋葬，<strong>也就在此</strong>與他一同復活。」<br><br>——「也就在此」。<br><br>兩件事被綁在同一個動作裡。你不能只要一半。<br><br>而這也說明了：<strong>「與祂同埋葬」不是一件令人沮喪的事。</strong>它是復活的前半段。<br><br>沒有埋葬，就沒有復活。<strong>而有了埋葬，復活就是必然的。</strong>
+      </div>
+
+      <p>下一篇，我們談一件很實際的事：那個「舊人已經被埋了」，在生活裡意味著什麼？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">不要回去挖那座墳</h2>
+      <p class="card-hook">而我們常常做的，正是這件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果舊人已經與基督一同埋葬了，那實際上意味著什麼？</p>
+
+      <p>我想從一個很常見的經驗說起。</p>
+
+      <div class="highlight">
+        <strong>那個經驗是：翻舊帳——對自己翻</strong>
+        很多信主的人，都有一個習慣：<strong>不斷回去想那些已經處理過的事。</strong><br><br>那件事、那個決定、那段日子、那個我最不想被人知道的部分。<br><br>而每一次想起，都會重新經歷一次那份羞恥。<br><br>——那就是回去挖那座墳。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛏️</span>
+        埋葬的意思，是<strong>那件事被蓋上了</strong>。<br><br>而如果一個人每隔一段時間就回去，把土撥開，看一眼，確認那個東西還在那裡，然後再蓋回去——<br><br>他做的，不是悔改，是<strong>反覆確認自己有罪</strong>。<br><br>而聖經對那些罪的處置方式，用的意象是相當徹底的：<br><br>「東離西有多遠，他叫我們的過犯離我們也有多遠。」（詩一〇三 12）<br>「將我們的一切罪投於深海。」（彌七 19）<br>「我不再記念他們的罪愆和他們的過犯。」（來十 17）<br><br>——「<strong>不再記念</strong>」。而如果祂不記念了，我卻一直記著，那我記的是什麼？
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>不過，我想在這裡做一個很重要的分辨，因為這件事有兩面。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">健康的：記得，但不再被定罪</span>
+          保羅一生都記得自己曾經逼迫教會。他在書信裡提過好幾次：「我原是使徒中最小的，不配稱為使徒，<strong>因為我從前逼迫神的教會</strong>。」<br><br>但他緊接著說：「<strong>然而我今日成了何等人，是蒙神的恩才成的。</strong>」<br><br>——他記得，而那份記憶讓他更看重恩典，不是讓他癱瘓。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">不健康的：反覆挖出來，重新受刑</span>
+          而另一種，是一再回去，一再定自己的罪，一再確認自己不配。<br><br>那不會產生任何改變，只會產生癱瘓。<br><br>而聖經說得很清楚：「<strong>如今，那些在基督耶穌裡的就不定罪了。</strong>」（羅八 1）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">分辨的方法：它把你推向哪裡？</span>
+          真正的悔改，會把你<strong>推向神</strong>——你會想禱告、想修復、想往前走。<br><br>而那個反覆的控告，會把你<strong>推離神</strong>——你會不敢禱告、覺得自己髒、想躲起來。<br><br><strong>方向不一樣。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅自己給了一句話，我覺得是最實用的</strong>
+        「弟兄們，我不是以為自己已經得著了；我只有一件事，就是<strong>忘記背後，努力面前的</strong>，向著標竿直跑。」（腓三 13～14）<br><br>「忘記背後」——那個「忘記」不是失憶，而是<strong>不再讓它決定我往哪裡走</strong>。<br><br>就像賽跑的人不會一直回頭看已經跑過的路——<strong>不是因為那段路不存在，是因為回頭看會讓你摔倒。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「與祂一同埋葬」還有另一個面向，是比較少被談的：<strong>它處理的不只是罪，也處理那個「舊的活法」。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👔</span>
+        以弗所書用了一個換衣服的比喻：<strong>「脫去你們從前行為上的舊人……穿上新人。」</strong><br><br>而「舊人」不只是指那些明顯的罪。<br><br>它也包括那整套<strong>活法</strong>：<br><br>那個必須靠表現才覺得自己有價值的方式。<br>那個總是在比較、總是怕輸的心態。<br>那個「我得自己撐住一切」的孤獨。<br>那個用忙碌來逃避的習慣。<br><br>這些不一定是「罪」，但它們是<strong>舊人的活法</strong>。<br><br>而洗禮所宣告的是：<strong>那一套，已經被埋了。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而羅馬書第六章那句話的目的，正是這個</strong>
+        「我們藉著洗禮歸入死，和他一同埋葬，<strong>原是叫我們一舉一動有新生的樣式</strong>。」<br><br>——「原是叫我們」。那是目的。<br><br>埋葬不是終點。<strong>埋葬的目的，是為了讓一種新的活法可以開始。</strong><br><br>而「一舉一動」四個字很具體：那不是一種抽象的屬靈狀態，是<strong>日常的一舉一動</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂連那一段路都走過了</h2>
+      <p class="card-hook">寫給那個正在「安息日」裡的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在那個安靜的安息日上。</p>
+
+      <p>那一天，什麼都沒有發生。至少在人看來是這樣。</p>
+
+      <div class="highlight">
+        <strong>而我覺得，那一天是為某些人預備的</strong>
+        因為在信仰的路上，有一種處境是最難的——<br><br>不是十字架那種劇烈的痛（那雖然痛，但至少在動）。<br>也不是復活那種明亮的喜樂。<br><br>而是<strong>中間那一天</strong>：<br><br>事情已經發生了，而還沒有任何轉機。<br>禱告已經求過了，而還沒有回應。<br>你知道理論上會好起來，而今天並沒有。<br><br>——那就是安息日。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而那些婦女在那一天做了什麼？<br><br>路加記載：「她們就回去，預備了香料香膏。<strong>她們在安息日，便遵著誡命安息了。</strong>」<br><br>——她們預備香料，然後守安息日。<br><br>她們不知道第三天會發生什麼。她們預備香料，是為了去<strong>膏一具屍體</strong>。<br><br>可是她們還是預備了。她們還是守了。<br><br><strong>在什麼都看不見的那一天，她們做了手邊那件該做的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下三件事。</p>
+
+      <p><strong>第一，祂連那一段路都走過了。</strong></p>
+
+      <p>祂不只死了，祂還被埋了。那意味著祂進到了那個地方——那個所有人最後都要去、也最害怕去的地方。</p>
+
+      <p>而祂從那裡出來了，並且說：「我曾死過，現在又活了，直活到永永遠遠；<strong>並且拿著死亡和陰間的鑰匙。</strong>」</p>
+
+      <div class="highlight">
+        <strong>所以那個地方，如今有人去過了</strong>
+        而祂拿走了鑰匙。<br><br>這意味著：<strong>對信的人來說，那扇門的性質改變了。</strong><br><br>詩篇二十三篇說：「我雖然行過死蔭的幽谷，也不怕遭害，因為<strong>你與我同在</strong>。」<br><br>——注意那個「行<strong>過</strong>」。<br><br>幽谷不是終點，是<strong>要走過去的一段</strong>。而那段路，有人走在你旁邊。
+      </div>
+
+      <p><strong>第二，那座墳，不要再回去挖了。</strong></p>
+
+      <p>那個舊人已經與祂一同埋葬。而祂說「不再記念」。</p>
+
+      <p>如果祂已經蓋上了土，你不必每個月回去確認一次。</p>
+
+      <p><strong>第三，如果你此刻正在「中間那一天」——</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌄</span>
+        那些婦女在那個安息日，並不知道自己在等什麼。<br><br>她們以為那是結束。<br><br>而天亮之後，她們帶著香料去墳墓——經文說她們一路上還在討論：「<strong>誰給我們把石頭從墓門滾開呢？</strong>」<br><br>她們擔心的，是一個已經被解決了的問題。<br><br>「那石頭原來很大，<strong>她們抬頭一看，卻見石頭已經滾開了。</strong>」
+      </div>
+
+      <div class="big-quote">
+        你們既受洗與他一同埋葬，<br>也就在此與他一同復活
+        <cite>— 歌羅西書 二章十二節</cite>
+      </div>
+
+      <p>那句經文的兩半，是一起來的。</p>
+
+      <p>而如果你現在只感覺到前半句——那也沒關係。</p>
+
+      <p>因為那兩半，是<strong>同一段接枝的兩端</strong>。</p>
+
+      <p>既然埋葬了，復活就是必然的。</p>
+
+      <p>只是還沒到第三天。</p>
+
+      <p>而那一天，會到的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  那被安葬的一夜 · Threads Series
+</footer>
+
+</body>
+</html>

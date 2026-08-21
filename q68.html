@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第十誡 知足 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第十誡 · <span>知足</span></h1>
+  <p class="subtitle">唯一一條完全發生在心裡的誡命</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">看完別人的動態，然後心情變差</h2>
+      <p class="card-hook">明明什麼事都沒發生，我的生活卻忽然變小了</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種很奇怪的經驗，我猜你也有過。</p>
+
+      <p>晚上躺在床上，本來心情不錯。然後隨手滑了十分鐘的社群——有人升遷了，有人買房了，有人一家人在很好的地方拍了很好的照片。</p>
+
+      <p>放下手機的時候，我的心情變差了。</p>
+
+      <div class="highlight">
+        <strong>而那十分鐘裡，我的生活一點都沒有改變</strong>
+        我的工作還是那個工作，我住的地方還是那個地方，我的家人還是那些人。<br><br>什麼事都沒發生。<br><br><strong>唯一改變的，是我心裡的那把尺。</strong>
+      </div>
+
+      <p>這件事讓我第一次真正明白第十誡在講什麼。</p>
+
+      <p>「不可貪戀人的房屋；也不可貪戀人的妻子、僕婢、牛驢，並他一切所有的。」</p>
+
+      <p>我以前讀這一條，覺得它有點多餘——前面已經有「不可偷盜」了，那貪戀不過是還沒動手而已，何必獨立成一條？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📏</span>
+        後來我懂了。<strong>第十誡對付的東西，跟第八誡完全不同。</strong><br><br>偷盜是「我想要那個東西」。<br>而貪戀是「<strong>我想要他所擁有的那個位置</strong>」——不只是東西，是那份被襯托出來的「我比較不足」。<br><br>所以貪戀最奇怪的地方在於：<strong>就算把那樣東西給你，你也不會滿足。</strong>因為你要的從來不是東西，是那個比較。<br><br>而比較是沒有盡頭的。永遠有下一個。
+      </div>
+
+      <p>而第十誡的位置也很特別——它是十誡的最後一條，也是唯一一條<strong>完全發生在內心</strong>的誡命。</p>
+
+      <p>前面九條，都有可以被看見的部分。只有這一條，沒有任何外顯行為。沒有任何法官能因為你「貪心」而定你的罪。</p>
+
+      <p>可是它被放進了十誡。</p>
+
+      <p>接下來這幾篇，我想陪你看這一誡。它的位置，其實是整份清單的收尾——而它的提示，只有兩個字。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅說：我是被這一條照出來的</h2>
+      <p class="card-hook">前面九條他都守得住，卡住他的是第十條</p>
+    </div>
+    <div class="card-body">
+
+      <p>保羅在羅馬書第七章有一段自述，非常坦白。他在解釋律法的功用時，舉的例子只有一個——而他舉的，正是第十誡：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">只是非因律法，我就不知何為罪。非律法說「不可起貪心」，我就不知何為貪心</p>
+        <p class="scripture-ref">羅馬書 七章七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>你要知道保羅是誰，才知道這句話的分量</strong>
+        他在腓立比書列過自己的資歷：「就律法說，我是法利賽人……就律法上的義說，我是<strong>無可指摘的</strong>。」<br><br>「無可指摘」——這不是自誇，這是事實陳述。以外顯行為而論，他確實守得住。他沒有拜偶像、沒有殺人、沒有姦淫、沒有偷盜、沒有作假見證。<br><br>可是第十誡不一樣。<strong>因為它不看行為，它看心。</strong><br><br>而一個在行為上「無可指摘」的人，被這一條照到的時候，才發現自己裡面是什麼樣子。
+      </div>
+
+      <p>保羅接著描述那個過程，而那段描述極其誠實：</p>
+
+      <p>「然而罪趁著機會，就藉著誡命叫諸般的貪心在我裡頭發動；因為沒有律法，罪是死的。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚫</span>
+        這是一個人人都經歷過的現象：<strong>一件事被禁止之後，它反而變得更有吸引力。</strong><br><br>油漆未乾的牌子，會讓人想摸一下。<br>「請勿觸摸」的展品，會讓手特別癢。<br>本來不特別想吃的東西，被說「這個不能吃」之後，忽然變得很想。<br><br>保羅說的正是這個：<strong>誡命本身是聖潔的，但它照進來的時候，會讓我裡面的東西「發動」。</strong><br><br>不是誡命製造了貪心。是誡命讓原本潛伏的貪心，浮上了檯面。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這件事，正是第十誡在十誡中的功用。</p>
+
+      <div class="highlight">
+        <strong>前面九條像是行為的規範，第十條像是一面鏡子</strong>
+        你可以靠著自制力，讓自己不去做前面九條所禁止的事。<br><br>但你沒有辦法靠自制力，讓自己「不想要」。<br><br>所以第十誡的存在，等於是在整份清單的最後宣告：<strong>如果你以為自己守得住，那是因為你還沒讀到這一條。</strong><br><br>而這，正是律法「叫人知罪」的功用。它不是為了讓你更用力，是為了讓你抬頭。
+      </div>
+
+      <p>那麼，第十誡對我們的提示是什麼？下一篇，我們來看那個答案——它短到讓人意外。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">提示只有兩個字：知足</h2>
+      <p class="card-hook">生存於世，總要知足</p>
+    </div>
+    <div class="card-body">
+
+      <p>第十誡對我們的提示，非常簡短：<strong>生存於世，總要知足。</strong></p>
+
+      <p>而聖經給的經文，是提摩太前書六章：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">然而，敬虔加上知足的心便是大利了；因為我們沒有帶甚麼到世上來，也不能帶甚麼去。只要有衣有食，就當知足</p>
+        <p class="scripture-ref">提摩太前書 六章六至八節</p>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>這三節經文的結構值得慢慢看，因為它是一個完整的論證：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 結論先講：敬虔加上知足，是大利</span>
+          保羅用的是<strong>生意人的語言</strong>——「大利」（porismos，收益、利潤）。<br>上下文提到有些人「以敬虔為得利的門路」。保羅說：敬虔<strong>確實</strong>是得利的門路——只是那個利，不是他們想的那個。<br><strong>敬虔＋知足＝真正的獲利。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 理由：我們沒有帶什麼來，也不能帶什麼去</span>
+          這是一個關於<strong>時間跨度</strong>的提醒。<br>你出生的時候什麼都沒有，離開的時候什麼都帶不走。中間這一段擁有的一切，本質上是<strong>暫時保管</strong>。<br>約伯在失去一切時說的正是這句：「我赤身出於母胎，也必赤身歸回。」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 標準：有衣有食，就當知足</span>
+          這個標準低到令人不安。<br>不是「有房有車」，不是「有存款有保障」。是<strong>衣、食</strong>——生存的兩項基本。<br>而主禱文求的也是同一個層次：「賜給我們日用的飲食。」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>我想先說清楚：這不是叫人不要努力</strong>
+        聖經從不反對工作、不反對計畫、不反對為將來預備。箴言整卷書都在稱讚勤勞、貶斥懶惰；螞蟻預備夏天的糧食，被拿來當榜樣。<br><br>而我們上一篇才談過，以弗所書說要「勞力，親手做正經事，就可有餘」。<br><br>所以「知足」對付的<strong>不是進取心</strong>，它對付的是<strong>「非得如何不可，否則我就不夠」</strong>的那個東西。<br><br>一個知足的人，可以很努力；他只是不會因為得不到而崩潰，也不會因為別人得到了而痛苦。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而保羅在腓立比書講知足時，說了一句很關鍵的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我並不是因缺乏說這話；我無論在甚麼景況都可以知足，這是我已經學會了</p>
+        <p class="scripture-ref">腓立比書 四章十一節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎓</span>
+        「<strong>這是我已經學會了</strong>」——注意這幾個字。<br><br>知足不是性格，不是天生的樂觀，也不是一種悟了就有的境界。<br><br>它是<strong>學來的</strong>。<br><br>而保羅接著說明了他的學程：「我知道怎樣處卑賤，也知道怎樣處豐富；或飽足，或飢餓；或有餘，或缺乏，隨事隨在，我都得了祕訣。」<br><br>兩個方向都要學。<strong>而且有意思的是，他把「處豐富」也列為需要學的——豐富的時候要知足，其實同樣困難。</strong>
+      </div>
+
+      <p>而那句大家都會背的「我靠著那加給我力量的，凡事都能作」——就是這一段的結論句。</p>
+
+      <div class="highlight">
+        <strong>那節經文的上下文，跟大部分人以為的不一樣</strong>
+        它常被拿來當成「靠主什麼都做得到」的勵志語。<br><br>但保羅寫那句話的語境，是在講<strong>知足</strong>——他說的是：無論處在什麼景況，飽足或飢餓、有餘或缺乏，我都能<strong>面對</strong>，因為有一位加給我力量。<br><br>所以那句話真正的意思，比較接近：<strong>「靠著祂，我什麼景況都撐得住。」</strong>
+      </div>
+
+      <p>那麼「貪戀」和「知足」的原文是什麼？下一篇，我們回到原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「知足」原文是「自己就夠了」</h2>
+      <p class="card-hook">保羅借了一個哲學術語，然後把它翻轉了</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Chamad<br>貪戀</div>
+        <div class="term-desc">第十誡用的希伯來字。它的意思是「<strong>渴慕、垂涎、貪求</strong>」，而且它<strong>不一定是負面的</strong>——同一個字也用在正面的渴慕上（如詩篇形容神的話語「比金子可羨慕」）。<br><br>所以「貪戀」的問題不在於「想要」這個動作本身，而在於<strong>對象</strong>：「<strong>人的</strong>房屋、<strong>人的</strong>妻子、<strong>人的</strong>僕婢」。<br><br>第十誡重複強調了那個「人的」。<strong>渴慕不是罪，渴慕那個明確不屬於你的，才是。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>而創世記三章，用的正是同一個字</strong>
+        夏娃看那棵樹「<strong>可喜愛的</strong>，能使人有智慧」——原文正是 chamad。<br><br>整個墮落的過程，經文描述得極其精確：「<strong>見</strong>那棵樹的果子好作食物，也<strong>悅人的眼目</strong>，且是<strong>可喜愛的</strong>（chamad）……就<strong>摘下果子來吃了</strong>。」<br><br>看見 → 悅目 → 貪戀 → 取。<br><br><strong>第十誡攔的，正是第三步。</strong>因為到了第四步，就已經是第八誡的事了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而新約「知足」那個字，來歷特別有意思。</p>
+
+      <div class="term-box">
+        <div class="term-original">Autarkeia<br>知足</div>
+        <div class="term-desc">字面是「<strong>自己就夠了</strong>」（autos 自己 + arkeō 足夠）。<br><br>這原本是<strong>希臘斯多亞學派的核心術語</strong>。他們追求的理想境界，正是 autarkeia——一個人透過克制慾望、不倚賴外物，達到內在的自足與不動搖。<br><br>而保羅<strong>借用了這個字</strong>，卻把它的內容整個換掉了。</div>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>斯多亞的自足</th>
+            <th>保羅的知足</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">來源</td>
+            <td>來自<strong>自己</strong>——鍛鍊意志，斷絕慾望，靠內在的堅強</td>
+            <td>來自<strong>另一位</strong>——「我靠著那加給我力量的」</td>
+          </tr>
+          <tr>
+            <td class="src">方法</td>
+            <td>降低期待，減少依附，不動情</td>
+            <td>不是不動情，而是有一位可以倚靠</td>
+          </tr>
+          <tr>
+            <td class="src">結果</td>
+            <td>一種堅忍的、有點冷的獨立</td>
+            <td>一種有溫度的安穩——可以哭，可以缺乏，但不慌</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        這是一個很漂亮的翻轉。<br><br>保羅用了那個字，但他的知足<strong>不是「我一個人就夠了」</strong>，而是<strong>「有祂我就夠了」</strong>。<br><br>字面上都是「足夠」，但一個把重心放在自己的意志上，一個放在關係上。<br><br>而這個差別很實際：<strong>靠意志的自足，在極限來臨時會斷；靠關係的知足，在極限來臨時反而更靠近。</strong><br><br>這也是為什麼保羅寫腓立比書時人在監獄裡，卻通篇在講喜樂。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後看一個常被誤引的句子。提摩太前書六章十節：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">貪財是萬惡之根。有人貪戀錢財，就被引誘離了真道，用許多愁苦把自己刺透了</p>
+        <p class="scripture-ref">提摩太前書 六章十節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💰</span>
+        這句話常被說成「金錢是萬惡之根」——但經文說的是<strong>「貪財」</strong>，不是「錢財」。<br><br>差別很大：錢是中性的工具，貪是心的狀態。聖經裡有很富有的義人（亞伯拉罕、約伯、亞利馬太的約瑟），也有很貧窮的惡人。<br><br>而「用許多愁苦把自己<strong>刺透</strong>了」這個意象很強烈——那是一個人被自己所追求的東西反過來扎穿。<br><br><strong>貪心最終傷害的，是貪心的那個人。</strong>
+      </div>
+
+      <p>下一篇，我們談一個更實際的問題：知足到底怎麼練？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">知足是學來的——那怎麼學？</h2>
+      <p class="card-hook">保羅說他「學會了」，而學習總有方法</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果知足是學來的，那就有辦法學。我整理出聖經給的幾條路徑。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 拉長時間軸</span>
+          「我們沒有帶甚麼到世上來，也不能帶甚麼去。」<br>貪戀之所以有力量，是因為它把視野壓縮到「現在」和「他有我沒有」。<br><strong>而只要把時間拉長到一生的兩端，很多東西的重量就會改變。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 換掉比較的對象</span>
+          貪戀需要一個參照物。<br>而現代生活最大的難處是：<strong>參照物被無限放大了。</strong>過去你只跟鄰居比，現在你跟全世界最好的那一群比——而且是他們精心挑選過的版本。<br>所以「減少暴露」不是逃避，是很實際的自保。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 練習數算</span>
+          感恩是貪戀的直接解藥，因為它們的方向剛好相反：<br>貪戀盯著<strong>沒有的</strong>，感恩盯著<strong>已有的</strong>。<br>而人的注意力一次只能放一個地方。<strong>這不是心靈雞湯，這是一種注意力的重新分配。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 練習給出去</span>
+          這一點最反直覺，卻最有效。<br><strong>一個定期把東西給出去的人，很難同時是一個貪心的人。</strong>因為那個動作本身，在一次次地宣告：我不需要抓那麼緊。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 回到那個真正的空缺</span>
+          最深的一層——<strong>貪戀往往不是真的想要那樣東西。</strong>它想要的是那樣東西背後的：安全感、價值感、被羨慕、不被落下。<br>而那些，那樣東西給不了。所以拿到之後，會有一段短暫的滿足，然後空缺回來，指向下一個。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第五點值得再說一層，因為它是整件事的核心。</p>
+
+      <div class="highlight">
+        <strong>貪戀的本質，是一個位置放錯了的渴望</strong>
+        傳道書的作者做了一場人類史上最徹底的實驗。他是王，他有無限的資源，他說：「凡我眼所求的，我沒有留下不給它的；我心所樂的，我沒有禁止不享受的。」<br><br>他蓋房子、栽葡萄園、修造水池、積蓄金銀、招聚歌唱的男女——什麼都試過了。<br><br>結論是那句有名的：「<strong>虛空的虛空，凡事都是虛空。</strong>」<br><br>而同一卷書裡，他說了一句我覺得是關鍵的話：「神……又將<strong>永遠</strong>安置在世人心裡。」<br><br>——人心裡有一個「永遠」大小的空缺。<strong>而你不可能用有限的東西，把一個無限的空缺填滿。</strong><br><br>這就是為什麼再多也不夠。不是你貪，是尺寸不對。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕳️</span>
+        我覺得這個理解很釋放。<br><br>因為它把「我怎麼這麼貪心」這種自我譴責，換成了一個更準確的診斷：<strong>我一直在用錯誤的材料，填一個它填不了的洞。</strong><br><br>而診斷正確了，才知道要往哪裡去。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後我想指出十誡的一個結構之美。</p>
+
+      <div class="highlight">
+        <strong>第一誡與第十誡，其實是同一件事的兩端</strong>
+        <strong>第一誡：</strong>除了我以外，你不可有別的神。<br><strong>第十誡：</strong>不可貪戀人一切所有的。<br><br>而保羅在歌羅西書講了一句話，把這兩條接了起來：「<strong>貪婪就與拜偶像一樣。</strong>」<br><br>——貪心的本質，是把一樣東西放在了神的位置上。你相信「只要有了它，我就會好」；你為它焦慮、為它犧牲、圍繞著它安排生活。<br><br>那不是欲望，那是敬拜。<br><br>所以十誡從「不可有別的神」開始，到「不可貪心」結束——<strong>它繞了一圈，回到了同一個地方。</strong>
+      </div>
+
+      <p>而這也解釋了為什麼「知足」是對治它的方法。</p>
+
+      <p>知足的內容，不是「我不想要更多」——那是壓抑。</p>
+
+      <p>知足的內容，是<strong>「我已經有了那個最重要的」</strong>。</p>
+
+      <p>詩篇二十三篇第一句，把這件事說完了：「耶和華是我的牧者，<strong>我必不致缺乏</strong>。」</p>
+
+      <p>不是「我什麼都有」，是「我不會缺」。因為那位牧者在。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">十誡的最後一條，是一面鏡子</h2>
+      <p class="card-hook">寫給那個滑完手機、心情忽然變差的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>十句話，走到這裡。</p>
+
+      <p>而我覺得第十誡放在最後，是一個很有智慧的安排。</p>
+
+      <div class="highlight">
+        <strong>因為讀完前面九條，人很容易產生一種錯覺</strong>
+        沒有拜偶像、沒有妄稱神的名、有守日子、有孝敬父母、沒殺人、沒姦淫、沒偷盜、沒作假見證——<br><br>然後你翻到第十條：<strong>不可貪心。</strong><br><br>而在那一刻，剛剛累積起來的那份自我感覺，會安靜地垮掉。<br><br>這正是保羅的經歷：「就律法上的義說，我是無可指摘的」——直到第十誡。<br><br><strong>十誡的最後一條，不是為了讓你及格，是為了讓你知道你不會及格。</strong>
+      </div>
+
+      <p>而這不是壞消息。因為律法的功用，本來就是「叫人知罪」——它像一面鏡子，照出你臉上的髒，卻不是用來洗臉的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        一面鏡子照出你臉上有灰，這不是鏡子在羞辱你。<br><br>而你也不會拿鏡子去擦臉。<br><br><strong>鏡子的工作是讓你知道要去洗。</strong>而十誡的工作，是把我們帶到那位能洗淨我們的面前。<br><br>加拉太書說：「律法是我們訓蒙的師傅，引我們到基督那裡。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個滑完手機、心情變差的夜晚。</p>
+
+      <p>我後來為自己做了一件很小的事，說出來有點土，但它有效。</p>
+
+      <p><strong>每次發現自己開始比較的時候，我就停下來，數三樣具體的東西。</strong></p>
+
+      <p>不是抽象的「我很感恩」，而是三樣具體的：今天有一頓熱的飯、有一個人傳訊息問我好不好、身體沒有哪裡在痛。</p>
+
+      <div class="highlight">
+        <strong>為什麼要「具體」？</strong>
+        因為貪戀是很具體的——它盯著<strong>那個</strong>房子、<strong>那個</strong>職位、<strong>那個</strong>人的生活。<br><br>所以對抗它的，也必須是具體的。抽象的感恩打不過具體的羨慕。<br><br>而奇怪的是，數到第三樣的時候，那個往下掉的感覺，通常就停住了。
+      </div>
+
+      <div class="big-quote">
+        然而，敬虔加上知足的心<br>便是大利了
+        <cite>— 提摩太前書 六章六節</cite>
+      </div>
+
+      <p>最後我想留下一句，是我覺得整件事最溫柔的部分。</p>
+
+      <p>第十誡沒有要求你活得很少。它沒有說你不可以有房子、不可以有好的東西、不可以為將來努力。</p>
+
+      <p>它只說了一件事：<strong>不要貪戀「人的」。</strong></p>
+
+      <p>而這句話的反面是：<strong>你有你的。</strong></p>
+
+      <p>神給每個人的份不一樣。而那份是為你量的——不是別人剩下的，也不是打折的版本。</p>
+
+      <p>大衛說：「耶和華是我的產業，是我杯中的分……用繩量給我的地界，坐落在佳美之處；我的產業實在美好。」</p>
+
+      <p>願你今晚放下手機的時候，心情是好的。</p>
+
+      <p>因為你的那一份，本來就夠了。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第十誡 · 知足 · Threads Series
+</footer>
+
+</body>
+</html>

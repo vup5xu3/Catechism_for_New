@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信主耶穌是基督 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>就是<span>那一位</span></h1>
+  <p class="subtitle">信「主耶穌是基督」，究竟意味著什麼？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">等了很久的人，才知道「就是他」是什麼感覺</h2>
+      <p class="card-hook">而以色列，等了幾千年</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種經驗，你大概有過：在機場的入境大廳等一個很久沒見的人。</p>
+
+      <p>門一次一次打開，出來的都是別人。你一次一次抬頭，一次一次失望。而在你已經有點麻木的時候，門又開了——</p>
+
+      <p>然後你看見那個人。</p>
+
+      <p><strong>那一瞬間的「就是他」，是所有等待累積出來的。</strong>如果你只等了三分鐘，那一刻不會有那樣的重量。</p>
+
+      <div class="highlight">
+        <strong>而以色列，等了幾千年</strong>
+        從創世記第三章那句「女人的後裔要傷你的頭」開始。<br><br>經過亞伯拉罕之約、經過大衛之約、經過先知一次一次的預告——伯利恆、童女、受苦的僕人、和平的君。<br><br>經過被擄、經過歸回、經過瑪拉基書之後那四百年的沉默——<strong>四百年，沒有一位先知說話。</strong><br><br>然後，在一個平凡的年份，在一座不起眼的小城，有一個嬰孩出生了。
+      </div>
+
+      <p>所以當彼得說「你是基督」的時候，他說的不只是一個稱號。</p>
+
+      <p>他說的是：<strong>就是你。我們等的那一位，就是你。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而這也是為什麼，這句話對第一世紀的猶太人來說，重量遠超過我們今天的體會。<br><br>我們是先聽見答案，才回頭去看題目。<br><br>他們是<strong>看了幾千年的題目，才終於看見答案。</strong>
+      </div>
+
+      <p>那麼，「信主耶穌是基督」這句話，具體包含哪些意義？</p>
+
+      <p>接下來這幾篇，我想陪你把它拆成五個層面來看。而你會發現，它不只是一個認知，它是<strong>一連串的接受</strong>。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">以馬忤斯路上那堂聖經課</h2>
+      <p class="card-hook">祂從摩西和眾先知起，講解關於自己的話</p>
+    </div>
+    <div class="card-body">
+
+      <p>復活那天下午，有兩個門徒往以馬忤斯去。他們一路談論，臉上帶著愁容。</p>
+
+      <p>耶穌親自就近他們，和他們同行，只是他們的眼睛迷糊了，不認識祂。</p>
+
+      <p>祂問他們在談什麼。他們就把整件事說了一遍——關於拿撒勒人耶穌，關於祭司長把祂釘了十字架。然後他們說了那句我覺得最令人心酸的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但我們素來所盼望要贖以色列民的就是他</p>
+        <p class="scripture-ref">路加福音 二十四章二十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「素來所盼望」——過去式</strong>
+        他們的意思是：<strong>我們本來以為是他。</strong><br><br>盼望結束了。他們正在往回走——離開耶路撒冷，離開那個希望破滅的地方。<br><br>而他們錯得很徹底：他們以為那個十字架終結了一切，卻不知道那正是一切的成就。
+      </div>
+
+      <p>而主耶穌接下來做的事，是整段最關鍵的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">於是從摩西和眾先知起，凡經上所指著自己的話都給他們講解明白了</p>
+        <p class="scripture-ref">路加福音 二十四章二十七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        我常常想像那個下午。<br><br>從耶路撒冷到以馬忤斯，大約十一公里，走路大概兩三個小時。<br><br>而在那兩三個小時裡，復活的主親自上了一堂課——<strong>從摩西和眾先知起，把整本舊約裡指著祂的話，一段一段講明白。</strong><br><br>那是聖經史上最珍貴的一堂課。而路加沒有記下內容。<br><br>我很想知道祂講了哪些段落。但也許路加不記，是因為<strong>那堂課的重點不是筆記，是那個「原來如此」的時刻。</strong>
+      </div>
+
+      <p>而他們後來的反應是：「在路上，他和我們說話，給我們講解聖經的時候，<strong>我們的心豈不是火熱的嗎？</strong>」</p>
+
+      <div class="card-divider"></div>
+
+      <p>這一段給了我們一個非常重要的原則：</p>
+
+      <div class="highlight">
+        <strong>「耶穌是基督」這件事，是可以從聖經驗證的</strong>
+        主耶穌沒有說「你們就相信吧」。<br><br>祂做的是<strong>打開聖經</strong>，一段一段講解。<br><br>而使徒後來傳道，用的也是同一個方法。保羅在帖撒羅尼迦「照他素常的規矩……本著聖經與他們辯論，講解陳明基督必須受害，從死裡復活；又說：我所傳與你們的這位耶穌就是基督」。<br><br>而庇哩亞人被稱讚，正是因為他們「天天考查聖經，要曉得這道是與不是」。<br><br><strong>信仰不是要人不要問，而是要人去查。</strong>
+      </div>
+
+      <p>那麼，信「耶穌是基督」具體包含什麼？下一篇，我們列出五個層面。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五個層面的意義</h2>
+      <p class="card-hook">從舊約的應驗，到將來的再臨</p>
+    </div>
+    <div class="card-body">
+
+      <p>先把「基督」這個稱號的內容說清楚。</p>
+
+      <div class="highlight">
+        <strong>「基督」——彌賽亞——是舊約聖經所預言的唯一救贖主</strong>
+        祂要救贖以色列人，<strong>也要救贖一切信祂的世人</strong>。<br><br>而祂是神所膏立的：<strong>最大的先知、永遠的祭司、永世的君主。</strong><br><br>——受膏的三個職分，都集中在祂一個人身上。
+      </div>
+
+      <p>而「我們信耶穌是基督」這句話，具有五個重要的意義：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 信祂是舊約所預言的那一位</span>
+          舊約中一切有關彌賽亞的預言，都應驗在耶穌身上。<br><strong>這正是約翰福音全書的主題之一。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 接受神為耶穌所作的見證</span>
+          天使對馬利亞的宣告、天使向牧羊人報的大喜信息（參路一 30～33；二 11～13）；以及在約旦河與變像山上，父從天上所說的話。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 接受耶穌自己的見證</span>
+          撒瑪利亞婦人說「我知道彌賽亞要來」，主直接回答：「<strong>這和你說話的就是他。</strong>」（約四 25～26）<br>另參路廿二 37、廿四 25～27、44。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 接受使徒們為耶穌所作的見證</span>
+          「但記這些事要叫你們信耶穌是基督，是神的兒子。」（約廿 31）<br>彼得在五旬節的講道，正是這樣的見證（徒二 22～36）。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 確信耶穌必要再來</span>
+          因為舊約多次預言，彌賽亞將有<strong>榮耀的顯現</strong>。<br>而第一次來，祂是受苦的僕人；那些關於榮耀的預言，指向再來。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>這五點的結構很值得注意，因為它們涵蓋了<strong>四種見證來源</strong>加上<strong>一個未來指向</strong>。</p>
+
+      <div class="highlight">
+        <strong>三重見證：父、子、使徒</strong>
+        <strong>②</strong> 是<strong>神</strong>為祂作的見證。<br><strong>③</strong> 是<strong>祂自己</strong>作的見證。<br><strong>④</strong> 是<strong>使徒</strong>為祂作的見證。<br><br>而律法規定：「憑兩三個人的口作見證，句句都可定準。」<br><br>這裡有三重見證，而且來自三個不同的層面：天上的、當事人的、目擊者的。<br><br>再加上 <strong>①</strong> ——舊約幾千年的預言作為<strong>歷史的見證</strong>。<br><br><strong>四重印證。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第五點——「確信耶穌必要再來」——常被當成一項獨立的末世教義。但它其實是「信祂是基督」的<strong>必要部分</strong>。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👑</span>
+        原因很簡單：<strong>舊約關於彌賽亞的預言，有兩種不同的圖像。</strong><br><br>一種是<strong>受苦的</strong>：以賽亞書五十三章那位「被藐視，被人厭棄，多受痛苦，常經憂患」的僕人。<br><br>一種是<strong>榮耀的</strong>：但以理書那位「駕著天雲而來」、得了權柄榮耀國度的人子；撒迦利亞書那位要作王掌權的。<br><br>而當時的猶太人，大多只讀後面那一種。所以當一位被釘十字架的彌賽亞出現時，他們無法接受。<br><br><strong>而答案是：兩種都是真的，只是分成兩次。</strong><br><br>第一次來，成就了受苦的那些預言；再來時，要成就榮耀的那些。<br><br>所以「確信祂必再來」不是附加選項——<strong>沒有這一項，關於彌賽亞的預言就只完成了一半。</strong>
+      </div>
+
+      <p>那麼，那些預言到底有多精確？下一篇，我們攤開來看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那些預言，寫得有多具體？</h2>
+      <p class="card-hook">而其中大部分，是當事人無法自己安排的</p>
+    </div>
+    <div class="card-body">
+
+      <p>先看幾則舊約的彌賽亞預言，以及它們的應驗：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>預言</th>
+            <th>內容</th>
+            <th>應驗</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">創三 15</td>
+            <td>女人的後裔要傷蛇的頭</td>
+            <td>整本聖經第一個福音的預告，在十字架上成就</td>
+          </tr>
+          <tr>
+            <td class="src">彌五 2</td>
+            <td>「伯利恆·以法他啊……將來必有一位從你那裡出來，在以色列中為我作掌權的」</td>
+            <td>生於伯利恆——而馬利亞原本住在拿撒勒，是因為報名上冊才去的</td>
+          </tr>
+          <tr>
+            <td class="src">賽七 14</td>
+            <td>「必有童女懷孕生子，給他起名叫以馬內利」</td>
+            <td>由童女而生</td>
+          </tr>
+          <tr>
+            <td class="src">亞九 9</td>
+            <td>「你的王來到你這裡……騎著驢，就是騎著驢的小駒子」</td>
+            <td>騎驢進耶路撒冷</td>
+          </tr>
+          <tr>
+            <td class="src">亞十一 12</td>
+            <td>「他們就給了三十塊錢作為我的工價」</td>
+            <td>猶大賣主的價錢</td>
+          </tr>
+          <tr>
+            <td class="src">賽五三 5</td>
+            <td>「他為我們的過犯受害，為我們的罪孽壓傷」</td>
+            <td>十字架</td>
+          </tr>
+          <tr>
+            <td class="src">賽五三 9</td>
+            <td>「他雖然未行強暴……誰知死的時候與財主同葬」</td>
+            <td>與強盜同釘，卻葬在財主亞利馬太的約瑟的新墳墓裡</td>
+          </tr>
+          <tr>
+            <td class="src">詩廿二 18</td>
+            <td>「他們分我的外衣，為我的裡衣拈鬮」</td>
+            <td>兵丁在十字架下所做的事</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        有人會說：一個人可以刻意去應驗預言。<br><br>而這對某些項目確實成立——比如騎驢進城，那是可以安排的。<br><br>但請注意這張表裡有多少項是<strong>當事人完全無法安排的</strong>：<br><br>出生的地點、出生的方式、被出賣的價錢、兵丁怎麼處理祂的衣服、埋葬在誰的墳墓裡。<br><br>而詩篇二十二篇更值得一提：<strong>它成書於釘十字架這種刑罰被發明之前幾百年</strong>，卻寫著「他們扎了我的手，我的腳」、「我的骨頭都脫了節」——那是十字架上的實況。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看「三個職分」。彌賽亞是受膏者，而舊約中受膏的有三種身分——而這三種，全部集中在祂身上：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">先知 · 代表神向人說話</span>
+          摩西預言：「耶和華你的神要從你們弟兄中間給你興起一位先知，像我，你們要聽從他。」（申十八 15）<br>而主耶穌說：「我的教訓不是我自己的，乃是那差我來者的。」——祂是<strong>最大的先知</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">祭司 · 代表人到神面前</span>
+          「你是照著麥基洗德的等次永遠為祭司。」（詩一一〇 4）<br>而祂與舊約祭司的差別在於：<strong>他們獻牲畜，祂獻自己；他們年年獻，祂一次永遠。</strong>祂是<strong>永遠的祭司</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">君王 · 掌權治理</span>
+          「他必為大，稱為至高者的兒子；主神要把他祖大衛的位給他。他要作雅各家的王，直到永遠。」（路一 32～33）<br>祂是<strong>永世的君主</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        在舊約歷史裡，這三個職分是<strong>嚴格分開</strong>的。<br><br>掃羅王擅自獻祭，被撒母耳嚴厲責備，並宣告他的國必不長久。<br>烏西雅王進殿燒香，長了大痲瘋，直到死日。<br><br>——王不可以做祭司的事。這是律法的界線。<br><br>而在基督身上，三個職分合而為一。這在舊約的框架裡是不可能的，除非——<strong>祂不只是一個人。</strong><br><br>希伯來書引用「照著麥基洗德的等次」，正是為了處理這件事：麥基洗德同時是「撒冷王」和「至高神的祭司」，是舊約中唯一同時具備兩種身分的人物，而他出現在利未支派設立之前。
+      </div>
+
+      <p>下一篇，我們談一個很重要的分辨：他們認錯了什麼？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">他們等對了人，卻等錯了樣子</h2>
+      <p class="card-hook">而這個錯誤，今天也還在發生</p>
+    </div>
+    <div class="card-body">
+
+      <p>當時的猶太人，並不是沒有在等彌賽亞。他們等得非常認真。</p>
+
+      <p>問題出在——<strong>他們心裡那個彌賽亞的樣子，是自己畫的。</strong></p>
+
+      <div class="highlight">
+        <strong>他們期待的是什麼？</strong>
+        一位<strong>政治的解放者</strong>：趕走羅馬人，恢復大衛的王國，讓以色列重新成為列國之首。<br><br>這個期待不是憑空來的——舊約確實有那些榮耀的預言。<br><br>問題在於：<strong>他們選擇性地只讀了那一半。</strong><br><br>以賽亞書五十三章那位「像羊羔被牽到宰殺之地」的受苦僕人，被解釋成別的意思，或者被略過。<br><br>因為一位<strong>會被殺的彌賽亞</strong>，不符合他們的需要。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🖼️</span>
+        我覺得這件事很值得我們警惕。<br><br>他們不是不讀聖經——他們讀得比我們多，很多人能整卷背誦。<br><br>他們的問題是：<strong>先有了想要的答案，再去聖經裡找支持的段落。</strong><br><br>而這件事，今天一樣在發生。我們也很容易在心裡畫一個「我需要的耶穌」——<br><br>一位讓我事業順利的耶穌。<br>一位認同我所有立場的耶穌。<br>一位只安慰、從不糾正的耶穌。<br><br>然後在聖經裡挑那些支持這幅畫的段落。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這也解釋了福音書裡一個奇特的現象：<strong>主耶穌常常禁止人宣揚祂是基督。</strong></p>
+
+      <p>彼得認信之後，經文說：「當下，耶穌囑咐門徒，不可對人說他是基督。」<br>祂醫好病人之後，常常說「你不可告訴人」。<br>祂在五餅二魚之後，知道眾人要來強逼祂作王，就獨自退到山上去了。</p>
+
+      <div class="highlight">
+        <strong>為什麼要禁止？</strong>
+        因為「基督」這個詞，在當時的群眾耳中，<strong>已經被填滿了錯誤的內容</strong>。<br><br>如果祂在那個時候公開接受這個稱號，群眾會立刻把祂推上政治的位置——而那正是魔鬼在曠野提出的那個試探：不必走十字架的路，也可以得萬國。<br><br>所以祂等。<strong>祂等到十字架，才讓這個詞的內容被重新定義。</strong><br><br>而在大祭司面前，當祂已經被綁著、已經沒有任何人會誤以為祂要作政治領袖的時候——祂才第一次公開承認：「你說的是。」<br><br><strong>祂要人先看見十字架，再理解「基督」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這件事的實際意義是什麼？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 檢查你心裡那幅畫</span>
+          問一個很誠實的問題：<strong>我所信的那位基督，有沒有哪些部分是我自己加上去的？</strong><br>而最好的檢查方法是——<strong>去讀那些讓你不舒服的經文。</strong><br>一位從不讓你意外的基督，多半是你自己畫的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 接受祂不照你的劇本走</span>
+          以馬忤斯路上那兩個門徒說：「我們素來所盼望要贖以色列民的就是他。」<br>他們沒有看錯人。<strong>他們只是不知道，救贖的方式跟他們想的不一樣。</strong><br>而主對他們說：「無知的人哪，先知所說的一切話，你們的心信得太遲鈍了。」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 記得還有第二次</span>
+          第五個意義——確信祂必再來——是這一切的收尾。<br>那些榮耀的預言沒有被取消，只是<strong>還沒到時候</strong>。<br>所以今天所有看起來不合理的、未完成的、還在等的，都不是終局。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而以馬忤斯那一段，還有一個溫柔的細節</strong>
+        主責備他們「信得太遲鈍」之後，做了什麼？<br><br>祂沒有離開。祂<strong>陪他們走完了那十一公里</strong>，一路講解聖經。到了村子，祂「好像還要往前行」，他們強留祂，祂就進去同他們住下。<br><br>然後在擘餅的時候，他們的眼睛明亮了。<br><br><strong>祂責備他們，卻沒有丟下他們。</strong><br><br>而他們立刻起身，回耶路撒冷去——同樣的十一公里，這次是在夜裡，往回走。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「這和你說話的就是他」</h2>
+      <p class="card-hook">寫給那個還在等一個確據的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在井邊那段對話上。</p>
+
+      <p>約翰福音第四章，主耶穌走了很遠的路，在正午最熱的時候，坐在雅各井旁。而來打水的，是一個撒瑪利亞婦人。</p>
+
+      <p>那是一個各方面都被排除在外的人：撒瑪利亞人（猶太人不與他們來往）、女人（當時的拉比不與婦女在公開場合談論宗教）、而且她的過去很複雜——她「有過五個丈夫，現在有的並不是她的丈夫」。</p>
+
+      <p>而她挑在正午來打水。這個細節本身就在說話：<strong>正常人清晨結伴來打水，只有不想遇見人的人，才會選最熱的時候。</strong></p>
+
+      <div class="highlight">
+        <strong>而那段對話的結尾，是整卷福音書最動人的一刻之一</strong>
+        她說：「我知道<strong>彌賽亞</strong>要來；他來了，必將一切的事都告訴我們。」<br><br>然後主耶穌說：<br><br>「<strong>這和你說話的就是他。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💧</span>
+        我一直覺得，這是整本福音書裡最溫柔的一次自我啟示。<br><br>祂第一次明明白白地說出「我就是彌賽亞」，不是在聖殿，不是在群眾面前，不是對著宗教領袖。<br><br>是在一口井邊，對一個正午出來打水、不想遇見任何人的女人。<br><br><strong>「這和你說話的就是他。」</strong><br><br>——就是現在，就是這裡，就是對你。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而她後來做的事更有意思。她把水罐子放下，跑回城裡，對眾人說：「你們來看！有一個人將我素來所行的一切事都給我說出來了，<strong>莫非這就是基督嗎？</strong>」</p>
+
+      <p>那個「莫非」，很真實。她不是一開始就百分之百確定——她是帶著一個還沒完全確認的震動，跑去叫別人來看。</p>
+
+      <div class="highlight">
+        <strong>而經文說，那城裡有好些人信了祂</strong>
+        「因為那婦人作見證說：『他將我素來所行的一切事都給我說出來了。』」<br><br>然後他們求主在他們那裡住下，主住了兩天。<br><br>而兩天之後，他們對那婦人說了一句話：<br><br>「<strong>現在我們信，不是因為你的話，是我們親自聽見了，知道這真是救世主。</strong>」<br><br>——從「因為你說的」，到「我們親自聽見了」。<br><br>這正是我們在前一篇談過的那個過程：從「人說我是誰」，走到「你說我是誰」。
+      </div>
+
+      <div class="big-quote">
+        這和你說話的就是他
+        <cite>— 約翰福音 四章二十六節</cite>
+      </div>
+
+      <p>回到入境大廳那個畫面。</p>
+
+      <p>信「耶穌是基督」，某種意義上，就是那個「就是他」的時刻。</p>
+
+      <p>不是「他看起來還不錯」，不是「他的教導很好」，而是——<strong>幾千年的等待、幾十卷書的預言、所有那些影兒和輪廓，指向的就是這一位。</strong></p>
+
+      <p>而如果你此刻還在「莫非」的階段——像那個婦人一樣，還帶著一個未完全確認的震動——</p>
+
+      <p>那也很好。因為她就是從那裡開始的。</p>
+
+      <p>而主在那座城裡，住了兩天。</p>
+
+      <p>祂願意留下來，直到你可以說：<strong>我親自聽見了。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  就是那一位 · Threads Series
+</footer>
+
+</body>
+</html>

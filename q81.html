@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>十字架的果效 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>十架的<span>果效</span></h1>
+  <p class="subtitle">那一天成就的事，比我們以為的多</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我以為十字架只做了一件事</h2>
+      <p class="card-hook">「赦罪」——然後呢？</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果有人問我十字架成就了什麼，我以前的答案是兩個字：<strong>赦罪。</strong></p>
+
+      <p>這個答案是對的，而且是最核心的一項。</p>
+
+      <p>但我後來發現，如果我對十字架的理解只停在這裡，會產生一個很實際的問題。</p>
+
+      <div class="highlight">
+        <strong>那個問題是：「然後呢？」</strong>
+        我的罪被赦免了——這解決了<strong>過去</strong>。<br><br>可是我<strong>現在</strong>還是會軟弱、還是有那些改不掉的習慣、還是會被同樣的東西絆倒。<br><br>而我心裡有一個很誠實的疑問：<strong>那十字架對「現在的我」有什麼幫助？</strong><br><br>如果它只處理帳目，那我就得靠自己去處理其餘的部分。<br><br>——而那正是我當時的活法：<strong>得救靠恩典，生活靠自己。</strong>
+      </div>
+
+      <p>後來我認真去查十字架的果效，才發現我漏掉了很多。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔑</span>
+        我想到一個比喻。<br><br>假設一個人被關在監獄裡。有人替他繳清了全部的罰金——那很重要，那是<strong>法律地位</strong>的問題。<br><br>可是如果只有這樣，他還在牢房裡。他還被鎖著、還在那個環境裡、還跟那些人在一起。<br><br><strong>「不欠了」和「出來了」，不是同一件事。</strong><br><br>而聖經說的十字架，不只是繳清罰金。<strong>它還開了門。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你把十字架的果效，一項一項攤開。</p>
+
+      <p>聖經列了五項。而你會發現，它們涵蓋的範圍——從過去，到現在，到將來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「成了」——一個商業用語</h2>
+      <p class="card-hook">那個字，會被蓋在還清的債據上</p>
+    </div>
+    <div class="card-body">
+
+      <p>主耶穌在十字架上說的最後幾句話中，有一句只有一個字。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌嘗（原文是受）了那醋，就說：「成了！」便低下頭，將靈魂交付神了</p>
+        <p class="scripture-ref">約翰福音 十九章三十節</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Tetelestai<br>成了</div>
+        <div class="term-desc">中文譯作「成了」，原文是一個字。<br><br>而這個字在當時的日常生活中，有幾種很具體的用法：<br><br><strong>商業上</strong>——寫在債據上，表示「<strong>債務已全額清償</strong>」。考古發現的當時票據上，就有這個字。<br><strong>祭祀上</strong>——用來指祭牲已檢驗合格、獻祭完成。<br><strong>工藝上</strong>——一件作品完工，工匠說這個字。<br><br>而它的時態是<strong>完成式</strong>：<strong>一個過去完成的動作，其效力持續到現在。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>「完成式」這個文法細節，非常重要</strong>
+        它的意思不是「我做完了這件事」（然後就過去了）。<br><br>它的意思是：<strong>「這件事已經完成了，而它現在仍然是完成的狀態。」</strong><br><br>換句話說——那不是一個歷史事件的結束，那是一個<strong>持續有效的狀態</strong>的開始。<br><br>兩千年前蓋上的那個「已清償」，今天依然有效。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        而我覺得最動人的是：<strong>祂沒有說「我完了」。</strong><br><br>如果祂說的是「我完了」，那是一場失敗的結束。<br><br>而祂說的是「<strong>成了</strong>」——那是一件工作的<strong>完工宣告</strong>。<br><br>一個工匠退後一步，看著剛完成的作品，說：好了。<br><br>——而祂看著的那件作品，是我們。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而就在那一刻，聖殿裡發生了一件事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">忽然，殿裡的幔子從上到下裂為兩半，地也震動，磐石也崩裂</p>
+        <p class="scripture-ref">馬太福音 二十七章五十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「從上到下」——這四個字是關鍵</strong>
+        那幅幔子分隔著聖所與至聖所。而至聖所是神的所在，一年只有一次、只有大祭司、只能帶著血進去。<br><br>那幅幔子非常厚重、非常高大。<br><br>而它裂開的方向是：<strong>從上到下。</strong><br><br>——不是從下往上撕，那會是人的動作。<br><br><strong>從上到下，意味著那是從上面來的。</strong><br><br>而希伯來書說：「弟兄們，我們既因耶穌的血得以坦然進入至聖所，是藉著他給我們開了一條又新又活的路，<strong>從幔子經過，這幔子就是他的身體。</strong>」
+      </div>
+
+      <p>那麼，那扇開了的門後面，有什麼？下一篇，我們看那五項果效。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五項果效</h2>
+      <p class="card-hook">從赦免，到收復失去的一切</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌被釘死在十字架上，有五項果效：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 使我們得赦免，免滅亡，得永生</span>
+          「這是我立約的血，為多人流出來，使罪得赦。」（太廿六 28）<br>「人子來……並且要捨命，作多人的贖價。」（可十 45）<br>「叫一切信他的，不至滅亡，反得永生。」（約三 16）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 使我們既然在罪上死，就得以在義上活</span>
+          「他被掛在木頭上，親身擔當了我們的罪，<strong>使我們既然在罪上死，就得以在義上活</strong>。」（彼前二 24）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 成就神人間的和平</span>
+          「你們從前與神隔絕……但如今他藉著基督的肉身受死，叫你們與自己和好。」（西一 21～22）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 使我們可以得勝罪惡、世界、魔鬼、自己</span>
+          「我們的舊人和他同釘十字架，使罪身滅絕。」（羅六 6）<br>「藉著死敗壞那掌死權的。」（來二 14）<br>「就我而論，世界已經釘在十字架上。」（加六 14）<br>「我已經與基督同釘十字架。」（加二 20）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 收復亞當所失的福祉，並賜人更多的恩惠</span>
+          「你曾被殺，用自己的血……買了人來，叫他們歸於神，又叫他們成為國民，作祭司。」（啟五 9～10）<br>「從他豐滿的恩典裡，我們都領受了，而且<strong>恩上加恩</strong>。」（約一 16～17）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>這五項的結構，涵蓋了三個時態。而這正好回答了我第一篇的困惑：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>果效</th>
+            <th>時態</th>
+            <th>解決的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">① 赦免</td>
+            <td><strong>過去</strong></td>
+            <td>罪的<strong>刑罰</strong>——那筆帳</td>
+          </tr>
+          <tr>
+            <td class="src">② 在義上活<br>④ 得勝</td>
+            <td><strong>現在</strong></td>
+            <td>罪的<strong>權勢</strong>——那個轄制</td>
+          </tr>
+          <tr>
+            <td class="src">③ 和平</td>
+            <td><strong>現在</strong></td>
+            <td>關係的<strong>斷裂</strong></td>
+          </tr>
+          <tr>
+            <td class="src">⑤ 收復並加恩</td>
+            <td><strong>將來</strong></td>
+            <td>罪的<strong>存在</strong>——最終的完滿</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這正是我以前漏掉的部分</strong>
+        我只看見第一項。<br><br>所以我的信仰是「過去式」的——那件事在兩千年前發生，解決了我的帳，然後我要靠自己走完剩下的路。<br><br>而聖經說的十字架，不只處理<strong>刑罰</strong>，也處理<strong>權勢</strong>。<br><br>羅馬書第六章那句話，是關鍵：「我們的舊人和他同釘十字架，<strong>使罪身滅絕，叫我們不再作罪的奴僕</strong>。」<br><br>——「不再作奴僕」，那是<strong>現在式</strong>的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項那句話的結構，值得慢慢讀：</p>
+
+      <div class="big-quote">
+        使我們既然在罪上死，<br>就得以在義上活
+        <cite>— 彼得前書 二章二十四節</cite>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        「在罪上死」——這句話的意思，不是「我再也不會犯罪」。<br><br>它的意思接近：<strong>那個關係斷了。</strong><br><br>死亡會終止一切法律上的義務。一個人死了，他的僱傭關係結束，他的債務關係改變，他不再受原本轄制他的那些安排管轄。<br><br>保羅在羅馬書就是用這個邏輯：「因為已死的人是脫離了罪。」<br><br>而重點在後半句：<strong>「就得以在義上活。」</strong><br><br>——不是死了就結束，是死了之後，<strong>換一種活法</strong>。
+      </div>
+
+      <p>那麼「和平」與「得勝」具體是什麼意思？下一篇，我們往下看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「和好」是一個戰後用語</h2>
+      <p class="card-hook">而發起和談的，是被得罪的那一方</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Katallassō<br>和好</div>
+        <div class="term-desc">這個字在當時用於<strong>敵對關係的終止</strong>——交戰雙方停戰、疏遠的關係復合。<br><br>它預設了一件事：<strong>原本是敵對的。</strong><br><br>而歌羅西書的措辭確實如此：「你們從前與神隔絕，因著惡行，<strong>心裡與他為敵</strong>。」<br><br>——「心裡與他為敵」。這不是輕描淡寫的疏遠。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這裡有一個極不尋常的地方</strong>
+        在人類的衝突裡，<strong>通常是理虧的一方先來求和</strong>。<br><br>而聖經記載的是相反的：<br><br>「一切都是出於神；<strong>他藉著基督使我們與他和好</strong>，又將勸人與他和好的職分賜給我們。」（林後五 18）<br><br>——發起和談的，是<strong>被得罪的那一方</strong>。<br><br>而且不只發起，還把和好的代價也付了。<br><br>保羅接著說：「所以，我們作基督的使者，就好像神藉我們勸你們一般。<strong>我們替基督求你們與神和好。</strong>」<br><br>「<strong>求</strong>你們」——被得罪的那一位，在求得罪祂的人接受和好。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        我想到那個浪子的比喻。<br><br>兒子拿了家產走了，把一切都揮霍盡了。而他回家時，準備了一套講稿：「我得罪了天，又得罪了你……把我當作一個雇工吧。」<br><br>而經文說：「<strong>相離還遠，他父親看見，就動了慈心，跑去抱著他的頸項，連連與他親嘴。</strong>」<br><br>「相離還遠……就看見」——那意味著父親一直在看。<br><br>而那套講稿，兒子還沒說完就被打斷了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第四項——<strong>得勝</strong>。而聖經列的是四個對象，每一個都有對應的經文：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>得勝的對象</th>
+            <th>經文與方式</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">罪惡</td>
+            <td>「我們的<strong>舊人</strong>和他同釘十字架，使罪身滅絕，叫我們不再作罪的奴僕。」（羅六 6）<br>——不是「更努力抵抗」，是那個舊人已經被處理了。</td>
+          </tr>
+          <tr>
+            <td class="src">魔鬼</td>
+            <td>「藉著死敗壞那掌死權的，就是魔鬼。」（來二 14）<br>——用死，打敗掌死權的。</td>
+          </tr>
+          <tr>
+            <td class="src">世界</td>
+            <td>「但我斷不以別的誇口，只誇我們主耶穌基督的十字架；因這十字架，<strong>就我而論，世界已經釘在十字架上；就世界而論，我已經釘在十字架上。</strong>」（加六 14）</td>
+          </tr>
+          <tr>
+            <td class="src">自己</td>
+            <td>「我已經與基督同釘十字架，<strong>現在活著的不再是我，乃是基督在我裡面活著</strong>。」（加二 20）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        加拉太書六章十四節那句「<strong>雙向的釘</strong>」，值得慢慢讀：<br><br>「就我而論，<strong>世界</strong>已經釘在十字架上」——世界對我失去了吸引力。<br>「就世界而論，<strong>我</strong>已經釘在十字架上」——我對世界也失去了價值。<br><br>兩邊互相失去了牽制的力量。<br><br>而這才是「得勝世界」的意思——<strong>不是打敗它，是不再被它定義。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而最後一項——<strong>收復亞當所失的福祉，並賜人更多的恩惠</strong>——這個「更多」很值得注意。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">從他豐滿的恩典裡，我們都領受了，而且恩上加恩</p>
+        <p class="scripture-ref">約翰福音 一章十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📈</span>
+        「恩上加恩」——原文的意思接近「<strong>一波恩典接著一波恩典</strong>」，像海浪一樣一層接一層。<br><br>而這帶出一個很重要的觀察：<strong>救恩不只是把人恢復到亞當的原點。</strong><br><br>如果只是恢復原狀，那我們就回到伊甸園那個「可能會失去」的狀態——因為亞當當時仍有可能跌倒。<br><br>而聖經給的是更多：<br><br>啟示錄五章說，被贖的人「<strong>成為國民，作祭司</strong>」——亞當在伊甸園裡沒有祭司的職分。<br><br>羅馬書說我們「和基督同作後嗣」——亞當沒有這個身分。<br><br>而末了，「不再有咒詛」，「他們要作王，直到永永遠遠」。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        羅馬書第五章有一段對照，把這件事說得極清楚。保羅比較亞當與基督，而他一再強調一個詞：<strong>「更加」。</strong><br><br>「若因一人的過犯，眾人都死了，何況神的恩典，與那因耶穌基督一人恩典中的賞賜，<strong>豈不更加倍地臨到眾人嗎？</strong>」<br><br>「若因一人的過犯，死就因這一人作了王，何況那些受洪恩……的，<strong>豈不更要因耶穌基督一人在生命中作王嗎？</strong>」<br><br>——整段的邏輯是：<strong>恩典的果效，大過罪的破壞。</strong><br><br>而最後那句：「只是罪在哪裡顯多，<strong>恩典就更顯多了</strong>。」
+      </div>
+
+      <p>下一篇，我們談一個很實際的問題：既然已經「得勝」，為什麼我還是常常跌倒？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">既然得勝了，為什麼我還是會跌倒？</h2>
+      <p class="card-hook">聖經的回答，是三個動詞</p>
+    </div>
+    <div class="card-body">
+
+      <p>這是一個很誠實、也很普遍的困惑。</p>
+
+      <p>如果十字架真的讓我「不再作罪的奴僕」，那為什麼我明天還是會犯同樣的錯？</p>
+
+      <div class="highlight">
+        <strong>而保羅在羅馬書第六章，用三個動詞回答了這件事</strong>
+        <strong>知道</strong>（羅六 6）：「因為<strong>知道</strong>我們的舊人和他同釘十字架。」<br><br><strong>算</strong>（羅六 11）：「這樣，你們向罪也當<strong>看自己是死的</strong>」——原文那個字是「計算、認定」。<br><br><strong>獻</strong>（羅六 13）：「將自己<strong>獻給</strong>神，並將肢體作義的器具獻給神。」<br><br>——三個動詞，三個層次：<strong>知道事實 → 據此認定 → 實際擺上。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        我覺得可以用「奴隸解放」來理解這個順序。<br><br>假設一份解放令頒布了。那是一個<strong>客觀的事實</strong>，在那一刻就生效了。<br><br>但一個在那個莊園待了四十年的人，會怎麼樣？<br><br>他可能<strong>不知道</strong>那份文件的存在——所以繼續照原來的方式活。<br>他可能知道了，卻<strong>不敢相信</strong>——每天早上還是條件反射地去做那些工。<br>他也可能相信了，卻<strong>還沒學會新的活法</strong>——因為他這輩子只會做奴隸。<br><br><strong>而在這三種情況下，那份解放令都是有效的。</strong>問題不在文件，在他還沒有活進去。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而神學上，這件事常用兩個概念來說明，我覺得非常有幫助：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">地位上的（已然）</span>
+          在神眼中，你已經是被稱為義的、已經是聖徒、已經在基督裡。<strong>這是完成式，不會變動。</strong><br>保羅寫信給哥林多教會——那是一間問題非常多的教會——而他的稱呼是「在基督耶穌裡成聖、蒙召作<strong>聖徒</strong>的」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">生活上的（未然）</span>
+          而實際的生命光景，是一個<strong>過程</strong>。「我們眾人……就變成主的形狀，<strong>榮上加榮</strong>。」<br>——「榮上加榮」意味著那是漸進的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">兩者之間的張力</span>
+          而信徒一生，就活在這兩者之間的張力裡。<br><strong>而重點是：後者不會改變前者。</strong><br>你今天的失敗，不會取消你的地位。而正因為地位穩固，你才有力氣繼續走。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個順序，不能顛倒</strong>
+        錯誤的順序是：<strong>我要活得夠好，才能確定自己被接納。</strong><br>——這條路會走到耗盡，因為永遠不夠好。<br><br>正確的順序是：<strong>我已經被接納了，所以我可以開始學著活。</strong><br>——這條路走得下去，因為起點是穩的。<br><br>而羅馬書第六章的三個動詞，正是這個順序：<strong>先「知道」那個事實，才「算」自己是那樣，然後才「獻上」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想再說一件很實際的事：<strong>「得勝」不表示沒有戰爭。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗓️</span>
+        歷史上有一個常被引用的類比：<strong>決定性的一戰，與最後的終戰日。</strong><br><br>在一場大戰裡，有時候某一場關鍵戰役就已經決定了結局——從那一刻起，勝負已定，剩下的只是時間問題。<br><br>但戰爭並沒有在那一天結束。之後還有戰鬥，還有傷亡，還有很長的路。<br><br>而十字架，就是那場決定性的戰役。<strong>結局已定。</strong><br><br>而我們現在活在「已定」與「完成」之間。<br><br>所以你今天仍然會有爭戰——<strong>但那是一場結局已定的爭戰。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個理解，改變了失敗的意義</strong>
+        如果戰局未定，那每一次失敗都可能是轉折點——所以你必須贏，不能輸。那壓力極大。<br><br>而如果結局已定，那一次失敗雖然真實、雖然要處理、雖然有後果——<strong>但它不會翻盤。</strong><br><br>約翰壹書說：「我將這些話寫給你們，是要叫你們不犯罪。<strong>若有人犯罪，在父那裡我們有一位中保</strong>，就是那義者耶穌基督。」<br><br>——注意約翰兩句都說了。他沒有縱容犯罪（「是要叫你們不犯罪」），也沒有讓跌倒的人絕望（「若有人犯罪……我們有一位中保」）。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那個「成了」，包含了你今天的難處</h2>
+      <p class="card-hook">寫給那個覺得自己一直在原地打轉的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>五項果效列完了。而我想把它們收回到那一個字上：<strong>成了。</strong></p>
+
+      <div class="highlight">
+        <strong>因為那個字是完成式</strong>
+        它的意思是：<strong>那件工作已經做完了，而它現在仍然有效。</strong><br><br>而「做完」的範圍，包含這五項全部：<br><br>你的<strong>赦免</strong>——成了。<br>你在義上活的<strong>可能</strong>——成了。<br>你與神的<strong>和好</strong>——成了。<br>那些轄制你的東西的<strong>權勢</strong>——被打破了。<br>那些將要賜給你的<strong>更多恩惠</strong>——已經預備好了。<br><br>沒有一項是「還在處理中」。<strong>沒有一項在等你補齊什麼。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己一直在原地打轉——同樣的軟弱、同樣的失敗、同樣的那件事——</p>
+
+      <p>我想留下三件事。</p>
+
+      <p><strong>第一，你的地位，不因今天的表現而改變。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        一個孩子今天打破了碗，他還是那家的孩子。<br><br>他會被管教，會需要收拾，會有後果。<br><br><strong>但他不會因此被逐出戶籍。</strong>
+      </div>
+
+      <p><strong>第二，那些「改不掉的」，聖經沒有要你自己去改。</strong></p>
+
+      <div class="highlight">
+        <strong>羅馬書第六章的順序值得再看一次</strong>
+        保羅沒有說「你要努力不犯罪」。<br><br>他說的是：<strong>「知道」</strong>你的舊人已經同釘十字架 → <strong>「算」</strong>自己向罪是死的 → <strong>「獻」</strong>上自己。<br><br>而最後那句：「<strong>罪必不能作你們的主，因你們不在律法之下，乃在恩典之下。</strong>」<br><br>——「必不能作你們的主」。<br><br>那是一個宣告，不是一個目標。
+      </div>
+
+      <p><strong>第三，那五項裡，有一項是關於將來的。</strong></p>
+
+      <p>「收復亞當所失的福祉，並賜人更多的恩惠。」</p>
+
+      <p>所以現在還沒有完全的，不是失敗，是<strong>還沒到那一天</strong>。</p>
+
+      <div class="big-quote">
+        成了
+        <cite>— 約翰福音 十九章三十節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個問題：「然後呢？」</p>
+
+      <p>我現在的答案是：<strong>然後你可以開始活了。</strong></p>
+
+      <p>不是為了掙得什麼，因為那已經有了。</p>
+
+      <p>不是為了證明什麼，因為估價已經定了。</p>
+
+      <p>而是像彼得那句話說的——「使我們既然在罪上死，<strong>就得以在義上活</strong>」。</p>
+
+      <p>那個「得以」兩個字，我很喜歡。</p>
+
+      <p>它不是「必須」，是<strong>「終於可以」</strong>。</p>
+
+      <p>那扇門開了。從上到下裂開的。</p>
+
+      <p>而門的那一邊，有一位在等你。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  十架的果效 · Threads Series
+</footer>
+
+</body>
+</html>

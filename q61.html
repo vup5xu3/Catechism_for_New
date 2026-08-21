@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第三誡 尊名為聖 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第三誡 · <span>尊名為聖</span></h1>
+  <p class="subtitle">不可妄稱耶和華你神的名</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「感謝主」這三個字，我用得太順了</h2>
+      <p class="card-hook">順到有一天，我聽見自己說出口，卻什麼都沒有感覺</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>那天有人告訴我一件好消息。我立刻回：「哇，感謝主！」</p>
+
+      <p>說完的下一秒，我愣了一下。</p>
+
+      <p>因為我發現——<strong>我剛才沒有在感謝任何人。</strong>那三個字從我嘴裡出來的方式，跟「太好了」、「真棒」、「恭喜」完全一樣。它是一個社交反射，一個在教會圈子裡通用的語助詞。它不指向任何對象。</p>
+
+      <div class="highlight">
+        <strong>我一直以為第三誡跟我無關</strong>
+        因為我從來不會拿神的名字去罵人，不會把「God」當髒話用。這條誡命在我理解裡，就是「不要說髒話」——而我不說。<br><br>可是那天之後我開始注意，發現一件很不舒服的事：<strong>我一天中提到神的名字很多次，而其中真正有分量的，可能一次都沒有。</strong><br><br>「主啊主啊」是禱告的開場白，「奉主耶穌的名求」是結束的訊號，「感謝主」是社交潤滑劑。這些話我說得很流利，流利到不需要經過心。
+      </div>
+
+      <p>而更讓我警醒的，是我後來查到「妄稱」原文的意思。</p>
+
+      <p>那個字不是「粗俗」，不是「不禮貌」。它的意思是——<strong>空的。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💳</span>
+        我想到一個比喻。<br><br>如果有人給你一張他親筆簽名的空白支票，那代表極高的信任——他把自己的信用交在你手上了。<br><br>而「妄稱」的意思，不是把那張支票撕掉，也不是拿去罵人。<strong>是拿它去買了一堆你自己想要的東西，然後隨手亂丟。</strong><br><br>把他的簽名，用在一堆空的地方。
+      </div>
+
+      <p>這個理解，讓第三誡整個活了過來。它不再是一條「不要說髒話」的規定，而是一個非常尖銳的問題：</p>
+
+      <p><strong>我把祂的名字，用在什麼地方了？</strong></p>
+
+      <p>接下來這幾篇，我想陪你把這一誡看清楚。它涵蓋的範圍，比我原本以為的寬得多，也重得多。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「主啊，主啊」——最恐怖的一段經文</h2>
+      <p class="card-hook">他們用了對的名字，做了對的事，結果卻是那樣</p>
+    </div>
+    <div class="card-body">
+
+      <p>登山寶訓的結尾，主耶穌說了一段話。老實說，那是整本聖經裡最讓我背脊發涼的幾節之一。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡稱呼我「主啊，主啊」的人，不能都進天國；惟獨遵行我天父旨意的人才能進去</p>
+        <p class="scripture-ref">馬太福音 七章二十一節</p>
+      </div>
+
+      <p>然後祂描述了那個場景。當那日來到，會有人對祂說——請注意他們說的話：</p>
+
+      <p>「主啊，主啊，我們不是<strong>奉你的名</strong>傳道，<strong>奉你的名</strong>趕鬼，<strong>奉你的名</strong>行許多異能嗎？」</p>
+
+      <div class="highlight">
+        <strong>「奉你的名」，說了三次</strong>
+        這些人不是無神論者，不是異教徒，不是攻擊教會的人。<br><br>他們用的是<strong>正確的名字</strong>。他們做的是<strong>看起來對的事</strong>——傳道、趕鬼、行異能。<strong>而且顯然有果效</strong>，否則他們不會拿出來說。<br><br>可是主的回答是：「我從來不認識你們。」<br><br>——「<strong>從來</strong>不認識」。不是「你們後來變壞了」，是從頭到尾就沒有那段關係。
+      </div>
+
+      <p>我讀這一段讀了很多次，每次都要停很久。因為它戳破了一個我很想相信的假設：<strong>只要我用對了名字、做對了事，就沒問題。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔑</span>
+        這有點像一個人拿著別人家的鑰匙，開了門、走進去、甚至把屋子整理得很好。<br><br>他做的事都是對的，鑰匙也是真的。<br><br>但主人回來時問的第一句話是：<strong>「你是誰？」</strong><br><br>——鑰匙可以撿到、可以複製。而關係不行。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這正是「妄稱」最深的一層：<strong>使用那個名，卻與那個名的主人沒有關係。</strong></p>
+
+      <p>舊約有一個對應的場景，同樣驚人。使徒行傳記載，有幾個猶太術士看見保羅奉耶穌的名趕鬼很有效，就想學。他們對著鬼說：「我奉保羅所傳的耶穌，敕令你們出來！」</p>
+
+      <p>結果那惡鬼回答說：「<strong>耶穌我認識，保羅我也知道。你們卻是誰呢？</strong>」然後那人跳到他們身上，把他們打得赤身帶傷逃出去。</p>
+
+      <div class="highlight">
+        <strong>連鬼都知道那個名字不是可以借用的</strong>
+        「你們卻是誰呢？」——這句話幾乎是第三誡的白話版。<br><br>那個名字的能力，不是一句咒語。它是<strong>一段關係的憑據</strong>。沒有關係的人拿去用，不但無效，還會反噬。
+      </div>
+
+      <p>那麼，第三誡對我們正面的提示是什麼？下一篇，我們把它整理成三件事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個提示：敬畏、尊為聖、榮耀</h2>
+      <p class="card-hook">從心裡的態度，到口中的稱呼，到生活的見證</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三誡對我們的提示，有三個層面。它們是遞進的——從裡到外，從心到生活：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 要敬畏神的名</span>
+          「你的僕人眾先知和眾聖徒，凡<strong>敬畏你名</strong>的人。」（啟十一 18）<br>這是<strong>心裡的態度</strong>。在開口之前，先有那份分量感。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 要尊神的名為聖</span>
+          「我們在天上的父：願人都<strong>尊你的名為聖</strong>。」（太六 9）<br>這是<strong>主禱文的第一個祈求</strong>——排在日用飲食之前、赦免之前、脫離兇惡之前。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 要榮耀神的名</span>
+          「主我的神啊，我要一心稱讚你；我要<strong>榮耀你的名</strong>，直到永遠。」（詩八六 12）<br>這是<strong>生活的方向</strong>——不只是不玷污，更是要使它得著榮耀。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而在這三個正面的提示之外，教材還提出了幾個很具體的應用。這幾點初讀會覺得嚴格，但它們的理路是一致的：</p>
+
+      <div class="term-box">
+        <div class="term-original">關於<br>神學院簡稱</div>
+        <div class="term-desc">不可以用「台神」、「中神」、「華神」、「玉神」這一類的簡稱。<br><br>理由是：<strong>「神」這個字被當成了一個可以隨意縮寫、拼接的字元。</strong>當「神」變成地名後面的一個音節時，它就從一個名號降格成了一個標籤。方便是真的方便，但代價是那個字的分量在日常使用中被磨平了。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">關於<br>「神父」的稱呼</div>
+        <div class="term-desc">更不可稱任何人為「神父」。<br><br>這一點有主耶穌自己的話作依據：「<strong>也不要稱呼地上的人為父，因為只有一位是你們的父，就是在天上的父。</strong>」（太廿三 9）<br><br>那一整段，主連續禁止了三種稱呼——不要稱人為拉比、不要稱人為父、不要受人稱為師尊。理由都一樣：那些是屬於神的位置。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">關於<br>「牧長」的稱呼</div>
+        <div class="term-desc">不可稱牧師為「牧長」。<br><br>因為聖經明確地把「牧長」這個位置留給了一位：「到了<strong>牧長</strong>顯現的時候，你們必得那永不衰殘的榮耀冠冕。」（彼前五 4）<br><br>而這節經文的上下文更耐人尋味——彼得正是在勸勉長老們要牧養群羊，然後提醒他們：<strong>你們上面還有一位牧長。</strong>你們是牧人，但你們不是那位。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>這三點背後，是同一個原理</strong>
+        <strong>屬於神的位置與稱謂，不要挪到人身上；屬於神的名，不要當成方便的零件使用。</strong><br><br>你可能會覺得這太嚴格了——不就是一個稱呼嗎？<br><br>但稱呼從來不只是稱呼。<strong>你怎麼稱呼一個人，會塑造你怎麼看待他。</strong>一個被稱為「神父」的人，久了會被當成有某種神性的中介；一個被稱為「牧長」的人，久了會佔據那個只有基督該站的位置。<br><br>而語言的磨損是無聲的。等到你發現時，那個字早就不重了。
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <div class="analogy">
+        <span class="analogy-icon">🪙</span>
+        我想到硬幣的磨損。<br><br>一枚硬幣在流通中被不斷傳遞，上面的紋路會一點一點被磨平。你看不出來是哪一次交易磨掉的——每一次都只磨掉極微小的一層。可是幾十年後，那枚硬幣上的圖案已經看不清了。<br><br><strong>名字的分量，就是這樣被磨掉的。</strong>沒有哪一次是決定性的，是無數次隨口的累積。<br><br>而第三誡，是在保護那些紋路。
+      </div>
+
+      <p>那麼「妄稱」原文究竟是什麼意思？它涵蓋哪些情況？下一篇，我們回到原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「妄」的原文是「空」</h2>
+      <p class="card-hook">同一個字，也用來形容偶像和謊言</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Shav<br>妄</div>
+        <div class="term-desc">核心意思是「<strong>空虛、無實質、徒然、虛假</strong>」。<br><br>同一個字，在舊約其他地方被用來形容：<strong>虛謊的偶像</strong>（因為它們是空的，沒有實質）、<strong>假見證</strong>（申五 20 的「假見證」就是 shav）、以及<strong>徒勞無功的努力</strong>（詩一二七 1「若不是耶和華建造房屋，建造的人就<strong>枉然</strong>勞力」——同一個字）。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>這個字義，把第三誡的範圍整個打開了</strong>
+        如果「妄」是「空」，那「妄稱神的名」的意思就是：<strong>把祂的名，用在空的地方。</strong><br><br>而「空」有很多形式：<br><br><strong>空洞的</strong>——說出口卻沒有實質，像我開頭那句反射性的「感謝主」。<br><strong>虛假的</strong>——用祂的名為謊言背書，這正是為什麼「假見證」用同一個字。<br><strong>徒然的</strong>——拿祂的名去做那些祂從未託付的事。
+      </div>
+
+      <p>而動詞「稱」（nasa）也很有意思。這個字的字面是「<strong>舉起、承載、背負</strong>」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎌</span>
+        「舉起祂的名」——這個畫面像是舉旗。<br><br>你舉著一面旗走在路上，路人看見旗子，就會用你的行為來判斷這面旗代表什麼。<br><br>所以第三誡的字面，也可以理解為：<strong>不可徒然地舉起祂的名。</strong>不要一邊舉著旗，一邊做出讓人誤解這面旗的事。<br><br>有些學者甚至指出，這個動詞的用法帶有「<strong>承載</strong>」的意味——你被稱為基督徒，就是把祂的名背在身上了。那不是一個標籤，是一份重量。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>那麼，「妄稱」實際涵蓋哪些情況？我整理成一張表：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>類型</th>
+            <th>樣子</th>
+            <th>為什麼算「空」</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">褻瀆</td>
+            <td>把神的名當咒罵、當髒話</td>
+            <td>最直接的一種，但其實最少見。</td>
+          </tr>
+          <tr>
+            <td class="src">起假誓</td>
+            <td>指著神的名說謊，或發了誓卻不履行</td>
+            <td>拿祂的信用，替自己的謊言背書。利十九 12：「不可指著我的名起假誓，褻瀆你神的名。」</td>
+          </tr>
+          <tr>
+            <td class="src">口頭禪化</td>
+            <td>「主啊」「感謝主」成為反射性的語助詞</td>
+            <td>沒有指向，沒有實質——名副其實的「空」。</td>
+          </tr>
+          <tr>
+            <td class="src">為私意背書</td>
+            <td>「神告訴我……」用來讓自己的想法不容挑戰</td>
+            <td>把祂的權威借來，蓋在自己的決定上。這是最危險的一種，因為它讓人無從反駁。</td>
+          </tr>
+          <tr>
+            <td class="src">名實不符</td>
+            <td>掛著祂的名，活出相反的樣子</td>
+            <td>羅二 24：「神的名在外邦人中，因你們受了褻瀆。」——最沉重的一種。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        看完這張表，我發現一件事：<strong>最少見的那一種（褻瀆），恰恰是我們最警惕的；而最常見的那幾種，我們幾乎不設防。</strong><br><br>特別是「為私意背書」那一項。當一個人說「神告訴我要這樣做」，這句話就把整件事移出了討論範圍——沒有人能反駁神。<br><br>而如果那其實只是他自己的想法，他就是拿神的簽名，蓋在了自己的空白支票上。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後看一個相關的細節。第三誡後面跟著一句嚴厲的話：「因為妄稱耶和華名的，耶和華<strong>必不以他為無罪</strong>。」</p>
+
+      <p>整部十誡，只有這一條附帶了這樣的警告。</p>
+
+      <p>而更值得注意的是——這一句「必不以他為無罪」，用的正是出埃及記三十四章那段自我啟示裡的同一個措辭：「<strong>萬不以有罪的為無罪</strong>」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        為什麼特別嚴重？<br><br>我想是因為：<strong>其他誡命的違反，傷害的是人或關係；而這一條，直接損壞的是神在世人面前的名譽。</strong><br><br>而神的名譽，是別人認識祂的唯一入口。當一個掛著祂名字的人活得亂七八糟，被擋在門外的，是那些原本可能會信的人。
+      </div>
+
+      <p>下一篇，我們換一個角度：既然這一誡這麼重，那我們該怎麼<strong>正面地</strong>使用祂的名？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">禁令的另一面，是一個祈求</h2>
+      <p class="card-hook">主教門徒禱告，第一句就是為這件事求</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三誡是「不可」。但主禱文把同一件事，翻成了「願」。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們在天上的父：願人都尊你的名為聖</p>
+        <p class="scripture-ref">馬太福音 六章九節</p>
+      </div>
+
+      <p>我覺得這件事值得停下來想很久。</p>
+
+      <p>主教門徒禱告，可以先教他們求任何東西。可是排在最前面的，不是飲食、不是赦免、不是脫離兇惡——那些都在後面。<strong>第一個祈求，是關於祂的名。</strong></p>
+
+      <div class="highlight">
+        <strong>而這是一個「祈求」，不是一個「決心」</strong>
+        這一點很重要。主沒有教我們說「我要尊你的名為聖」——那會變成一個自我要求。<br><br>祂教我們<strong>求</strong>：「願人都尊你的名為聖。」<br><br>因為這件事，靠我自己是做不到的。我沒辦法靠意志力讓自己每一次說「主啊」都帶著分量。<strong>那份分量感，本身就要向祂求。</strong>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那麼，「尊為聖」具體是什麼意思？「聖」這個字我們在別處看過——它的字根是<strong>「分別、切開」</strong>。</p>
+
+      <div class="term-box">
+        <div class="term-original">Hagiazō<br>尊為聖</div>
+        <div class="term-desc">「使成為聖」、「分別為聖」。這個字並不是說我們能讓神變得更聖潔——祂的聖潔不需要我們添加。<br><br>它的意思是：<strong>在我心裡、在我口中、在我的生活中，把這個名分別出來，不與其他一切等同看待。</strong><br><br>換句話說，「尊為聖」就是「<strong>不要讓它變成日常用語</strong>」。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎁</span>
+        每個家裡大概都有一兩樣東西是「分別出來」的：奶奶留下的那個碗、只有過年才拿出來的那套餐具、結婚戒指。<br><br>它們的材質可能沒有多特別，但你不會拿它們去裝廚餘、不會隨手扔在流理臺上。<br><br><strong>分別為聖的意思，就是「這個不一樣」。</strong>而你對待它的方式，會反過來提醒你它不一樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而正面的使用，聖經其實給了幾個非常明確的方向：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">呼求</span>
+          「凡求告主名的，就必得救。」名字最主要的用途，就是讓你可以叫祂。<strong>這是第三誡背後那份禮物：祂把名字給了你，是為了讓你能呼求。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">禱告</span>
+          奉主耶穌的名禱告——這不是一句結束語的公式，而是承認：我沒有資格自己來，我是憑著那一位的名分來的。<strong>理解了這一點，那句話就不會說得那麼隨便。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">聚集</span>
+          「因為無論在哪裡，有兩三個人奉我的名聚會，那裡就有我在他們中間。」奉祂的名，而不是奉某個人的名。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">見證</span>
+          「你們是世上的光……叫他們看見你們的好行為，便將榮耀歸給你們在天上的父。」——這是「榮耀神的名」最具體的樣子。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">承載</span>
+          「基督徒」這個稱呼本身，就是把祂的名背在身上。「你們若為基督的名受辱罵，便是有福的。」<strong>背著這個名，有榮耀，也有代價。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>最後一項，是第三誡最深的應用</strong>
+        大部分人不會拿神的名去罵人。<br><br>但每一個自稱基督徒的人，<strong>都在用自己的生活，替那個名字下註解。</strong><br><br>你在工作上誠不誠實、你怎麼對待比你弱的人、你在壓力下的反應、你講不講信用——這些都在告訴周圍的人：「跟這位神有關係的人，是這個樣子的。」<br><br>保羅那句「神的名在外邦人中，因你們受了褻瀆」，講的正是這個。<strong>那是一種不需要開口的妄稱。</strong>
+      </div>
+
+      <p>所以第三誡最終指向的，不是我們的嘴，是我們的生活。</p>
+
+      <p>而這一點，其實是好消息。因為它意味著——<strong>每一天，你都有機會正面地使用那個名。</strong>不是靠說得更多，是靠活得對得起。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂把名字給你，是為了讓你叫祂</h2>
+      <p class="card-hook">寫給那個怕自己說錯、乾脆不敢開口的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>寫到這裡，我想先處理一個可能的副作用。</p>
+
+      <p>如果一個人認真讀完第三誡，很可能會產生一種緊張：那我以後說話是不是要非常小心？是不是連「感謝主」都不敢說了？會不會一不小心就妄稱了？</p>
+
+      <p>我想說：<strong>那不是這條誡命的用意。</strong></p>
+
+      <div class="highlight">
+        <strong>回想那段歷史</strong>
+        猶太人因為太敬畏這條誡命，最後選擇了完全不念那個名字。結果是——<strong>那個名字的讀音失傳了。</strong><br><br>他們的敬畏是真的，我們該學。但如果第三誡的終點是「所以乾脆別開口」，那就走偏了。<br><br>因為神把名字告訴我們，<strong>本來就是為了讓我們呼求。</strong>約珥書說：「凡求告耶和華名的，就必得救。」保羅在羅馬書又引用了一次。<br><br>祂不是給我們一個燙手的東西，祂是給我們一扇門。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>所以第三誡真正要對付的，不是「說得多」，是「說得空」。</p>
+
+      <p>而分辨的方法，其實不難：<strong>當你說出那個名字的時候，你心裡有沒有一個對象？</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📞</span>
+        這就像叫一個人的名字。<br><br>你可以很大聲地叫，但心不在焉；也可以很輕地叫，卻整個人都在那裡。<br><br>被叫的那個人，分得出來。
+      </div>
+
+      <p>我自己後來養成一個很小的習慣：<strong>禱告開頭那一聲「主啊」，我會慢一點說。</strong></p>
+
+      <p>就慢半秒。慢到我意識到我在對誰說話。</p>
+
+      <p>這個習慣沒有讓我變得更屬靈，但它讓我很多次在慢下來的那半秒裡，忽然想起——<strong>我現在是在對那一位說話。</strong>那位造天地的、那位為我死的、那位此刻真的在聽的。</p>
+
+      <div class="card-divider"></div>
+
+      <p>而最後，我想留下那三個提示，因為它們其實是三種恩典：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">敬畏祂的名</span>
+          不是害怕，是<strong>知道分量</strong>。一個知道分量的人，才配得被託付。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">尊祂的名為聖</span>
+          在你心裡，替那個名字留一個不與其他東西混在一起的位置。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">榮耀祂的名</span>
+          用你的生活，替那個名字寫一份好的註解。<strong>這是每一天都能做的事。</strong>
+        </div>
+      </div>
+
+      <div class="big-quote">
+        願人都<br>尊你的名為聖
+        <cite>— 馬太福音 六章九節</cite>
+      </div>
+
+      <p>回到我開頭那句脫口而出的「感謝主」。</p>
+
+      <p>我現在還是會說這三個字。但我學會了一件事：<strong>如果我發現自己說得很空，我會停下來，重說一次。</strong></p>
+
+      <p>不是為了達標，也不是怕被追究。</p>
+
+      <p>是因為那位值得我停下來，好好地叫祂一聲。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第三誡 · 尊名為聖 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第四誡 安息 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第四誡 · <span>安息</span></h1>
+  <p class="subtitle">身心需要七日一日，而真實的安息在基督裡</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我以為休息只是為了走更長的路</h2>
+      <p class="card-hook">結果我連休息，都在為了生產力做準備</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一陣子我的行事曆上，連「休息」都是排進去的。</p>
+
+      <p>而且我會很認真地評估：這個週末我要好好睡一下，因為下週有大案子；這趟旅行要安排在專案結束後，可以「充個電」。</p>
+
+      <p>聽起來很負責任。可是有一天我忽然發現一件事——<strong>在這套邏輯裡，休息從來不是目的，休息是為了讓我能繼續生產。</strong></p>
+
+      <div class="highlight">
+        <strong>我不是在休息，我是在保養機器</strong>
+        機器需要停機保養，不是因為機器值得休息，是因為不保養它會壞掉、產能會下降。<br><br>而我對自己，用的就是這套邏輯。<br><br>所以我休息的時候會焦慮，會覺得浪費，會忍不住看一下訊息。因為在我心裡，「什麼都不產出」這件事本身，是不被允許的。<strong>我必須先賺到休息的資格。</strong>
+      </div>
+
+      <p>後來我讀到創世記第二章那幾節，被一句話卡住了。</p>
+
+      <p>「到第七日，神造物的工已經完畢，就在第七日歇了他一切的工，安息了。」</p>
+
+      <p>——<strong>神安息了。</strong></p>
+
+      <p>我坐在那裡想：祂為什麼要安息？祂會累嗎？以賽亞書明明說「祂並不疲乏，也不困倦」。一位不會累的神，「安息」是什麼意思？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎨</span>
+        後來我想到一個可能。<br><br>一個畫家畫完一幅畫，最後那個動作是什麼？他會放下筆，往後退幾步，然後<strong>看</strong>。<br><br>那幾分鐘他什麼都沒做。但那不是因為他累了——那是因為<strong>作品完成了，而完成需要被欣賞。</strong><br><br>而創世記第一章，神每造完一樣，就說「神看著是好的」。第六日結束時，經文說：「神看著一切所造的都甚好。」<br><br>然後祂安息了。
+      </div>
+
+      <p>如果這個理解是對的，那安息就不是「累了才停」，而是<strong>「好了，可以停了」。</strong></p>
+
+      <p>那是一種完全不同的休息。而我發現，我從來沒有這樣休息過。</p>
+
+      <p>接下來這幾篇，我想陪你看這一誡。它的提示有兩個層面，而且順序很重要。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">奴隸是沒有休假的</h2>
+      <p class="card-hook">而這一誡，是說給剛從奴役裡出來的人聽的</p>
+    </div>
+    <div class="card-body">
+
+      <p>要理解第四誡，得先想像它的第一批聽眾。</p>
+
+      <p>那是一群在埃及做了四百年苦工的人。他們的工作內容是做磚、蓋積貨城。而法老最後那幾道命令，我們都讀過——不再給草，卻要交同樣數量的磚。督工天天催逼，官長被打。</p>
+
+      <div class="highlight">
+        <strong>在那樣的體制裡，「休息」這個概念根本不存在</strong>
+        奴隸沒有休假。奴隸的價值等於他的產出。一個不產出的奴隸，就是一項損失。<br><br>所以當這群人站在西奈山下，聽見「六日要勞碌做你一切的工，但第七日是向耶和華你神當守的安息日，這一日你和你的兒女、僕婢、牲畜，並你城裡寄居的客旅，無論何工都不可做」——<br><br><strong>這在他們耳中，是一句幾乎難以置信的話。</strong>
+      </div>
+
+      <p>而且請注意那份名單的完整程度：你、兒女、<strong>僕婢</strong>、牲畜、寄居的客旅。</p>
+
+      <p>這裡面沒有階級。連奴僕都要休息，連外籍勞工都要休息，連牲口都要休息。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛏️</span>
+        在古代世界，這是一個非常激進的規定。<br><br>因為它等於是說：<strong>在我的百姓中間，沒有一個人的價值是由產出決定的。</strong><br><br>你不是一台機器。連你家的牛都不是。
+      </div>
+
+      <p>而申命記那個版本，把理由講得更直接：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你也要記念你在埃及地作過奴僕；耶和華你神用大能的手和伸出來的膀臂將你從那裡領出來。因此，耶和華你的神吩咐你守安息日</p>
+        <p class="scripture-ref">申命記 五章十五節</p>
+      </div>
+
+      <p>翻成白話大概是：<strong>你曾經是那個沒有休假的人。所以現在，不要讓在你手下的人也沒有。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>不過我想指出一件更深的事。安息日對那群人來說，不只是體力上的恢復，更是一場<strong>身分的宣告</strong>。</p>
+
+      <div class="highlight">
+        <strong>停下來，是一種信心的行動</strong>
+        當你停下來一天，你等於在說幾件事：<br><br>「這個世界，少了我一天也不會塌。」<br>「我的供應，不是全靠我自己掙來的。」<br>「我不是靠產出來證明我值得活著。」<br><br>對一個剛脫離奴隸身分的人，這是最難的功課。因為<strong>身體出了埃及，心裡的奴隸邏輯還沒有出來。</strong><br><br>他們在曠野收嗎哪的時候，神特意設計了一個訓練：第六天收兩天的份，第七天不會有。而總是有人不信，跑出去找——結果什麼也沒找到。
+      </div>
+
+      <p>而我讀到這裡的時候，忽然覺得那些跑出去找嗎哪的人，很像我。</p>
+
+      <p>停不下來的原因，往往不是事情真的那麼多，而是<strong>不敢相信停下來也不會出事。</strong></p>
+
+      <p>那麼，第四誡對今天的我們，提示的是什麼？下一篇，我們把它整理成兩點。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩個提示：真安息在基督裡，身心需要七中取一</h2>
+      <p class="card-hook">一個是根本，一個是節奏</p>
+    </div>
+    <div class="card-body">
+
+      <p>第四誡對我們的提示，有兩個層面。順序不能顛倒——第一個是根，第二個是從根長出來的實踐。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 只有在基督裡，才有真實的安息</span>
+          「凡勞苦擔重擔的人，可以到我這裡來，我就使你們得安息。」（太十一 28～30）<br>「這樣看來，必另有一安息日的安息為神的子民存留。」（來四 9～10）<br>「這些原是後事的影兒，那形體卻是基督。」（西二 16～17）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 我們的身心，需要每七日安息一日</span>
+          「豈不知你們是神的殿，神的靈住在你們裡頭嗎？」（林前三 16～17）——身體是聖靈的殿，需要被善待。<br>而神所定的安息節奏，是<strong>七中取一</strong>（參利未記二十五章的安息年制度，同樣是七中取一的原則）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>先看第一點，因為它是關鍵。</p>
+
+      <p>歌羅西書把安息日明確地列在「影兒」那一類裡：「不拘在飲食上，或節期、月朔、<strong>安息日</strong>，都不可讓人論斷你們。這些原是後事的影兒，那形體卻是基督。」</p>
+
+      <div class="highlight">
+        <strong>所以安息日投射的那個形體，是什麼？</strong>
+        是基督。<br><br>而希伯來書第四章把這件事說得最完整。作者論證：約書亞領百姓進迦南，那不是真正的安息（因為後來大衛還在說「你們今日若聽他的話」）。所以——<br><br>「這樣看來，<strong>必另有一安息日的安息為神的子民存留</strong>。因為那進入安息的，乃是歇了自己的工，正如神歇了他的工一樣。」（來四 9～10）<br><br>請注意那句「<strong>歇了自己的工</strong>」。真正的安息，不是暫時停工，是<strong>不再靠自己的工作來換取地位</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛋️</span>
+        我想到一個畫面。<br><br>一個人受邀到別人家作客。如果他不斷地想幫忙洗碗、擦桌子、整理東西，主人會說：「你坐著就好。」<br><br>他忙，往往不是因為主人需要，而是因為<strong>他不習慣白白受招待</strong>。他心裡有一個聲音說：我得做點什麼才配坐在這裡。<br><br>而福音說的是：<strong>你坐著就好。位置已經是你的了。</strong><br><br>這，就是「歇了自己的工」。
+      </div>
+
+      <p>所以第一點是根本。如果一個人沒有進入基督裡的安息，那他就算一週休七天，心裡還是在做工——他會在休息中焦慮，會在放假時盤算，會覺得自己不夠格停下來。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>第二點則很實際：<strong>我們的身心，需要每七日安息一日。</strong></p>
+
+      <p>這是一個被造的事實，不是一種選擇。</p>
+
+      <div class="highlight">
+        <strong>「七中取一」是神所定的節奏</strong>
+        這個比例貫穿整本舊約，不只用在日子上：<br><br><strong>七日一日</strong>——安息日。<br><strong>七年一年</strong>——安息年，地要休耕（利廿五）。<br><strong>七個七年之後</strong>——禧年，奴僕得釋放，產業歸回。<br><br>連土地都需要休息。神設計這個世界的時候，就把「停」寫進了節奏裡。
+      </div>
+
+      <p>而身體是聖靈的殿這件事，讓「休息」有了一個我原本沒想過的維度。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        如果有人管理一座聖殿，卻讓它年久失修、屋頂漏水、樑柱蛀空——我們不會說他很敬虔，我們會說他失職。<br><br>而長期熬夜、長期不休息、長期把自己操到極限——<strong>那不是委身，那是對一座殿的疏於維護。</strong><br><br>保羅那句「若有人毀壞神的殿，神必要毀壞那人」，講的是教會；但同一段裡「你們是神的殿」這個原則，也適用在我們如何對待自己的身體上。
+      </div>
+
+      <p>那麼，「安息日」這個字原文是什麼意思？基督徒在這件事上該怎麼實踐？下一篇，我們回到原文與歷史。</p>
+
+      <p>〔註：關於安息日的問題，本系列將在後面的章節中詳述。這一篇集中在第四誡對我們的<strong>提示</strong>。〕</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「安息」原文就是「停」</h2>
+      <p class="card-hook">而創世記那個「安息」，跟疲倦一點關係都沒有</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Shabbat<br>安息日</div>
+        <div class="term-desc">這個字的動詞形式 shavat，意思非常單純：「<strong>停止、止息、不再繼續</strong>」。<br><br>它<strong>不是</strong>「休息以恢復體力」那個意思——希伯來文另有一個字（nuach）表達那個。<br><br>所以創世記說神在第七日 shavat，講的不是祂累了要恢復，而是：<strong>祂停了。工作完成了，所以停了。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>這個字義解開了我第一篇的疑問</strong>
+        神為什麼要安息？因為 shavat 不是「因累而停」，是「<strong>因成而停</strong>」。<br><br>而這一點，直接呼應了十字架上那句話：「<strong>成了。</strong>」<br><br>主耶穌說完那句話，就低下頭將靈魂交付神了。然後——祂在安息日，安臥在墳墓裡。<br><br>工作完成了，所以停了。第一次創造是這樣，第二次創造也是這樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第四誡用的兩個動詞。出埃及記和申命記各用了一個，剛好構成一組：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>出處</th>
+            <th>動詞</th>
+            <th>語意</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">出二十 8</td>
+            <td>當<strong>記念</strong><br>Zakhor</td>
+            <td>「記念」在希伯來文中不只是「不要忘記」，而是<strong>「主動把它放在心上，並據此行動」</strong>。它是一個帶有行動含意的字。</td>
+          </tr>
+          <tr>
+            <td class="src">申五 12</td>
+            <td>當<strong>守</strong><br>Shamor</td>
+            <td>「守」的字根有「看守、保護、謹守」的意思——就像園丁「看守」園子。它帶有<strong>「保護它不被侵蝕」</strong>的意味。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛡️</span>
+        「保護它不被侵蝕」這個語感很重要。<br><br>因為在現實中，休息從來不會自己發生。它總是最先被犧牲的那一項——有急事就先砍它，有機會就先賣它。<br><br><strong>所以它需要被「守」。</strong>像守一座園子那樣，主動把它圍起來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>再看主耶穌對安息日的態度，因為這是整件事的關鍵。福音書記載祂多次在安息日引起爭議——醫病、門徒掐麥穗。而祂的回應，有兩句話最重要：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">安息日是為人設立的，人不是為安息日設立的；所以，人子也是安息日的主</p>
+        <p class="scripture-ref">馬可福音 二章二十七至二十八節</p>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>這句話</th>
+            <th>糾正了什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">「安息日是<br>為人設立的」</td>
+            <td>糾正了律法主義。當時的規條已經細到把「安息」變成了一種新的重擔——走幾步算違例、提多重算做工。主說：這東西本來是<strong>禮物</strong>，不是<strong>枷鎖</strong>。</td>
+          </tr>
+          <tr>
+            <td class="src">「人子也是<br>安息日的主」</td>
+            <td>這是一個極大的宣告。祂沒有說「安息日不重要」，祂說<strong>「我是它的主」</strong>——那個影子，指向的正是祂自己。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        整件事的邏輯線是這樣的：<br><br><strong>Shabbat＝停止。</strong>而停止的理由，是「完成了」。<br>神在創造完成後停了；基督在救贖完成後說「成了」。<br>所以真正的安息，不在某一天，<strong>在那位說「成了」的人裡面</strong>。<br><br>而同時，人的身心確實需要「七中取一」的節奏——這是被造的實況，也是神所定的設計。<br><br><strong>根本在基督裡，節奏在七日中。兩者都要。</strong>
+      </div>
+
+      <p>下一篇，我們談一個很實際的問題：既然真安息在基督裡，那我們今天到底該怎麼實踐？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「我的軛是容易的」——一個牛軛的比喻</h2>
+      <p class="card-hook">主給的安息，不是卸下所有的軛</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音十一章那段話，是主耶穌講安息講得最溫柔的一次。但裡面有一個細節，常常被忽略。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡勞苦擔重擔的人，可以到我這裡來，我就使你們得安息。我心裡柔和謙卑，你們當負我的軛，學我的樣式，這樣，你們心裡就必得享安息。因為我的軛是容易的，我的擔子是輕省的</p>
+        <p class="scripture-ref">馬太福音 十一章二十八至三十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意祂沒有說什麼</strong>
+        祂沒有說「你們就不用負軛了」。<br><br>祂說的是：「<strong>你們當負我的軛。</strong>」<br><br>安息的方式，不是把所有的軛都卸掉——那不是安息，那是失去方向。安息的方式是<strong>換一個軛</strong>。
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Zygos<br>軛</div>
+        <div class="term-desc">套在牛頸上的橫木，用來牽引犁具。在猶太語境中，「軛」也常被用來比喻「<strong>某位師傅的教導與門徒生活</strong>」——所謂「負某某人的軛」，意思是成為他的門生，接受他的教導方式。<br><br>所以主說「負我的軛，學我的樣式」，講的是<strong>換一位師傅</strong>。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐂</span>
+        而關於軛，還有一個常被提到的細節：軛通常是<strong>雙軛</strong>——套兩隻牛。<br><br>而農夫的做法，是把一隻缺乏經驗的小牛，跟一隻老練的牛套在一起。小牛不需要知道怎麼走，牠只需要跟著。<strong>而大部分的重量，是由旁邊那一隻在扛。</strong><br><br>「我的軛是容易的」——不是因為那個軛特別輕，是因為<strong>你不是自己在拉。</strong>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那麼，我們今天該怎麼實踐？我想提出幾個層次，從外到內：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 節奏上：真的要停一天</span>
+          七中取一不是建議，是設計。而「停」意味著<strong>不處理工作、不追進度、不用那一天去補償前六天的落後</strong>。<br>這一點，多半需要提前安排——因為它不會自己發生。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 內容上：轉向，而不只是空白</span>
+          安息不等於發呆或滑手機一整天。聖經的安息是<strong>「歸向神」</strong>的一天——敬拜、讀經、與弟兄姊妹相聚、與家人在一起。<br>一天結束後如果比開始時更空虛，那多半不是安息。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 群體上：讓別人也能停</span>
+          第四誡的名單裡有「僕婢」和「寄居的客旅」。<br>所以這一誡不只問「你有沒有休息」，也問：<strong>在你的安排底下工作的人，有沒有休息的空間？</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 心裡上：停止用產出定義自己</span>
+          這是最難的一層，也是唯一真正治本的一層。<br>因為<strong>一個用產出定義自己的人，就算躺著也在做工。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第四層，只有福音能解決。</p>
+
+      <div class="highlight">
+        <strong>兩種完全不同的自我理解</strong>
+        <strong>奴隸的邏輯：</strong>我做得好 → 所以我有價值 → 所以我被接納。<br>在這個邏輯裡，停下來就等於價值歸零。所以停不下來。<br><br><strong>兒女的邏輯：</strong>我被接納 → 所以我有價值 → 所以我可以做事。<br>在這個邏輯裡，做事是回應，不是交換。<strong>所以可以停。</strong><br><br>而福音做的事，就是把箭頭反過來。<br><br>這也是為什麼安息日的第一次出現，是在人被造的隔天。亞當被造在第六日；他人生的<strong>第一個完整的日子，是安息日。</strong><br><br><strong>他還沒有做任何工，就先進入了安息。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        我很喜歡這個細節。<br><br>人生的第一天，不是上工，是安息。<br><br>神先讓人享受，才讓人工作。<strong>順序是：恩典在先，勞動在後。</strong><br><br>而我們常常把它顛倒過來活。
+      </div>
+
+      <p>所以第四誡最深的功課，可能不是「你有沒有守」，而是：<strong>你敢不敢停下來？</strong></p>
+
+      <p>因為停下來，本身就是一次信心的告白。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你可以停下來，世界不會塌</h2>
+      <p class="card-hook">寫給那個已經很久沒有真正休息的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切收在一個很小的觀察上。</p>
+
+      <p>創世記第一章，每一天的結尾都有同一句話：「有晚上，有早晨，這是第某日。」</p>
+
+      <p>——<strong>先有晚上，才有早晨。</strong></p>
+
+      <p>希伯來人的一天，是從日落開始算的。所以他們的一天，起點是「天黑了，去睡覺」。</p>
+
+      <div class="highlight">
+        <strong>這個順序，藏著一整套世界觀</strong>
+        我們的一天是從早上開始的——醒來、工作、努力，然後累了才睡。休息是<strong>一天的結束</strong>，是工作之後的獎賞。<br><br>而希伯來人的一天是從睡覺開始的。也就是說：<strong>在你什麼都還沒做之前，神已經在工作了。</strong><br><br>你睡著的那幾個小時，世界照常運轉，種子照常發芽，星辰照常運行——而那些完全不需要你。<br><br>等你醒來，你只是<strong>加入</strong>一件已經在進行的工作。
+      </div>
+
+      <p>詩篇一二七篇把這件事說得很直白，而且有點好笑：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們清晨早起，夜晚安歇，吃勞碌得來的飯，本是枉然；惟有耶和華所親愛的，必叫他安然睡覺</p>
+        <p class="scripture-ref">詩篇 一二七篇二節</p>
+      </div>
+
+      <p>「必叫他安然睡覺」——在整篇講建造、看守、勞碌的詩裡，神給所愛之人的禮物，竟然是<strong>好好睡一覺</strong>。</p>
+
+      <div class="card-divider"></div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌙</span>
+        我後來想通了一件事：<strong>睡覺是每個人每天都必須做的、最徹底的信心行動。</strong><br><br>你躺下、閉上眼睛、失去意識六到八個小時，在那段時間裡你完全無法保護自己、無法掌控任何事、無法回應任何訊息。<br><br>然後你醒來，發現世界還在。<br><br><strong>每一個晚上，都在提醒你：你不是那個撐住這一切的人。</strong>
+      </div>
+
+      <div class="big-quote">
+        凡勞苦擔重擔的人，<br>可以到我這裡來，<br>我就使你們得安息
+        <cite>— 馬太福音 十一章二十八節</cite>
+      </div>
+
+      <p>回到我開頭那份把「休息」排進去的行事曆。</p>
+
+      <p>我現在還是會安排休息。但有一件事變了——我不再是為了「充電好去打下一場」而休息。</p>
+
+      <p>我試著練習一件事：<strong>在停下來的那一天，不問自己「今天有沒有進度」。</strong></p>
+
+      <p>老實說，我還沒學會。我還是會焦慮，還是會忍不住看訊息。這是一個很長的功課，我大概還要練很久。</p>
+
+      <p>但我至少知道方向了。方向是那句話：<strong>「歇了自己的工。」</strong></p>
+
+      <p>不是歇了所有的工，是歇了<strong>那些我用來證明自己值得被愛的工</strong>。</p>
+
+      <p>那些工，已經有一位在十字架上替我做完了。而祂做完的時候說：成了。</p>
+
+      <p>願你今天也能停下來，好好地睡一覺。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第四誡 · 安息 · Threads Series
+</footer>
+
+</body>
+</html>

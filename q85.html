@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>復活的身體 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>復活的<span>身體</span></h1>
+  <p class="subtitle">屬靈的、卓越的、榮耀的——那榮耀無法想像</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">在告別式上，我想到的那個問題</h2>
+      <p class="card-hook">「將來會怎樣？」——而我發現自己想像不出來</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>參加過幾次告別式之後，有一個問題就一直放在我心裡。</p>
+
+      <p>我們常說「他到主那裡去了」、「將來會再見面」。這些話我信，可是我發現——<strong>我完全想像不出那是什麼樣子。</strong></p>
+
+      <div class="highlight">
+        <strong>而我腦中的畫面，其實有點荒謬</strong>
+        白袍、雲、翅膀、豎琴、飄來飄去。<br><br>那些形象大多來自繪畫和影視，不是來自聖經。<br><br>而更麻煩的是：<strong>那個畫面一點都不吸引人。</strong>坐在雲上彈豎琴，聽起來像是一場非常漫長的告別式。<br><br>所以我心裡有一個不太敢說的感覺：<strong>永生聽起來很好，但我想像中的那個地方，我並不是很想去。</strong>
+      </div>
+
+      <p>後來我讀哥林多前書十五章——那是聖經談復活身體最完整的一章——才發現我的問題出在哪裡。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        保羅在那一章用了一個很好的比喻：<strong>種子。</strong><br><br>他說：「你所種的，不過是子粒，即如麥子……但神隨自己的意思給他一個形體。」<br><br>而這個比喻有一個很重要的意思：<strong>如果你只見過種子，你猜不出那棵樹長什麼樣。</strong><br><br>一顆橡實和一棵橡樹，外表上完全沒有相似之處。<br><br>而保羅說：我們現在的身體是種子，將來的是那棵樹。<br><br>——<strong>所以想像不出來，是正常的。</strong>
+      </div>
+
+      <p>而聖經對這個問題，確實留下了不少啟示。雖然那榮耀是無法完全想像的，但我們並不是一無所知。</p>
+
+      <p>接下來這幾篇，我想陪你把聖經說過的，整理出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">最好的樣本，就是祂自己</h2>
+      <p class="card-hook">而復活後那四十天，門徒看得很清楚</p>
+    </div>
+    <div class="card-body">
+
+      <p>要知道復活的身體是什麼樣子，最直接的方法，是去看<strong>那位已經有了那種身體的人</strong>。</p>
+
+      <p>而福音書記載，主復活之後，在門徒面前顯現了四十天。那四十天裡的每一個細節，都是資料。</p>
+
+      <div class="highlight">
+        <strong>而那些細節，指向兩個看似矛盾的方向</strong>
+        <strong>一邊是「真實的」：</strong><br>祂說：「摸我看看！<strong>魂無骨無肉</strong>，你們看，我是有的。」<br>祂在他們面前吃了一片燒魚。<br>祂讓多馬摸祂的手和肋旁。<br>祂與門徒同坐席、擘餅、在海邊烤魚。<br><br><strong>另一邊是「不受限的」：</strong><br>「門都關了，耶穌來站在當中。」——門是關著的。<br>在以馬忤斯，祂與他們同席，「忽然不見了」。<br>兩個門徒起初「眼睛迷糊了，不認識他」。<br>最後祂在他們眼前被取上升，有一朵雲彩把祂接去。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        這兩組細節，是整件事的關鍵。<br><br>那不是一個幽靈——幽靈不會吃燒魚，也不能被摸。<br><br>那也不是一具「回到原狀」的身體——原狀的身體不會穿過關著的門。<br><br><strong>那是一種我們沒有見過的東西：有實體，卻不受物質限制。</strong><br><br>而拉撒路的復活，就完全不是這一種。拉撒路出來的時候還裹著布，需要人替他解開——<strong>他回到的是同一具會朽壞的身體，而他後來又死了一次。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而聖經明確地說，我們將來要得的，就是這一種：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他要按著那能叫萬有歸服自己的大能，將我們這卑賤的身體改變形狀，和他自己榮耀的身體相似</p>
+        <p class="scripture-ref">腓立比書 三章二十一節</p>
+      </div>
+
+      <p>而約翰壹書說得更直接：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們必要像他，因為必得見他的真體</p>
+        <p class="scripture-ref">約翰壹書 三章二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節經文前面那句，很誠實</strong>
+        「親愛的弟兄啊，我們現在是神的兒女，<strong>將來如何，還未顯明</strong>；但我們知道，主若顯現，我們必要像他。」<br><br>——「將來如何，還未顯明」。<br><br>約翰承認：細節我們不知道。<br><br>而他知道的那一件，已經夠了：<strong>我們必要像他。</strong>
+      </div>
+
+      <p>那麼，聖經具體說了什麼？下一篇，我們把三項排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個特徵</h2>
+      <p class="card-hook">屬靈的、卓越的、榮耀的</p>
+    </div>
+    <div class="card-body">
+
+      <p>復活身體的榮耀，是無法想像的。而聖經對這問題，有不少的啟示——歸納起來，是三項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 屬靈的 —— 以靈居首</span>
+          「所種的是血氣的身體，復活的是<strong>靈性的身體</strong>……但屬血氣的在先，屬靈的在後。」（林前十五 44～46）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 卓越的 —— 不受限制</span>
+          <strong>不必靠物質而活，不受疾病侵襲，不受時間、空間、環境的限制。</strong><br>「他們正驚訝的時候，耶穌親自站在他們當中。」（路廿四 36）「門都關了，耶穌來站在當中。」（約廿 19）「忽然不見了。」（路廿四 31）<br>「這必朽壞的既變成不朽壞的……那時經上所記『死被得勝吞滅』的話就應驗了。」（林前十五 54）<br><br>沒有肉體的需要——如食物、衣物、睡眠、休息、疲倦、哀傷、痛苦，甚至不用洗澡、排泄。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 榮耀的 —— 光明的形體</span>
+          <strong>潔白如雪</strong>（可九 3）；<strong>透明如露</strong>（賽廿六 19）；<strong>發光如星、如日</strong>（但十二 3；太十三 43）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第一項——「屬靈的」——是最容易被誤解的一項，所以我想先把它說清楚。</p>
+
+      <div class="highlight">
+        <strong>「靈性的身體」不等於「沒有身體」</strong>
+        中文的「靈性的身體」，原文是 <strong>sōma pneumatikon</strong>。<br><br>而關鍵在於：<strong>sōma（身體）這個名詞沒有變</strong>，變的是形容詞。<br><br>保羅沒有說「復活的是靈，不是身體」。他說的是：復活的<strong>仍然是「身體」</strong>，只是那個身體的性質不同了。<br><br>而那個形容詞 pneumatikon，講的不是「材質是靈」，而是<strong>「由靈所主導、以靈居首」</strong>。<br><br>——就像我們說一個人「很屬靈」，指的不是他沒有身體，是說他的生命由靈所主導。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔋</span>
+        對照的那個詞更清楚：現在的身體是「<strong>血氣的身體</strong>」（sōma psychikon）。<br><br>那不是說我們現在的身體「材質是血氣」，而是說它<strong>由血氣（自然生命）所主導、所維繫</strong>——需要吃、需要睡、會累、會壞。<br><br>而復活的身體，改成由靈所主導、所維繫。<br><br><strong>同樣是身體，換了驅動的方式。</strong>
+      </div>
+
+      <p>而這一點很要緊，因為它把兩種偏差都擋住了：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>偏差</th>
+            <th>主張</th>
+            <th>問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">過度物質化</td>
+            <td>復活就是回到現在這種身體，繼續吃喝、繼續會累</td>
+            <td>那只是「甦醒」，不是復活。拉撒路是那樣，而他又死了。</td>
+          </tr>
+          <tr>
+            <td class="src">過度靈化</td>
+            <td>復活只是靈魂的存續，沒有身體</td>
+            <td>那就違背了「<strong>身體</strong>復活」這件事。而主復活時明說：「魂無骨無肉，你們看，<strong>我是有的</strong>。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項那份清單——<strong>沒有食物、衣物、睡眠、休息、疲倦、哀傷、痛苦的需要</strong>——初讀可能會覺得有點冷。</p>
+
+      <p>不用吃東西？那不是少了很多樂趣嗎？</p>
+
+      <div class="highlight">
+        <strong>而我後來想通了一個分別：「需要」與「能夠」是兩回事</strong>
+        清單說的是「<strong>沒有肉體之需要</strong>」——不是「不能」。<br><br>而證據就在主自己身上：<strong>祂復活後吃了一片燒魚。</strong>祂不需要吃，但祂吃了。<br><br>而聖經對將來最常用的意象之一，正是<strong>筵席</strong>——「羔羊的婚筵」、「在我父的國裡同你們喝新的」。<br><br>所以那不是「取消了享受」，是<strong>取消了匱乏</strong>。<br><br>——現在我們吃，有一半是因為不吃會餓、會虛弱、會死。<br><br>而在那裡吃，將會是<strong>純粹的享受</strong>，沒有匱乏的驅動。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        這個分別，其實很有分量。<br><br>一個因為快餓死而吃東西的人，和一個因為喜歡而吃東西的人——<strong>吃的是同一道菜，經驗完全不同。</strong><br><br>而清單裡那些被取消的東西，仔細看，全部都是<strong>「匱乏」與「損耗」</strong>：飢餓、疲倦、需要休息、哀傷、痛苦。<br><br>被取消的不是喜樂，是<strong>那些讓喜樂無法持續的東西</strong>。
+      </div>
+
+      <p>那麼「潔白如雪」、「發光如日」是什麼意思？下一篇，我們去看那些經文的出處。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">變像山上，門徒看見了預演</h2>
+      <p class="card-hook">那一次，祂讓三個人先看了一眼</p>
+    </div>
+    <div class="card-body">
+
+      <p>「潔白如雪」那個描述，出自一個很特別的場景——<strong>變像山。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">就在他們面前變了形像，臉面明亮如日頭，衣裳潔白如光</p>
+        <p class="scripture-ref">馬太福音 十七章二節</p>
+      </div>
+
+      <p>而馬可的記載，加了一個很生活化的細節：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">衣服放光，極其潔白，地上漂布的，沒有一個能漂得那樣白</p>
+        <p class="scripture-ref">馬可福音 九章三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「地上漂布的，沒有一個能漂得那樣白」</strong>
+        我很喜歡這個細節。<br><br>馬可在試著形容一種他沒有詞彙可以形容的東西，於是他用了一個日常的參照：<strong>漂布匠</strong>——當時專門把布料漂白的職人。<br><br>而他說：最厲害的漂布匠，也漂不出那種白。<br><br>——那是一個目擊者在說「我找不到話形容」的方式。<br><br>而彼得後來在書信裡提到這件事：「我們曾和他同在聖山的時候，親自聽見這聲音從天上出來。」<strong>幾十年後，他還記得。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛰️</span>
+        而變像山那一幕的意義，很可能正是<strong>一次預演</strong>。<br><br>因為那一幕發生的時間點，緊接在彼得認信「你是基督」、以及主第一次預告受難之後。<br><br>門徒剛聽見「祂要被殺」，正在崩潰。<br><br>而六天後，祂帶了三個人上山——<strong>讓他們先看一眼結局。</strong><br><br>路加還記下祂們談話的內容：摩西、以利亞「談論耶穌去世的事，就是他在耶路撒冷將要成的事」。<br><br>——連在那個榮耀的場景裡，話題還是十字架。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「發光如星、如日」，出自兩處：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">但十二 3</td>
+            <td>「智慧人必發光如同天上的光；那使多人歸義的，必<strong>發光如星</strong>，直到永永遠遠。」<br>——而這一節的上一節，正是舊約中最明確的復活預言之一：「睡在塵埃中的，必有多人復醒。」</td>
+          </tr>
+          <tr>
+            <td class="src">太十三 43</td>
+            <td>「那時，義人在他們父的國裡，要<strong>發出光來，像太陽一樣</strong>。有耳可聽的，就應當聽！」<br>——這是主自己說的，出現在稗子的比喻的解釋裡。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「透明如露」出自以賽亞書二十六章十九節：「死人要復活，屍首要興起。睡在塵埃的啊，要醒起歌唱！因你的甘露好像菜蔬上的甘露，<strong>地也要交出死人來</strong>。」<br><br>——「甘露」的意象，帶著清透、清晨、新生的感覺。<br><br>而這三個描述——<strong>潔白如雪、透明如露、發光如日</strong>——有一個共同點：<br><br>它們全部都與<strong>光</strong>有關。<br><br>不是反射光，是<strong>發出光</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而哥林多前書十五章那段「種子」的論證，值得完整看一次。因為保羅用了四組對比：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">所種的是必朽壞的，復活的是不朽壞的</span>
+          <strong>Phthora → Aphtharsia</strong>。不再衰敗、不再損耗。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">所種的是羞辱的，復活的是榮耀的</span>
+          「羞辱」（atimia）——那是一具屍體的狀態。而復活的是 doxa，榮耀。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">所種的是軟弱的，復活的是強壯的</span>
+          從「無力」到「有能」。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">所種的是血氣的身體，復活的是靈性的身體</span>
+          由血氣主導 → 由靈主導。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而保羅在同一段裡，回答了那個「這怎麼可能」的質疑。<br><br>有人問：「死人怎樣復活，帶著甚麼身體來呢？」<br><br>而保羅的回答，語氣有點不客氣：「<strong>無知的人哪，你所種的，若不死就不能生。</strong>」<br><br>他的論點是：<strong>這件事在自然界，你天天都看見。</strong><br><br>一顆種子埋進土裡，它「死了」——然後長出一個和它完全不同的形體。<br><br>「並且你所種的不是那將來的形體，不過是子粒……<strong>但神隨自己的意思給他一個形體。</strong>」<br><br>而他接著說：「凡肉體各有不同……日月星辰的榮光也有分別。」<br><br>——他要說的是：<strong>神造形體的花樣，本來就多到超出我們的想像。</strong>
+      </div>
+
+      <p>下一篇，我們談一個更貼身的問題：那還是「我」嗎？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">那還是「我」嗎？</h2>
+      <p class="card-hook">而聖經給的答案是：是的，而且是更完整的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>這是一個很多人心裡有、卻不太問出口的問題。</p>
+
+      <p>如果那個身體那麼不一樣——不會累、不會餓、會發光——<strong>那還是我嗎？</strong></p>
+
+      <div class="highlight">
+        <strong>而聖經給的證據，指向「是」</strong>
+        <strong>證據一：主復活後，門徒認得出祂。</strong><br>雖然有幾次一開始沒認出來，但最終都認出了——而且是憑著<strong>個人的特徵</strong>：祂叫馬利亞名字的方式、祂擘餅的動作、祂手上的釘痕。<br><br><strong>證據二：那些傷痕還在。</strong><br>祂沒有變成一個「全新的、與過去無關的存在」。<strong>祂的歷史，被帶進了新的身體裡。</strong><br><br><strong>證據三：在變像山上，摩西和以利亞被認出來了。</strong><br>經文說門徒知道那是誰——而摩西已經死了一千多年。<strong>身分沒有消失。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🦋</span>
+        而毛毛蟲與蝴蝶，是一個常被用的比喻。<br><br>牠們的外形沒有任何相似之處。如果你只見過毛毛蟲，你絕對猜不到蝴蝶長什麼樣。<br><br>而那<strong>是同一隻</strong>。<br><br>不只是同一隻——而且蝴蝶不是「毛毛蟲的替代品」，牠是<strong>毛毛蟲一直要成為的那個東西</strong>。<br><br>毛毛蟲不是失去了什麼，是<strong>終於完整了</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而我想處理一個更深的問題：<strong>為什麼一定要有身體？</strong></p>
+
+      <p>如果靈魂與神同在就夠了，為什麼還需要一個復活的身體？</p>
+
+      <div class="highlight">
+        <strong>因為聖經從來不認為「身體」是問題</strong>
+        這一點與許多古代哲學傳統不同。<br><br>那些傳統多半認為：<strong>身體是靈魂的牢籠</strong>，得救就是脫離身體。<br><br>而聖經的立場完全不同：<br><br><strong>身體是神造的</strong>，而祂造完之後說「甚好」。<br><strong>神自己取了身體</strong>——道成了肉身。<br><strong>復活的是身體</strong>，不只是靈魂。<br><strong>而結局是「新天新地」</strong>，不是「脫離物質」。<br><br>——所以問題從來不在於「有身體」，在於<strong>這個身體被罪損壞了。</strong><br><br>而救恩的方向，不是拋棄它，是<strong>修復它</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        而保羅在哥林多後書第五章，用了一個很有意思的說法。<br><br>他說我們「在這帳棚裡歎息，深想得那從天上來的房屋」——然後他加了一句關鍵的話：<br><br>「因為我們不願意<strong>脫下</strong>這個，乃是願意<strong>穿上</strong>那個，好叫這必死的被生命吞滅了。」<br><br>——「不是脫下，是穿上」。<br><br>保羅要的不是把身體丟掉。他要的是<strong>在外面再穿上一層</strong>。<br><br>而那個結果是：「<strong>必死的被生命吞滅了。</strong>」<br><br>不是死亡把生命吞了，是生命把必死的吞了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而還有一件事，讓「身體」這件事變得很重要：<strong>沒有身體，就沒有關係。</strong></p>
+
+      <div class="highlight">
+        <strong>因為我們認識彼此，是透過身體的</strong>
+        一個擁抱、一個眼神、一起吃飯、聽見一個熟悉的聲音——<strong>這些全部需要身體。</strong><br><br>而聖經對將來的描述，充滿了<strong>群體性</strong>的意象：一座城、一場筵席、一群人、各族各方各民各國。<br><br>而那些，全部預設了<strong>有形體的相聚</strong>。<br><br>所以「復活的身體」這件事，不是一個技術性的細節。<br><br><strong>它是「我們還會認得彼此」的保證。</strong>
+      </div>
+
+      <p>而保羅在帖撒羅尼迦前書講到那日時，說了一句很溫暖的話。而他寫的原因，正是為了安慰一群失去了親人的信徒：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">論到睡了的人，我們不願意弟兄們不知道，恐怕你們憂傷，像那些沒有指望的人一樣</p>
+        <p class="scripture-ref">帖撒羅尼迦前書 四章十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意保羅的措辭：「恐怕你們憂傷，<span style="font-size:inherit;">像那些沒有指望的人一樣</span>」</strong>
+        他<strong>沒有說「不要憂傷」</strong>。<br><br>他說的是：不要像<strong>沒有指望的人</strong>那樣憂傷。<br><br>——那個分別很重要。<br><br>基督徒也會哭，也會捨不得，也會在告別式上難過。主自己在拉撒路的墳前就哭了。<br><br>差別不在於有沒有眼淚，<strong>差別在於那眼淚後面有沒有一個「還會再見」。</strong><br><br>而保羅那段話的結論是：「所以，你們當<strong>用這些話彼此勸慰</strong>。」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂要親手擦去</h2>
+      <p class="card-hook">寫給那個身體正在衰敗、或正在思念一個人的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一個很具體的動作上。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神要擦去他們一切的眼淚；不再有死亡，也不再有悲哀、哭號、疼痛，因為以前的事都過去了</p>
+        <p class="scripture-ref">啟示錄 二十一章四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「擦去」這個動作，需要手</strong>
+        經文沒有說「眼淚會自己乾」，也沒有說「到時候你就不會想哭了」。<br><br>它說有一位會<strong>親手擦去</strong>。<br><br>——那是一個很近的動作。是家人才會做的動作。<br><br>而這也再次說明了：<strong>那不是一個沒有形體的、抽象的存在狀態。</strong><br><br>那裡有手，有臉，有相見。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想對兩種人，各說一句話。</p>
+
+      <p><strong>如果你的身體正在衰敗——</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌾</span>
+        因為疾病、因為年紀、因為某個不會好轉的狀況。<br><br>保羅那句話，是給你的：<strong>「外體雖然毀壞，內心卻一天新似一天。」</strong><br><br>而他接著說：「我們這至暫至輕的苦楚，要為我們成就<strong>極重無比、永遠的榮耀</strong>。」<br><br>——「至暫至輕」。<br><br>寫這句話的人，被鞭打過五次、被棍打三次、被石頭打過一次、遇船壞三次。<strong>而他稱那些為「至暫至輕」。</strong><br><br>不是因為那些不痛，是因為他拿另一邊在秤。<br><br>而那個「種子」的比喻，也是給你的：<strong>所種的是必朽壞的、羞辱的、軟弱的——而復活的是不朽壞的、榮耀的、強壯的。</strong>
+      </div>
+
+      <p><strong>如果你正在思念一個人——</strong></p>
+
+      <div class="highlight">
+        <strong>保羅那句話，是為你寫的</strong>
+        「恐怕你們憂傷，像那些沒有指望的人一樣。」<br><br>你可以憂傷。<strong>但那份憂傷後面，有一個「還會再見」。</strong><br><br>而那個相見，是有形體的相見——認得出來的、可以擁抱的、可以說話的。<br><br>因為那些傷痕，主自己都留著。<strong>身分不會消失。</strong>
+      </div>
+
+      <div class="big-quote">
+        我們必要像他，<br>因為必得見他的真體
+        <cite>— 約翰壹書 三章二節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個問題：我想像不出那是什麼樣子。</p>
+
+      <p>我現在的答案是：<strong>想像不出來，是因為那超過我們現在的參照。</strong></p>
+
+      <p>而聖經也承認這件事：「將來如何，還未顯明。」</p>
+
+      <p>但它給了我們幾個確定的錨點——<strong>屬靈的、卓越的、榮耀的</strong>；不再衰敗、不再匱乏、不再痛。</p>
+
+      <p>而最重要的那一個，是約翰那句：<strong>「我們必要像他。」</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        而保羅用了一句我很喜歡的話收尾：<br><br>「我們如今彷彿對著鏡子觀看，模糊不清，<strong>到那時，就要面對面了</strong>。我如今所知道的有限，到那時就全知道，<strong>如同主知道我一樣</strong>。」<br><br>——「如同主知道我一樣」。<br><br>那是最深的一種被認識。<br><br>而那一天，你不再需要透過模糊的鏡子。
+      </div>
+
+      <p>那顆種子埋在土裡的時候，什麼都看不出來。</p>
+
+      <p>而神「隨自己的意思給他一個形體」。</p>
+
+      <p>願你在等待的日子裡，記得自己是一顆種子。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  復活的身體 · Threads Series
+</footer>
+
+</body>
+</html>

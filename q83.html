@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>復活的意義 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第三天，<span>石頭滾開了</span></h1>
+  <p class="subtitle">復活的四重意義</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">最先發現的那幾個人，沒有一個是在等的</h2>
+      <p class="card-hook">而這件事，反而讓我更相信</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果復活這件事是編出來的，那有一個地方，編得很奇怪。</p>
+
+      <div class="highlight">
+        <strong>四卷福音書都記載：最先發現空墳的，是婦女。</strong>
+        而在第一世紀的猶太社會，這是一個<strong>對敘事不利</strong>的安排。<br><br>當時的法庭實務中，婦女的證詞地位不如男性。<br><br>所以如果你要編一個讓人相信的故事，你不會這樣安排。你會讓彼得、讓約翰、讓某位有名望的男性門徒第一個發現。<br><br>而四卷福音書，都不約而同地記了同一件事：<strong>最先發現的，是那幾個帶著香料去膏屍體的婦女。</strong>
+      </div>
+
+      <p>而更有意思的是<strong>她們去的目的</strong>。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏺</span>
+        她們帶著香料去。<br><br>而香料是用來做什麼的？<strong>膏一具屍體。</strong><br><br>換句話說：<strong>她們去的時候，完全不預期祂會活著。</strong><br><br>她們路上還在討論一個很實際的問題：「誰給我們把石頭從墓門滾開呢？」<br><br>——她們煩惱的是搬石頭。她們的整個計畫，是圍繞著「裡面有一具屍體」設計的。
+      </div>
+
+      <p>而門徒那邊也一樣。婦女回去報信，路加記下了他們的反應：</p>
+
+      <p>「她們這些話，使徒<strong>以為是胡言</strong>，就不相信。」</p>
+
+      <div class="highlight">
+        <strong>沒有一個人在等</strong>
+        主明明說過三次「第三日復活」。<br><br>而第三天早上，沒有一個門徒在墳墓外面等。<br><br>他們鎖著門，因為怕猶太人。多馬不在場。彼得大概還在為那三次否認而崩潰。<br><br>——<strong>這不是一群「準備好要相信」的人。</strong><br><br>而正因為如此，他們後來的轉變才這麼難解釋。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看復活的意義。聖經列了四項——而那四項，各自從不同的角度，撐住了同一件事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">那些細節，不像編的</h2>
+      <p class="card-hook">尤其是那條疊好的手巾</p>
+    </div>
+    <div class="card-body">
+
+      <p>約翰福音記載空墳那一段，有幾個細節，讀起來非常不像是設計出來的。</p>
+
+      <div class="highlight">
+        <strong>細節一：兩個人賽跑</strong>
+        「兩個人同跑，那門徒比彼得跑得更快，先到了墳墓。」<br><br>——約翰在自己寫的福音書裡，特地提了一句「我跑得比較快」。<br><br>這種微小的、幾乎有點孩子氣的細節，是一個親歷者才會記得的東西。
+      </div>
+
+      <div class="highlight">
+        <strong>細節二：他先到，卻沒有進去</strong>
+        「低頭往裡看，就見細麻布還放在那裡，<strong>只是沒有進去</strong>。」<br><br>然後彼得後到，直接就進去了。<br><br>——這兩個人的性格，完全對上了。約翰謹慎，彼得衝動。<br><br>而這種性格的一致性，是很難刻意編出來的。
+      </div>
+
+      <div class="highlight">
+        <strong>細節三：那條疊好的手巾</strong>
+        「又看見耶穌的裹頭巾沒有和細麻布放在一處，是<strong>另在一處捲著</strong>。」<br><br>——這是整段最奇怪的一個細節。<br><br>如果是有人偷走了屍體，他不會花時間把裹屍布留在原位、還把裹頭巾另外捲好放在一邊。<strong>偷屍體的人，會連布一起帶走。</strong><br><br>而經文說，約翰「看見就信了」。<br><br>那個「看見」，看的正是這個現場。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧺</span>
+        我一直覺得那條疊好的手巾，是整個故事裡最安靜、也最有說服力的細節。<br><br>它傳達的訊息是：<strong>這裡沒有慌亂。</strong><br><br>那不是一個逃離現場的場面，那是一個從容離開的場面。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而還有一件事，我覺得同樣值得注意：<strong>那些門徒後來的轉變。</strong></p>
+
+      <div class="highlight">
+        <strong>從「鎖著門」到「站在公會面前」</strong>
+        復活前的門徒：全部逃走、彼得三次否認、其餘的躲在屋裡，「門都關了」。<br><br>而幾週之後，同一批人：<br><br>彼得站在耶路撒冷的人群面前公開講道，指著那些人說「你們把他釘在十字架上殺了」。<br>被公會抓起來、被威嚇、被鞭打，出來之後「心裡歡喜，因被算是配為這名受辱」。<br>而其中大多數，最後為這個見證死了。<br><br>——<strong>是什麼讓一群逃跑的人變成這樣？</strong><br><br>而他們所堅持的內容，不是一套哲學，是一個<strong>事實主張</strong>：我們看見祂活了。<br><br>人可能為了一個信念而死。<strong>但很少有人會為了一件自己明知是編造的事而死。</strong>
+      </div>
+
+      <p>那麼，復活的意義是什麼？下一篇，我們把四項排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四重意義</h2>
+      <p class="card-hook">應驗、印證、得勝、證明</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌被釘死後，第三天從死人中復活，有四項意義：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 應驗聖經的預言</span>
+          「而且埋葬了；又<strong>照聖經所說</strong>，第三天復活了。」（林前十五 4）<br>——舊約早已預告。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 應驗主對門徒所說的話</span>
+          「約拿三日三夜在大魚肚腹中，人子也要這樣三日三夜在地裡頭。」（太十二 40）<br>「從此，耶穌才指示門徒，他必須……被殺，<strong>第三日復活</strong>。」（太十六 21）<br>——祂自己說過，而祂說到做到。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 表明祂勝過死亡的權勢</span>
+          「神卻將死的痛苦解釋了，叫他復活，<strong>因為他原不能被死拘禁</strong>。」（徒二 24）<br>「死啊！你得勝的權勢在哪裡？」（林前十五 55～57）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 證明耶穌不曾犯過任何過失和任何罪</span>
+          因為死是罪的工價。<strong>若祂自己有罪，死就有權柄拘禁祂。</strong>而死拘禁不住祂——這本身就是一份判決。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第四項，是最需要說明、也最精彩的一項。它的邏輯是這樣的：</p>
+
+      <div class="highlight">
+        <strong>「罪的工價乃是死。」</strong>
+        這是聖經的原則。死亡不是隨機發生的，它是罪的後果。<br><br>所以死亡對一個罪人，是<strong>有正當管轄權</strong>的。<br><br>而彼得在五旬節講道時說的那句話，用字極其精準：<br><br>「神卻將死的痛苦解釋了，叫他復活，<strong>因為他原不能被死拘禁</strong>。」<br><br>——「<strong>不能</strong>被死拘禁」。<br><br>不是「神很有能力，所以把祂救出來了」。而是：<strong>死亡本來就沒有資格扣住祂。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        我覺得可以這樣理解：<br><br>一座監獄可以合法地關押一個有罪的人。<br><br>而如果它關了一個<strong>完全無辜</strong>的人——那個關押，從一開始就是非法的。<br><br>而復活，就是那扇門被打開。<br><br>不是越獄，是<strong>釋放</strong>——因為根本就不該被關。<br><br>所以復活這件事，同時證明了一件事：<strong>祂是無罪的。</strong>否則死亡有權留住祂。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這四項，其實是四種不同的「證實」。它們各自回答一個不同的問題：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>意義</th>
+            <th>回答的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">① 應驗聖經</td>
+            <td><strong>這是不是神原本的計畫？</strong>——是。從舊約就寫著。</td>
+          </tr>
+          <tr>
+            <td class="src">② 應驗祂的話</td>
+            <td><strong>祂說的話算不算數？</strong>——算。祂預告了，也做到了。</td>
+          </tr>
+          <tr>
+            <td class="src">③ 勝過死權</td>
+            <td><strong>那我們最終的敵人怎麼辦？</strong>——已經被打敗了。</td>
+          </tr>
+          <tr>
+            <td class="src">④ 證明無罪</td>
+            <td><strong>那個代贖有沒有效？</strong>——有。因為獻上的是無瑕疵的。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第二項，值得特別注意</strong>
+        「應驗主對門徒所說的話」——這一項關乎<strong>祂話語的可信度</strong>。<br><br>因為一個人如果預告了一件極難的事，然後真的發生了——那他說的其他話，分量就完全不同了。<br><br>祂還說過什麼？<br><br>「我去原是為你們預備地方去……<strong>我必再來接你們到我那裡去。</strong>」<br>「我就是復活，我就是生命。信我的人雖然死了，也必復活。」<br>「我總不撇下你，也不丟棄你。」<br><br>——<strong>而祂已經證明過一次，祂說的話會兌現。</strong>
+      </div>
+
+      <p>那麼，「照聖經所說」指的是哪些經文？下一篇，我們回頭去找。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「照聖經所說」——哪一段聖經？</h2>
+      <p class="card-hook">彼得在五旬節那天，引了詩篇十六篇</p>
+    </div>
+    <div class="card-body">
+
+      <p>保羅說「照聖經所說，第三天復活了」。而他寫這句話的時候，新約還沒有成書——所以他說的「聖經」，指的是舊約。</p>
+
+      <p>那麼是哪些段落？彼得在五旬節那天的講道，直接給了答案。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因你必不將我的靈魂撇在陰間，也不叫你的聖者見朽壞</p>
+        <p class="scripture-ref">詩篇 十六篇十節（徒二 27 引用）</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而彼得的論證方式，非常嚴謹</strong>
+        他引用了大衛這句話，然後說：<br><br>「弟兄們！先祖大衛的事，我可以明明地對你們說：<strong>他死了，也葬埋了，並且他的墳墓直到今日還在我們這裡。</strong>」<br><br>——他先排除了「這句話是講大衛自己」的可能。<br><br>邏輯是：大衛的身體確實朽壞了，他的墳墓大家都知道在哪裡。<strong>所以這句話不可能是講他自己。</strong><br><br>然後彼得下結論：「大衛既是先知……就<strong>預先看明</strong>這事，講論基督復活說：他的靈魂不撇在陰間，他的肉身也不見朽壞。」<br><br>——他是站在耶路撒冷，對著一群熟讀舊約的人，做這個論證的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而舊約裡指向復活的線索，還有幾條：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>指向</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">詩十六 10</td>
+            <td>「不叫你的聖者見朽壞」——彼得與保羅都引用過。</td>
+          </tr>
+          <tr>
+            <td class="src">賽五三 10～11</td>
+            <td>那位受苦的僕人：「他必看見後裔，並且<strong>延長年日</strong>……他必看見自己勞苦的功效，便心滿意足。」<br>——一位被殺的僕人，怎麼可能「延長年日」、「看見」結果？</td>
+          </tr>
+          <tr>
+            <td class="src">何六 2</td>
+            <td>「過兩天他必使我們甦醒，<strong>第三天他必使我們興起</strong>，我們就在他面前得以存活。」</td>
+          </tr>
+          <tr>
+            <td class="src">拿一 17</td>
+            <td>約拿在魚腹中三日三夜——主自己指認的預表。</td>
+          </tr>
+          <tr>
+            <td class="src">創廿二</td>
+            <td>以撒被獻上——希伯來書說：亞伯拉罕「以為神還能叫人從死裡復活；<strong>他也彷彿從死中得回他的兒子來</strong>」。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而還有一個更大的圖像：<strong>初熟的果子。</strong><br><br>利未記規定，在逾越節之後的那一天，要把初熟的莊稼一捆搖在耶和華面前——那叫「<strong>初熟節</strong>」。<br><br>而保羅說：「但基督已經從死裡復活，成為睡了之人<strong>初熟的果子</strong>。」（林前十五 20）<br><br>——那不只是一個比喻。<strong>主復活的日子，正落在初熟節的時序上。</strong><br><br>而「初熟的果子」的意思是：<strong>這是第一批，而後面還有一整片田。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第三項——<strong>勝過死亡的權勢</strong>。而保羅在哥林多前書十五章，用一種近乎歡呼的語氣寫了那一段：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">死啊！你得勝的權勢在哪裡？死啊！你的毒鉤在哪裡？死的毒鉤就是罪，罪的權勢就是律法。感謝神，使我們藉著我們的主耶穌基督得勝
+        </p>
+        <p class="scripture-ref">哥林多前書 十五章五十五至五十七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐝</span>
+        「<strong>毒鉤</strong>」這個字，指的是蜜蜂或蠍子的螫針。<br><br>而有一件事很多人知道：<strong>蜜蜂螫過人之後，針會留在對方身上，而牠自己會死。</strong><br><br>螫過一次的蜂，就不再有那根針了。<br><br>而保羅的意象是：<strong>死亡已經把牠的針，用在基督身上了。</strong><br><br>牠螫了那一次——而那一次，牠失去了牠的針。<br><br>所以對信的人來說，死亡仍然會來，但<strong>它的毒鉤已經不在了。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而保羅接著解釋了那根針是什麼：「<strong>死的毒鉤就是罪</strong>。」<br><br>死亡之所以可怕，不只是因為它終結生命。<strong>是因為它後面有審判。</strong>「按著定命，人人都有一死，死後且有審判。」<br><br>而如果罪已經被處理了——那根針就被拔掉了。<br><br>死亡還在，但它變成了一個<strong>通道</strong>，不是一個<strong>刑罰</strong>。<br><br>這也是為什麼保羅可以說：「我情願離世與基督同在，因為這是好得無比的。」
+      </div>
+
+      <p>下一篇，我們談那第四項——為什麼復活等於一份無罪判決？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">復活，是一份公開的判決書</h2>
+      <p class="card-hook">而那份判決，也寫著你的名字</p>
+    </div>
+    <div class="card-body">
+
+      <p>第四項意義——「證明耶穌不曾犯過任何過失和任何罪」——它的分量，比表面看起來大得多。</p>
+
+      <div class="highlight">
+        <strong>因為那不只關乎祂，也關乎你</strong>
+        整個代贖的邏輯，繫在一件事上：<strong>獻上的祭必須是無瑕疵的。</strong><br><br>利未記反覆強調這一點：祭牲必須「沒有殘疾」。有殘疾的不可獻上。<br><br>而彼得說：「知道你們得贖……乃是憑著基督的寶血，如同<strong>無瑕疵、無玷污的羔羊</strong>之血。」<br><br>所以：<strong>如果祂有罪，那個祭就無效，而我們仍在罪中。</strong><br><br>而復活，就是那個「無瑕疵」的公開驗證。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        我覺得可以這樣理解：<br><br>十字架，像是把一張支票交出去。<br><br>而復活，是<strong>那張支票兌現了的回執</strong>。<br><br>如果那張支票跳票——如果祂沒有出來——那我們永遠不會知道那筆錢有沒有真的付清。<br><br>而祂出來了。<strong>那就是回執。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而保羅在羅馬書，把這件事與我們直接連了起來。那節經文常被讀漏後半句：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌被交給人，是為我們的過犯；復活，是為叫我們稱義</p>
+        <p class="scripture-ref">羅馬書 四章二十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「復活，是為叫我們稱義」</strong>
+        這句話很值得停下來想。<br><br>我們通常會說：<strong>祂的死</strong>，使我們的罪得赦。<br><br>而保羅在這裡說：<strong>祂的復活</strong>，是為叫我們稱義。<br><br>為什麼？<br><br>因為復活是那份<strong>公開的宣判</strong>——宣判那個代贖有效、那筆帳付清了、那位擔當者是無瑕疵的。<br><br>而既然如此，那些「在祂裡面」的人，也一同被算在那份判決裡。<br><br>提摩太前書說祂「<strong>被聖靈稱義</strong>」——那個「稱義」，指的正是這個公開的平反。<br><br><strong>而祂的平反，就是我們的平反。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這件事在實際生活裡，意味著什麼？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 你的赦免，有一個客觀的憑據</span>
+          它不建立在你「感覺被赦免了」上。<br>它建立在一件<strong>歷史事件</strong>上——那件事發生在你出生之前，而且與你的心情無關。<br><strong>你今天感覺不到，不影響它成立。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 死亡對你的性質改變了</span>
+          「死的毒鉤就是罪。」而罪被處理了，針就被拔掉了。<br>希伯來書說祂「<strong>釋放那些一生因怕死而為奴僕的人</strong>」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 祂說過的其他話，也會兌現</span>
+          第二項意義說的正是這個：<strong>祂說到做到。</strong><br>而祂說過「我必再來接你們到我那裡去」。<br>祂已經在最難的那一件事上證明過一次了。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 你也會復活</span>
+          「初熟的果子」意味著後面還有一整片田。<br>「基督若沒有復活，你們的信便是徒然……但基督已經從死裡復活，成為睡了之人初熟的果子。」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而我想特別說第一點</strong>
+        因為很多人的信仰痛苦，來自一種<strong>依賴感覺的循環</strong>：<br><br>感覺不到神 → 懷疑自己是不是真的得救 → 更焦慮 → 更感覺不到。<br><br>而復活這件事，把地基<strong>移到了自己之外</strong>。<br><br>它是一個發生過的事件。它不隨你今天的狀態變動。<br><br>——就像一份判決書，不會因為當事人今天心情不好而失效。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📄</span>
+        而這也是為什麼，聖經一再要人「<strong>記念</strong>」。<br><br>主設立聖餐的時候說：「你們應當如此行，<strong>為的是記念我。</strong>」<br><br>因為人的感覺會漂移，而事實不會。<br><br>所以在感覺不到的日子裡，我們回到那個事實：<strong>那個墳墓是空的。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂復活後做的第一件事</h2>
+      <p class="card-hook">寫給那個覺得自己搞砸了、回不去的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在復活之後的那幾天上。</p>
+
+      <p>因為祂復活之後，做的第一批事情，非常有意思。</p>
+
+      <div class="highlight">
+        <strong>祂沒有去找彼拉多，沒有去找大祭司</strong>
+        如果我是編故事的人，我大概會安排祂去見那些定祂罪的人——那會是一場精彩的翻盤。<br><br>而祂沒有。<br><br>祂做的第一件事，是<strong>叫一個女人的名字</strong>：「馬利亞。」<br><br>然後祂陪兩個垂頭喪氣的門徒走了十一公里的路，一路講解聖經。<br><br>然後祂在提比哩亞海邊，生了一堆炭火，烤好魚和餅，對那幾個回去打魚的門徒說：「<strong>你們來吃早飯。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        而在那頓早餐之後，祂問了彼得三次：「<strong>你愛我嗎？</strong>」<br><br>三次——正好對應那三次否認。<br><br>而那堆炭火，也對應著彼得否認主那一夜，他站著烤火的那堆炭火。<br><br><strong>祂把彼得帶回了同一個場景，然後給了他一個不同的結局。</strong><br><br>三次否認，三次「你愛我嗎」，三次「你餵養我的羊」。<br><br>——不只是赦免，是<strong>復職</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己搞砸了、覺得回不去了——</p>
+
+      <p>我想請你記得彼得。</p>
+
+      <div class="highlight">
+        <strong>他的失敗，是公開的、明確的、當面的</strong>
+        他不是暗中軟弱。他是<strong>當著人的面，三次說「我不認得這個人」</strong>——而最後一次還發咒起誓。<br><br>然後雞叫了，而經文記下了一個細節：「<strong>主轉過身來看彼得。</strong>」<br><br>——他們對到了眼。<br><br>「彼得就想起主對他所說的話……他就出去痛哭。」<br><br>而那個彼得，在復活之後，成了那個站在耶路撒冷公開講道、一天帶三千人歸主的彼得。<br><br><strong>而中間發生的，就是那頓早餐。</strong>
+      </div>
+
+      <p>還有一個細節，我一直很喜歡。</p>
+
+      <p>天使對那些婦女說：「你們可以去告訴他的門徒<strong>和彼得</strong>，說：他在你們以先往加利利去。」</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✉️</span>
+        「門徒<strong>和彼得</strong>」。<br><br>為什麼要特別加上「和彼得」？他不就是門徒之一嗎？<br><br>——因為<strong>他自己大概不這麼認為了。</strong><br><br>一個三次否認過主的人，會覺得自己還算門徒嗎？<br><br>所以那句話，是特地點名的。<br><br><strong>怕他覺得那個消息不包括他。</strong>
+      </div>
+
+      <div class="big-quote">
+        他不在這裡，照他所說的，<br>已經復活了
+        <cite>— 馬太福音 二十八章六節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>四項意義，最後我想這樣收：</p>
+
+      <p><strong>應驗聖經</strong>——所以這不是意外，這是從起初就鋪好的路。</p>
+
+      <p><strong>應驗祂的話</strong>——所以祂說的其他話，也會算數。包括「我必再來」。</p>
+
+      <p><strong>勝過死權</strong>——所以那個最終的敵人，已經沒有毒鉤了。</p>
+
+      <p><strong>證明無罪</strong>——所以那個代贖有效，而你的名字，也在那份判決裡。</p>
+
+      <p>而那些帶著香料去的婦女，她們煩惱的是「誰給我們把石頭滾開」。</p>
+
+      <p>她們抬頭一看——<strong>石頭已經滾開了。</strong></p>
+
+      <p>願你今天抬頭的時候，也看見這件事。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第三天 · Threads Series
+</footer>
+
+</body>
+</html>

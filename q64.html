@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第六誡 保重生命 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第六誡 · <span>保重生命</span></h1>
+  <p class="subtitle">從「不可殺人」，到「要愛仇敵」</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我這輩子沒殺過人，可是……</h2>
+      <p class="card-hook">有一種恨，是在心裡把一個人刪掉</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>第六誡看起來是十誡裡最容易過關的一條。我沒殺過人，你大概也沒有。這條可以直接打勾。</p>
+
+      <p>可是有一年，我發生了一件事。</p>
+
+      <p>有一個人做了一件讓我很受傷的事。那件事的細節不重要，重要的是我後來的反應——我沒有跟他吵架，沒有報復，甚至表面上還維持著客氣。</p>
+
+      <p><strong>我只是在心裡，把他刪掉了。</strong></p>
+
+      <div class="highlight">
+        <strong>那是一種很安靜的處決</strong>
+        我不再關心他過得怎樣。<br>聽到他的消息，我心裡沒有任何波動——如果是壞消息，甚至會有一絲說不出口的滿意。<br>我在心裡把他從「人」的類別，降級成了一個「事件」。<br><br>而我對自己的解釋是：我沒有做任何壞事啊，我只是不想跟他來往了。<br><br>直到我讀到約翰壹書那句話，整個人被釘住。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">凡恨他弟兄的，就是殺人的；你們曉得凡殺人的，沒有永生存在他裡面</p>
+        <p class="scripture-ref">約翰壹書 三章十五節</p>
+      </div>
+
+      <p>「<strong>就是殺人的。</strong>」</p>
+
+      <p>我第一個反應是想替自己辯護：這太誇張了吧？恨一個人跟殺人怎麼能相提並論？一個只是情緒，一個是實際奪走生命。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        可是後來我想通了一件事。<br><br>殺人的本質是什麼？是<strong>把一個人從這個世界上抹掉。</strong><br><br>而在我心裡，我已經做了同一件事。我把他從「值得被關心的人」抹掉了，從「有感受的存在」抹掉了。<br><br>只是我沒有動手。<strong>而沒有動手，往往只是因為條件不允許，不是因為心不想。</strong>
+      </div>
+
+      <p>這個發現，把第六誡從一條「我早就過關」的規定，變成了一條我每天都在面對的功課。</p>
+
+      <p>接下來這幾篇，我想陪你把這一誡從外面走到裡面。而它的提示，最後會走到一個很遠的地方——遠到讓人不太舒服。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">為什麼殺人這麼嚴重？</h2>
+      <p class="card-hook">聖經給的理由，跟我們想的不一樣</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果問一般人「為什麼不可以殺人」，答案大概是：因為生命很寶貴、因為那會造成痛苦、因為社會需要秩序。</p>
+
+      <p>這些都對。但聖經給的理由，是另一個。</p>
+
+      <p>洪水之後，神與挪亞立約，說了這樣一段話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡流人血的，他的血也必被人所流，因為神造人是照自己的形像造的</p>
+        <p class="scripture-ref">創世記 九章六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「因為神造人是照自己的形像造的」</strong>
+        這才是第六誡的根據。<br><br>不是「因為人很珍貴」——那還是一個關於人自己的說法。<br><br>而是：<strong>每一個人身上，都立著神的形像。</strong>所以殺一個人，不只是奪走一條命，那是在對那個形像動手。<br><br>這就像古代的王在邊境立下的雕像——毀損那尊像，不只是破壞一塊石頭，那是對那位君王的直接冒犯。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🖼️</span>
+        這個理由的力量，在於它<strong>不取決於那個人的狀態</strong>。<br><br>如果生命的價值來自「他有沒有用」、「他過得好不好」、「別人愛不愛他」，那價值就會浮動——有些人的命就會比較值錢，有些人的就比較不值錢。<br><br>人類歷史上所有的大屠殺，都是從這一步開始的：<strong>先論證某一群人「不算完整的人」。</strong><br><br>而創世記九章六節，把這條路徹底堵死。價值不在人身上，在那個形像上。<strong>而那個形像，沒有人拿得掉。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主耶穌把這一誡往裡推了一層。祂在登山寶訓裡說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們聽見有吩咐古人的話，說：不可殺人；又說：凡殺人的難免受審判。只是我告訴你們：凡向弟兄動怒的，難免受審判</p>
+        <p class="scripture-ref">馬太福音 五章二十一至二十二節</p>
+      </div>
+
+      <p>然後祂舉了兩個具體的例子：「凡罵弟兄是拉加的，難免公會的審斷；凡罵弟兄是魔利的，難免地獄的火。」</p>
+
+      <div class="term-box">
+        <div class="term-original">拉加 · 魔利<br>兩句罵人的話</div>
+        <div class="term-desc">「<strong>拉加</strong>」是亞蘭文的一個蔑稱，大意接近「空空的」、「廢物」——罵一個人腦袋空空、一無是處。<br><br>「<strong>魔利</strong>」大致是「愚頑人」——在聖經的語彙裡，這個字不只是說人笨，更帶有道德與屬靈上的否定。<br><br>兩句話的共通點是：<strong>它們都在否定一個人的價值。</strong>不是「你這件事做錯了」，是「你這個人不值得」。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>主的邏輯線非常清楚</strong>
+        殺人 → 動怒 → 罵人是廢物。<br><br>祂把這三件事放在同一條線上，因為它們的方向是同一個：<strong>否定一個人的存在價值。</strong><br><br>動手的，取消他的生命；動口的，取消他的價值；動念的，在心裡取消他這個人。<br><br>程度不同，方向一樣。
+      </div>
+
+      <p>那麼，第六誡對我們的提示是什麼？下一篇，我們把它整理出來——你會發現它有三層。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三層提示：保重、不恨、愛仇敵</h2>
+      <p class="card-hook">一層比一層難，而最後一層幾乎不合常理</p>
+    </div>
+    <div class="card-body">
+
+      <p>第六誡對我們的提示，是三層遞進的：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 盡力保重自己和別人的性命</span>
+          「凡動刀的，必死在刀下。」（太廿六 52）「擄掠人的，必被擄掠；用刀殺人的，必被刀殺。」（啟十三 10）<br><strong>因為人類是照神的形像造的</strong>（創九 6）。<br>注意：這裡包括<strong>自己</strong>的性命。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 要愛人，不可恨人</span>
+          「凡向弟兄動怒的，難免受審判。」（太五 21～22）<br>「人若說自己在光明中，卻恨他的弟兄，他到如今還是在黑暗裡。」（約壹二 9～11）<br>「凡恨他弟兄的，就是殺人的。」（約壹三 15）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 要愛仇敵，為逼迫我們的祈禱</span>
+          「只是我告訴你們，要愛你們的仇敵，為那逼迫你們的禱告。」（太五 44～48）<br>「不要自己伸冤……你的仇敵若餓了，就給他吃。」（羅十二 19～21）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>先看第一層，因為它包含一個常被忽略的部分：<strong>保重自己的性命。</strong></p>
+
+      <div class="highlight">
+        <strong>第六誡不只保護別人，也保護你</strong>
+        那個「照神的形像造的」的理由，同樣適用在你身上。<br><br>所以糟蹋自己的身體、長期把自己逼到極限、用各種方式慢性地損耗自己——這些也在這一誡的範圍內。<br><br>而在極端的處境裡，這一誡也是一句對絕望之人的挽留：<strong>你身上也立著那個形像，那不是你可以自行處置的。</strong><br><br>如果你此刻正走在那樣的邊緣，請找一個人說。那不是軟弱，那是保重。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>第二層是「不可恨人」。而約翰壹書給了一個很實用的判準：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">人若說自己在光明中，卻恨他的弟兄，他到如今還是在黑暗裡</p>
+        <p class="scripture-ref">約翰壹書 二章九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌑</span>
+        約翰在這裡把「恨」當成一個<strong>屬靈狀態的指示燈</strong>。<br><br>它不是「你偶爾有負面情緒就完了」——聖經自己就記載了很多義人的憤怒。它講的是那種<strong>長期的、養著的、不打算處理的恨</strong>。<br><br>而它的可怕之處在於：<strong>恨會讓人在黑暗裡而不自知。</strong>約翰接著說：「他在黑暗裡行，也不知道往哪裡去，因為黑暗叫他眼睛瞎了。」<br><br>恨的第一個受害者，往往是恨的人自己——它會扭曲你對整件事的判斷。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三層，老實說，是不合常理的。</p>
+
+      <p>「要愛你們的仇敵，為那逼迫你們的禱告。」</p>
+
+      <p>這不是「原諒他」，不是「算了不計較」，不是「保持距離但不恨」——這些都還在人的常理範圍內。</p>
+
+      <p><strong>主說的是：愛他，而且為他禱告。</strong></p>
+
+      <div class="highlight">
+        <strong>而祂給的理由，更是出乎意料</strong>
+        「這樣，就可以作你們天父的兒子；因為他叫日頭照好人，也照歹人；降雨給義人，也給不義的人。」<br><br>理由不是「這樣對方會改變」，也不是「這樣你會比較好過」。<br><br>理由是：<strong>因為天父就是這樣的。</strong><br><br>太陽今天照在你仇敵的院子上，雨也下在他的田裡。神沒有為了懲罰他而關掉太陽。<br><br>而主說：你若愛仇敵，你就活出了那個家族的樣子。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">☀️</span>
+        我覺得「日頭照好人也照歹人」這個比方，選得極好。<br><br>因為太陽不是在「原諒」誰。太陽只是<strong>照它本性所是的樣子在照</strong>。<br><br>愛仇敵，最終不是一個關於對方的決定，是一個關於<strong>你是誰</strong>的決定。
+      </div>
+
+      <p>那麼，「殺人」的原文究竟是什麼？這一誡涵蓋哪些情況、不涵蓋哪些？下一篇，我們回到原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原文用的字，比「殺」精確</h2>
+      <p class="card-hook">希伯來文有七個「殺」的字，而第六誡只用了一個</p>
+    </div>
+    <div class="card-body">
+
+      <p>希伯來文中，表達「殺」的動詞有好幾個，各有各的用法。而第六誡選用的，是其中一個相當特定的字。</p>
+
+      <div class="term-box">
+        <div class="term-original">Ratsach<br>第六誡用的字</div>
+        <div class="term-desc">這個字主要用於<strong>人與人之間非法的奪命</strong>——包括蓄意的謀殺，也包括過失致死。<br><br>它<strong>不用於</strong>：戰爭中的殺敵（那用 harag 或別的字）、獻祭時宰殺牲畜（那用 shachat）、司法上的處決。<br><br>所以第六誡的字面，比中文的「不可殺人」更精確——它指的是<strong>「不可謀殺」</strong>。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>為什麼這個區分重要？</strong>
+        因為它讓第六誡與聖經其他部分不矛盾。<br><br>同一部律法，一方面說「不可 ratsach」，另一方面又詳細規定了司法程序與逃城制度。<strong>如果第六誡禁止的是一切奪命，那整部摩西律法會自相矛盾。</strong><br><br>而 ratsach 這個字的精確，正好對應了律法接下來的處理——它區分了<strong>蓄意</strong>與<strong>誤殺</strong>，並為後者設立了逃城。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而說到逃城，那是一個非常值得認識的制度。</p>
+
+      <p>在當時的社會，若有人死於非命，死者的至近親屬（就是我們談過的 go'el）有責任為他報仇。這是當時的常態，也是血債循環的來源。</p>
+
+      <p>而神設立了六座逃城，分散在應許之地各處。誤殺人的人可以逃到那裡，在會眾面前受審。若查明確實是無心的，他就可以住在城裡，報血仇的人不得傷害他。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>逃城制度的設計</th>
+            <th>它保護了什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">必須經過審判</td>
+            <td>保護<strong>被告</strong>——不讓私刑取代司法，不讓情緒取代事實。</td>
+          </tr>
+          <tr>
+            <td class="src">誤殺與蓄意<br>分別處理</td>
+            <td>保護<strong>公義</strong>——動機被納入考量，但不是逃避責任的藉口。</td>
+          </tr>
+          <tr>
+            <td class="src">城要分散設立<br>道路要修平</td>
+            <td>保護<strong>可及性</strong>——申命記特別吩咐要修好通往逃城的路。恩典必須是<strong>走得到</strong>的。</td>
+          </tr>
+          <tr>
+            <td class="src">大祭司死後<br>方可返鄉</td>
+            <td>這一點極耐人尋味——<strong>那個人的自由，繫於大祭司的死。</strong>而基督正是我們永遠的大祭司。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        逃城制度告訴我們：第六誡不是一句孤立的禁令，它<strong>配套著一整套保護生命的機制</strong>。<br><br>而其中「修平道路」那個細節，我一直很喜歡。神不只設立避難所，還吩咐要把通往避難所的路修好——<strong>免得逃命的人在半路上被追上。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看新約的兩個字，它們把「愛仇敵」這件事說得更清楚：</p>
+
+      <div class="term-box">
+        <div class="term-original">Agapaō<br>愛仇敵的「愛」</div>
+        <div class="term-desc">主耶穌說「要愛你們的仇敵」，用的不是 phileō（朋友之愛、情感之愛），而是 <strong>agapaō</strong>。<br><br>這一點很關鍵。祂沒有要求你對仇敵產生溫暖的感覺——那多半也做不到。<br><br>agapē 是<strong>意志性的愛</strong>：一種不論對方是否可愛、都選擇尋求對方益處的定意。所以它<strong>可以被命令</strong>，而情感不行。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🙏</span>
+        而主給的那個具體做法，我覺得是最有智慧的一句：<strong>「為那逼迫你們的禱告。」</strong><br><br>為什麼是禱告？因為那是一件<strong>你現在就能做、而且不需要對方配合</strong>的事。<br><br>而且它有一個副作用：<strong>你很難一邊真誠地為一個人禱告，一邊在心裡把他刪掉。</strong>禱告會逼你重新把他當成一個人來看待。<br><br>它改變的，往往先是禱告的那一個。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        保羅在羅馬書給了同一件事的實踐版，而且非常具體：<br><br>「<strong>不要自己伸冤</strong>，寧可讓步，聽憑主怒……你的仇敵若餓了，就給他吃；若渴了，就給他喝。」<br><br>注意「不要自己伸冤」的下一句：「聽憑主怒。」<br><br>放下報復，<strong>不等於認為那件事無所謂</strong>。它的意思是：這件事有一位比我更有資格處理的，我把它交出去。<br><br>這是很重要的分別。愛仇敵不是說「你沒有錯」，而是說「這筆帳不由我來討」。
+      </div>
+
+      <p>下一篇，我們談一個更難的問題：那憤怒本身是罪嗎？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">生氣是罪嗎？</h2>
+      <p class="card-hook">主耶穌自己也發過怒</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果「凡向弟兄動怒的，難免受審判」，那是不是所有的憤怒都是罪？</p>
+
+      <p>這個問題必須處理，因為誤解它會造成兩種傷害：一種是讓人把正當的義憤壓抑成內傷，另一種是讓人替自己的暴怒找藉口。</p>
+
+      <div class="highlight">
+        <strong>先看事實：聖經記載主耶穌發過怒</strong>
+        祂在會堂裡看見那些人不肯回答祂關於安息日醫病的問題時，「<strong>怒目周圍看他們，憂愁他們的心剛硬</strong>」。<br><br>祂潔淨聖殿的時候，推倒兌換銀錢之人的桌子，趕出做買賣的。<br><br>祂對法利賽人說的那七個「你們有禍了」，語氣之重，讀起來讓人不寒而慄。<br><br>所以憤怒<strong>本身</strong>不可能是罪——否則主耶穌就犯罪了。
+      </div>
+
+      <p>那分別在哪裡？我認為聖經給了三個判準：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 為誰而怒？</span>
+          主的怒，總是為著<strong>別人受的傷害、神的名受的褻瀆</strong>。<br>而我們的怒，多半是為著<strong>自己被冒犯</strong>——面子、權益、預期落空。<br><strong>這是最關鍵的一個分水嶺。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 指向什麼？</span>
+          義怒指向<strong>那件錯事</strong>，並且尋求它被糾正。<br>罪的怒指向<strong>那個人</strong>，並且尋求他被毀滅。<br>前者說「這件事不對」，後者說「這個人不該存在」。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 留多久？</span>
+          「生氣卻不要犯罪；不可含怒到日落。」（弗四 26）<br>保羅沒有禁止生氣——他禁止的是<strong>把它養起來</strong>。<br>而下一節說：「也不可給魔鬼留地步。」<strong>過夜的怒氣，會變成別的東西。</strong>
+        </div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        我覺得憤怒像火。<br><br>火本身不是壞的——它能煮飯、取暖、煉金。問題從來不在有沒有火，而在<strong>它燒的是什麼、燒多久、有沒有邊界。</strong><br><br>在爐子裡，它是資源。在屋子裡，它是災難。<br><br>而「不可含怒到日落」，講的正是<strong>不要讓火過夜</strong>。因為沒有人看著的火，會蔓延。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而我想再往裡走一層，談那個更難的問題：<strong>怎麼真的放下？</strong></p>
+
+      <p>因為「不可恨人」這句話，聽起來簡單，做起來幾乎不可能。你沒辦法靠決心把一份恨關掉。</p>
+
+      <div class="highlight">
+        <strong>羅馬書那句「聽憑主怒」，其實是關鍵</strong>
+        「親愛的弟兄，不要自己伸冤，寧可讓步，<strong>聽憑主怒</strong>；因為經上記著：主說『伸冤在我，我必報應』。」<br><br>很多人讀這句話，讀成「你要大方一點，別計較」。<br><br>但保羅的邏輯完全不是這樣。他說的是：<strong>這件事會被處理，只是不由你處理。</strong><br><br>放下報復的前提，不是「假裝那件事沒發生」，而是<strong>「相信有一位會處理」</strong>。<br><br>——如果沒有那位審判者，「愛仇敵」就只是弱者的自我安慰。而正因為有那位，放手才成為可能。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📁</span>
+        我想到一個比喻：你手上有一個案子，你可以自己去追討，也可以把卷宗交給一位比你更公正、更有能力、掌握全部事實的法官。<br><br>交出去，不代表你認為這件事不重要。<br><br><strong>恰恰相反——正因為你認為它太重要了，重要到不能被你有限的憤怒草率處理，所以你交給了那位處理得對的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後我想留一件很實際的事。</p>
+
+      <p>如果你此刻心裡有一個人，是你「已經刪掉」的那種——我不會叫你今天就去愛他。那太快了，而且假的和好比不和好更糟。</p>
+
+      <p>但也許可以從一件很小的事開始：<strong>為他禱告一次。</strong></p>
+
+      <div class="highlight">
+        <strong>不需要為他求祝福，如果你還做不到</strong>
+        可以只是把他的名字，在神面前說出來。<br><br>可以只是說：「主啊，這個人，我還恨他。我沒辦法。求你處理。」<br><br>這也是禱告。而且是很誠實的一種。<br><br>詩篇裡有大量這樣的禱告——那些對神訴說仇恨、要求伸冤的詩。<strong>神沒有把它們從聖經裡刪掉。</strong>祂寧可你把恨帶到祂面前，也不要你自己在心裡養著。
+      </div>
+
+      <p>而奇妙的是——當你開始在神面前提起一個人的名字，那個人就慢慢地，從「一個事件」變回了「一個人」。</p>
+
+      <p>而那，正是第六誡要保護的東西。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">十字架上那句禱告</h2>
+      <p class="card-hook">寫給那個心裡還放不下一個人的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>「要愛你們的仇敵，為那逼迫你們的禱告。」</p>
+
+      <p>這句話，如果只是一句教導，那它是不合理的。它要求的是人性做不到的事。</p>
+
+      <p>可是說這句話的那一位，自己做到了。而且是在最極端的處境下做到的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">當下耶穌說：父啊！赦免他們；因為他們所做的，他們不曉得</p>
+        <p class="scripture-ref">路加福音 二十三章三十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>請注意這句話說出口的時間點</strong>
+        路加福音的記載，是在<strong>釘十字架的那一刻</strong>——就是釘子正在穿過的時候。<br><br>不是事後平靜下來以後，不是復活之後回頭原諒，是<strong>正在被傷害的當下。</strong><br><br>而且祂求的內容很具體：<strong>赦免他們。</strong>祂沒有求「讓他們知道錯」，沒有求「讓他們受報應」。<br><br>祂為那些正在殺祂的人，向父求赦免。
+      </div>
+
+      <p>而第一個殉道者司提反，在被石頭打的時候，跪下大聲喊著說：「主啊，不要將這罪歸於他們。」</p>
+
+      <p>他學會了。而站在旁邊看守衣裳的那個年輕人，名叫掃羅——後來成了保羅。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        我常想，司提反那句禱告，是不是在掃羅心裡留下了什麼。<br><br>因為一個人在被石頭砸死的時候，居然為砸他的人求赦免——這種事，看過的人是忘不掉的。<br><br><strong>愛仇敵最深的能力，不在於改變對方的行為，而在於它會留在對方心裡。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭說的那個被我「刪掉」的人。</p>
+
+      <p>我想誠實地說：那件事我處理了很久，而且不是靠一個屬靈的頓悟解決的。</p>
+
+      <p>我做的第一件事，是承認我在恨。不再說服自己「我只是不想來往」。</p>
+
+      <p>第二件事，是把那個恨帶到神面前——用很不體面的方式，把我心裡真正想說的話都說了。</p>
+
+      <p>第三件事，是開始偶爾為他禱告。一開始很勉強，甚至有點虛偽。但我還是做了。</p>
+
+      <p>然後有一天我發現，聽到他的消息時，我心裡那個「一絲滿意」不見了。</p>
+
+      <p>我沒有變成愛他。但我不再需要他過得不好，才覺得公平。</p>
+
+      <div class="big-quote">
+        凡恨他弟兄的，<br>就是殺人的
+        <cite>— 約翰壹書 三章十五節</cite>
+      </div>
+
+      <p>第六誡最終要保護的，是那個「照著神形像被造」的東西——在別人身上，也在你身上。</p>
+
+      <p>因為恨一個人，會同時損壞兩個人的形像。</p>
+
+      <p>願你今天，能把心裡那個名字，帶到那位會處理的面前。</p>
+
+      <p>然後，把那筆帳放下。不是因為它不重要，是因為它太重要了，重要到值得交給一位處理得對的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第六誡 · 保重生命 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>復活與我們的關係 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>復活，<span>與你有關</span></h1>
+  <p class="subtitle">從靈命的開始、發展，到登峰造極</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「那是兩千年前的事」</h2>
+      <p class="card-hook">而這句話，正是我信仰無力的原因</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一段時間，我對復活的理解，停在一個「已經證實的歷史事件」上。</p>
+
+      <p>它是真的，我相信它。而每年復活節，我會被提醒一次。</p>
+
+      <div class="highlight">
+        <strong>可是它跟我這個星期一的早上，有什麼關係？</strong>
+        我還是會為同樣的事焦慮。<br>那個改不掉的習慣，還是在。<br>那個讓我一想起就火大的人，還是讓我火大。<br><br>而「祂復活了」這件事，在那些時刻並沒有進來幫我。<br><br>所以我的信仰是分裂的：<strong>教義上我信復活，生活上我靠自己。</strong>
+      </div>
+
+      <p>而讓我開始改變的，是一節我讀過很多次、卻從來沒有真的看見的經文。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">並知道他向我們這信的人所顯的能力是何等浩大，就是照他在基督身上所運行的大能大力，使他從死裡復活
+        </p>
+        <p class="scripture-ref">以弗所書 一章十九至二十節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚡</span>
+        我當時整個愣住了。<br><br>保羅在為以弗所教會禱告，求神讓他們知道<strong>「向我們這信的人所顯的能力」</strong>有多大。<br><br>而他形容那個能力的方式是：<strong>「就是照他在基督身上所運行的大能大力，使他從死裡復活。」</strong><br><br>——同一份能力。<br><br>那份把一個人從墳墓裡帶出來的能力，保羅說：<strong>它現在向著你我運行。</strong>
+      </div>
+
+      <p>而那節經文之後，我對復活的理解就變了。</p>
+
+      <p>它不是一件「已經結束的事」，它是一件<strong>正在對我發生的事</strong>。</p>
+
+      <p>接下來這幾篇，我想陪你看聖經列的五個層面。而它們涵蓋了一個人靈命的全部——<strong>從開始，到發展，到登峰造極。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅一生的目標，只有一句話</h2>
+      <p class="card-hook">而那句話裡，有一個常被讀漏的詞</p>
+    </div>
+    <div class="card-body">
+
+      <p>腓立比書第三章，保羅在講完自己所有的資歷之後——法利賽人、希伯來人所生的希伯來人、就律法上的義說是無可指摘的——說了一句話：</p>
+
+      <p>「只是我先前以為與我有益的，我現在因基督都當作有損的……<strong>我也將萬事當作有損的</strong>。」</p>
+
+      <p>然後他說出了他一生的目標：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">使我認識基督，曉得他復活的大能，並且曉得和他一同受苦，效法他的死</p>
+        <p class="scripture-ref">腓立比書 三章十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「曉得他復活的大能」</strong>
+        注意保羅要的<strong>不是「知道復活這件事」</strong>——那他早就知道了。<br><br>他要的是「<strong>曉得他復活的大能</strong>」——那個「曉得」在原文裡帶有<strong>經歷性的認識</strong>，不是資訊性的知道。<br><br>就像「知道游泳的原理」和「會游泳」，是兩件事。<br><br>保羅寫這封信的時候在監獄裡，而他已經信主二十幾年了。<strong>而他說他還在追求這件事。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎯</span>
+        而他接著說：「這不是說我已經得著了，我乃是竭力追求。」<br><br>——一個寫了大半本新約的人，說自己還在追求。<br><br>這句話對我是一種釋放。<br><br>因為它意味著：<strong>「還沒完全經歷到」，不是失格，是正常。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅在別處，把這份能力的運作方式講得更具體：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們四面受敵，卻不被困住；心裡作難，卻不至失望；遭逼迫，卻不被丟棄；打倒了，卻不至死亡</p>
+        <p class="scripture-ref">哥林多後書 四章八至九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意這四句話的結構</strong>
+        每一句都是「<strong>……卻不……</strong>」。<br><br>受敵，<strong>卻不</strong>被困住。<br>作難，<strong>卻不</strong>至失望。<br>逼迫，<strong>卻不</strong>被丟棄。<br>打倒，<strong>卻不</strong>至死亡。<br><br>——前半句是實況，後半句是那份能力。<br><br>而保羅沒有說「我們沒有受敵、沒有作難」。<strong>困難是真的，全部都在。</strong><br><br>那份能力的運作方式，不是把困難拿走，是<strong>讓你在困難裡不垮掉</strong>。<br><br>而他接著說明了原因：「<strong>身上常帶著耶穌的死，使耶穌的生也顯明在我們身上。</strong>」
+      </div>
+
+      <p>那麼，復活與我們的關係，具體有哪五個層面？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五個層面</h2>
+      <p class="card-hook">開始、脫去、活著、能力、盼望</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌復活，與基督徒靈命的<strong>開始、發展、以及登峰造極</strong>，都有重要的關係。而聖經列了五項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 奇妙的重生</span>
+          重生、得救、被稱為義、地位上的成聖。<br>「他曾照自己的大憐憫，<strong>藉耶穌基督從死裡復活</strong>，重生了我們，叫我們有活潑的盼望。」（彼前一 3～4）<br>「你若口裡認耶穌為主，心裡信神叫他從死裡復活，就必得救。」（羅十 9）<br>「耶穌被交給人，是為我們的過犯；復活，是為叫我們稱義。」（羅四 25）<br>「你們奉主耶穌基督的名，並藉著我們神的靈，已經洗淨，成聖，稱義了。」（林前六 11）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 超然的割禮</span>
+          不是人手所行的割禮，乃是<strong>脫去肉體情慾</strong>的割禮。<br>「你們在他裡面也受了不是人手所行的割禮……你們既受洗與他一同埋葬，也就在此與他一同復活。」（西二 11～12）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 「基督」的生活</span>
+          <strong>基督在裡面活著</strong>——比律法之下的生活，遠勝千倍。<br>「現在活著的不再是我，乃是基督在我裡面活著。」（加二 19～20）<br>「使基督因你們的信，住在你們心裡。」（弗三 17）<br>「這奧祕就是基督在你們心裡成了有榮耀的盼望。」（西一 27）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 莫大的能力</span>
+          勝過各種困難、失望、痛苦、危險的力量。<br>「我們四面受敵，卻不被困住……身上常帶著耶穌的死，使耶穌的生也顯明在我們身上。」（林後四 8～10）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 榮耀的指望</span>
+          更美的復活，或奇妙的變化。<br>「我們不是都要睡覺，乃是都要改變……這必朽壞的總要變成不朽壞的。」（林前十五 50～54）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這五項，正好對應了靈命的三個階段：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>階段</th>
+            <th>對應</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>開始</strong></td>
+            <td>① 重生</td>
+            <td>從死裡被叫活過來——這是入口。</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>發展</strong></td>
+            <td>② 割禮<br>③ 基督的生活<br>④ 莫大的能力</td>
+            <td>脫去、內住、勝過——這是日常。</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>登峰造極</strong></td>
+            <td>⑤ 榮耀的指望</td>
+            <td>身體的改變——這是終點。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而中間那三項，正是我以前漏掉的部分</strong>
+        我的信仰以前是「頭尾兩端」的：<strong>信主的那一刻</strong>，和<strong>將來的盼望</strong>。<br><br>而中間那一大段——就是我實際在過的這幾十年——是空的。我以為那段要靠自己。<br><br>而聖經說：復活的關係，涵蓋<strong>整段</strong>。<br><br>——尤其是第三項：<strong>「基督在裡面活著。」</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第一項「重生」，有一件事值得注意：<strong>它與復活的關聯，是直接的。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        彼得前書那節的措辭很精確：「他曾照自己的大憐憫，<strong>藉耶穌基督從死裡復活</strong>，重生了我們。」<br><br>——「藉……從死裡復活，重生了我們」。<br><br>那不是兩件平行的事，是<strong>一件事帶出另一件</strong>。<br><br>而以弗所書描述得更直接：「當我們死在過犯中的時候，便叫我們<strong>與基督一同活過來</strong>。」<br><br>注意那個診斷：<strong>「死在過犯中」</strong>——不是虛弱，是死。<br><br>而死人需要的不是鼓勵，是復活。<br><br>所以「重生」在聖經裡，用的是<strong>同一份能力</strong>：那份把祂從墳墓裡帶出來的能力。
+      </div>
+
+      <p>下一篇，我們看第二項——那個「超然的割禮」。因為那個比喻，比我原本以為的深。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「不是人手所行的割禮」</h2>
+      <p class="card-hook">而這個比喻，舊約自己就用過</p>
+    </div>
+    <div class="card-body">
+
+      <p>歌羅西書那節經文，把兩件事接在一起了：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們在他裡面也受了不是人手所行的割禮，乃是基督使你們脫去肉體情慾的割禮。你們既受洗與他一同埋葬，也就在此與他一同復活
+        </p>
+        <p class="scripture-ref">歌羅西書 二章十一至十二節</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">割禮<br>Peritomē</div>
+        <div class="term-desc">舊約中，割禮是<strong>立約的記號</strong>——神與亞伯拉罕立約時所設立的。它的動作是<strong>切除、去掉</strong>一部分。<br><br>而它的意義，不只是外在的記號。<strong>舊約自己就已經把它靈意化了：</strong><br><br>「所以你們要將心裡的污穢除掉，不可再<strong>硬著頸項</strong>。」（申十 16，原文作「將你們心的包皮割去」）<br>「耶和華你神必將你心裡……的<strong>污穢除掉</strong>，好叫你盡心盡性愛他。」（申卅 6）<br>「你們當自行割禮，歸耶和華，<strong>將心裡的污穢除掉</strong>。」（耶四 4）</div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        所以「心的割禮」不是新約才發明的概念。<strong>舊約先知一再呼籲的，就是這件事。</strong><br><br>而保羅說的是：<strong>那件舊約一直在盼望、卻沒有辦法自己完成的事，如今由基督完成了。</strong><br><br>「不是<strong>人手</strong>所行的」——這幾個字很關鍵。<br><br>因為肉身的割禮是人手所行的；而「心的割禮」，人做不到。<br><br>你沒辦法自己動手把心裡的那一層切掉。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔪</span>
+        而「割」這個動作的意象，我覺得很有分量。<br><br>它不是「洗掉」，不是「蓋住」，不是「改善」。<br><br>是<strong>切除</strong>——把一部分永久地拿走。<br><br>而歌羅西書說那個被切除的是「<strong>肉體情慾</strong>」——原文更接近「屬肉體的身軀」，也就是那個被罪主導的舊我。<br><br>所以這一項與「與祂一同埋葬」是同一件事的兩種說法：<strong>那個舊的，被了結了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第三項——<strong>「基督」的生活</strong>。而加拉太書那節，是整本新約最驚人的自我描述之一：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我已經與基督同釘十字架，現在活著的不再是我，乃是基督在我裡面活著；並且我如今在肉身活著，是因信神的兒子而活
+        </p>
+        <p class="scripture-ref">加拉太書 二章二十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「現在活著的不再是我」——這句話常被誤解</strong>
+        它<strong>不是</strong>說「我的人格消失了」、「我變成一個沒有自我的容器」。<br><br>因為保羅緊接著說：「<strong>我如今在肉身活著。</strong>」——那個「我」還在，還在肉身裡活著。<br><br>他要說的是<strong>動力來源的轉換</strong>：<br><br>從前，那個活著的動力是「我」——我的意志、我的努力、我的成績。<br>現在，那個動力是「基督在我裡面」。<br><br>——同一個人，不同的引擎。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎻</span>
+        我想到一個彈琴的比喻。<br><br>一個初學者彈琴，是「我在彈」——每一個音都要想、要數拍子、要看譜，非常費力。<br><br>而一個真正把音樂內化了的人，會說一種奇怪的話：<strong>「不是我在彈，是那首曲子在流出來。」</strong><br><br>他還是那個人，手還是他的手。<strong>但那個吃力的「我」退到了後面。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而歌羅西書用了一個更深的說法：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這奧祕就是基督在你們心裡成了有榮耀的盼望</p>
+        <p class="scripture-ref">歌羅西書 一章二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而保羅在這節前面說，這是「歷世歷代所隱藏的奧祕，但如今向他的聖徒顯明了」。<br><br>而那個奧祕，用一句話講完：<strong>「基督在你們心裡。」</strong><br><br>——舊約時代，神的同在在會幕、在聖殿、在至聖所。人要去<strong>那裡</strong>找祂。<br><br>而新約的奧祕是：<strong>祂搬進來了。</strong><br><br>「豈不知你們是神的殿，神的靈住在你們裡頭嗎？」<br><br>這就是為什麼教材說「基督在裡面活著，<strong>比律法之下的生活遠勝千倍</strong>」。<br><br>律法在外面，寫在石版上；<strong>而基督在裡面。</strong>
+      </div>
+
+      <p>下一篇，我們談第四項——那份「莫大的能力」，在實際上怎麼運作。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">那份能力，長得跟我想的不一樣</h2>
+      <p class="card-hook">它不是把困難拿走，是在困難裡不垮</p>
+    </div>
+    <div class="card-body">
+
+      <p>「復活的大能」——這五個字，很容易讓人期待某種戲劇性的東西。</p>
+
+      <p>而保羅描述它的方式，出乎意料地樸實。</p>
+
+      <div class="highlight">
+        <strong>他用的是「瓦器」這個意象</strong>
+        「我們有這寶貝放在<strong>瓦器</strong>裡，要顯明這莫大的能力是出於神，不是出於我們。」（林後四 7）<br><br>瓦器是什麼？<strong>當時最便宜、最普通、最容易破的容器。</strong>不值錢，摔了就換一個。<br><br>而保羅說：那份能力，是放在這種東西裡的。<br><br>——而且他說明了原因：<strong>「要顯明這莫大的能力是出於神，不是出於我們。」</strong><br><br>如果容器很堅固，人會以為是容器的功勞。<strong>正因為容器很脆，那份能力才顯得出來。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏺</span>
+        而這解釋了一件我以前想不通的事：<strong>為什麼神不讓我變得更強？</strong><br><br>如果祂讓我不再軟弱、不再需要掙扎——那不是更好嗎？<br><br>而保羅自己求過三次，主的回答是：<br><br>「<strong>我的恩典夠你用的，因為我的能力是在人的軟弱上顯得完全。</strong>」<br><br>而保羅的結論是：「所以，我更喜歡誇自己的軟弱，好叫基督的能力覆庇我。」<br><br>——不是「我變強了」，是「<strong>我變弱了，而祂的能力覆庇我</strong>」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而哥林多後書四章那一整段，把這份能力的運作方式，描述得非常完整：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">「四面受敵，卻不被困住」</span>
+          原文的意象是：<strong>被逼到絕境，卻總還有一條路。</strong>「總要給你們開一條出路。」
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">「心裡作難，卻不至失望」</span>
+          <strong>困惑是允許的。</strong>保羅承認自己「作難」——那個字有「不知所措」的意思。<br>但不至於「失望」——那是徹底放棄的意思。<strong>可以困惑，不至絕望。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">「遭逼迫，卻不被丟棄」</span>
+          外面的攻擊是真的，而那不代表被神放棄了。<br><strong>「遭逼迫」和「被丟棄」，是兩件常被人混在一起的事。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">「打倒了，卻不至死亡」</span>
+          注意——<strong>「打倒了」。</strong>保羅承認自己被打倒過。<br>經文沒有說「站得穩穩的」。它說的是：倒了，但沒有結束。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">「身上常帶著耶穌的死，使耶穌的生也顯明在我們身上」</span>
+          而這是關鍵的那一句：<strong>兩者是連在一起的。</strong><br>那個「死」的部分——軟弱、受苦、被打倒——正是那個「生」得以顯明的地方。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而最後那一句，改變了我對「軟弱」的理解</strong>
+        我以前以為，軟弱是<strong>那份能力還沒到</strong>的證據。<br><br>而保羅說：<strong>軟弱正是那份能力顯明的方式。</strong><br><br>「使耶穌的生，也顯明在我們這必死的身上。」<br><br>——「<strong>必死的身上</strong>」。<br><br>復活的生命，不是顯明在一個不會死的身體上，是顯明在一個<strong>會死、會累、會壞</strong>的身體上。<br><br>那才是神蹟。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而在同一章的結尾，保羅說了一句很實際的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">所以，我們不喪膽。外體雖然毀壞，內心卻一天新似一天</p>
+        <p class="scripture-ref">哥林多後書 四章十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📉📈</span>
+        兩條相反方向的線。<br><br><strong>外體毀壞</strong>——這是往下的。年紀、體力、健康，這條線不會逆轉。<br><strong>內心一天新似一天</strong>——這是往上的。<br><br>而保羅把它們放在同一句話裡，是要說：<strong>那兩條線可以同時發生。</strong><br><br>一個身體正在衰老的人，內裡可以正在更新。<br><br>——而這，可能是「復活的大能」在日常裡最真實的樣子。<br><br>不是不會老，是<strong>在老去的過程中，裡面有東西在長。</strong>
+      </div>
+
+      <p>而保羅接著說明了他怎麼撐住的：「原來我們不是顧念所見的，乃是顧念所不見的；因為所見的是暫時的，<strong>所不見的是永遠的</strong>。」</p>
+
+      <p>——而那個「所不見的」，正是第五項：<strong>榮耀的指望。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂復活的時候，帶著傷痕</h2>
+      <p class="card-hook">寫給那個帶著傷、覺得自己撐不到終點的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這五項，收在一個常被讀過去的細節上。</p>
+
+      <div class="highlight">
+        <strong>復活後的主，身上還有釘痕</strong>
+        祂對多馬說：「伸過你的指頭來，<strong>摸我的手</strong>；伸出你的手來，探入我的<strong>肋旁</strong>。」<br><br>——那意味著，那些傷還在。<br><br>而這件事我想了很久。<strong>如果那是一個榮耀的、完全的復活身體，為什麼還留著傷？</strong><br><br>祂大可以完全復原。<br><br>而祂沒有。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        我後來想到一個可能：<strong>因為那些傷，是憑據。</strong><br><br>它們證明了那位復活的，就是那位被釘的。<br><br>而它們也告訴我們一件事：<strong>復活不是「假裝那些事沒發生」。</strong><br><br>那些傷沒有被抹掉。它們被<strong>帶進了榮耀裡</strong>。<br><br>而啟示錄裡，約翰在天上看見的那位，是「<strong>像是被殺過的羔羊</strong>」——在最榮耀的場景裡，那個記號還在。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻帶著傷——那些不會消失的、已經留下痕跡的、你希望從來沒發生過的——</p>
+
+      <p>我想說：<strong>聖經沒有承諾那些事會被抹掉。</strong></p>
+
+      <p>它承諾的是：<strong>它們會被帶進榮耀裡。</strong></p>
+
+      <div class="highlight">
+        <strong>而五項當中的最後一項，正是這個</strong>
+        「更美的復活，或奇妙的變化。」<br><br>「這必朽壞的<strong>總要變成不朽壞的</strong>，這必死的<strong>總要變成不死的</strong>。」（林前十五 53）<br><br>——那個「變成」不是「換掉」。<br><br>就像上一次我們談過的：<strong>新天新地的「新」，是 kainos——這一個被更新，不是換另一個。</strong><br><br>而你這個身體、這一生、這些傷——不會被丟掉。<strong>它們會被更新。</strong>
+      </div>
+
+      <div class="big-quote">
+        現在活著的不再是我，<br>乃是基督在我裡面活著
+        <cite>— 加拉太書 二章二十節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那句話：「那是兩千年前的事。」</p>
+
+      <p>我現在會這樣回答自己：</p>
+
+      <p><strong>是的，那件事發生在兩千年前。而那份能力，是現在式的。</strong></p>
+
+      <p>保羅為以弗所教會禱告的，正是這件事——他不是求神多給他們能力，他是求神<strong>讓他們知道那份能力有多大</strong>。</p>
+
+      <p>「並知道他向我們這信的人所顯的能力是何等浩大，就是照他在基督身上所運行的大能大力，使他從死裡復活。」</p>
+
+      <div class="highlight">
+        <strong>所以這五項，最後我想這樣收：</strong>
+        <strong>重生</strong>——你不是被修補的，你是被叫活過來的。<br><strong>割禮</strong>——那個舊的，已經被切除了，不是被藏起來。<br><strong>基督的生活</strong>——你不是自己在撐，有一位住在裡面。<br><strong>莫大的能力</strong>——它不會拿走困難，它讓你在困難裡不垮。<br><strong>榮耀的指望</strong>——而這一切，有一個確定的終點。<br><br>而這五項，用的都是同一份能力。<br><br><strong>就是那份把祂從墳墓裡帶出來的。</strong>
+      </div>
+
+      <p>願你在這個星期一的早上，也想起這件事。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  復活與我們 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖靈對教會的工作 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>教會的<span>那一位</span></h1>
+  <p class="subtitle">管理、分授恩賜、領導工作</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一次讓我印象很深的討論</h2>
+      <p class="card-hook">大家都很認真，而有一件事沒有被提</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>曾經參加過一次事工的討論會。討論得很認真——資源、人力、時程、可行性，一項一項評估。</p>
+
+      <p>而散會之後，我心裡有一個說不上來的空。</p>
+
+      <div class="highlight">
+        <strong>後來我想通了那個空是什麼</strong>
+        整場討論裡，我們談了<strong>我們要怎麼做</strong>。<br><br>而幾乎沒有人問：<strong>祂要我們怎麼做。</strong><br><br>——不是因為大家不敬虔。恰恰相反，大家都很想把事情做好。<br><br>只是那個「誰在領導」的問題，被默認掉了。
+      </div>
+
+      <p>而使徒行傳裡的模式，跟這個很不一樣。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        安提阿教會差派宣教士那一段，經文是這樣寫的：<br><br>「他們事奉主、禁食的時候，<strong>聖靈說</strong>：『要為我分派巴拿巴和掃羅，去做我召他們所做的工。』」<br><br>——注意主詞：<strong>聖靈說。</strong><br><br>不是「大家討論之後決定」。<br><br>而下一節說：「他們既被<strong>聖靈差遣</strong>，就下到西流基。」<br><br>——是聖靈差遣的。人只是<strong>照著做</strong>。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看聖靈在教會中的三項工作。</p>
+
+      <p>而那三項，全部是<strong>主導性</strong>的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅被攔了兩次</h2>
+      <p class="card-hook">而那兩次，都是往「好事」的方向</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳十六章，記了一段很短、卻很值得停留的路程。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">聖靈既然禁止他們在亞細亞講道，他們就經過弗呂家、加拉太一帶地方。到了每西亞的邊界，他們想要往庇推尼去，耶穌的靈卻不許
+        </p>
+        <p class="scripture-ref">使徒行傳 十六章六至七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>他們想做的，是「講道」</strong>
+        這一點很值得注意。<br><br>他們不是想去度假，不是想去做什麼可疑的事。<br><br><strong>他們想去傳福音。</strong>——那是最正當不過的計畫。<br><br>而聖靈<strong>禁止</strong>了。而且是兩次。<br><br>——所以「被攔阻」不一定表示那件事是壞的。<br><br>有時候只是表示：<strong>不是那裡，不是現在。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚧</span>
+        而更值得注意的是：<strong>經文沒有記他們問為什麼。</strong><br><br>沒有辯論，沒有堅持，沒有「可是我們都準備好了」。<br><br>被攔了，就換方向。<br><br>而那個順服的結果是什麼？<br><br>下一節：「在夜間有異象現與保羅。有一個<strong>馬其頓人</strong>站著求他說：『請你過到馬其頓來幫助我們。』」<br><br>——福音進入了歐洲。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這一段還有一個細節：<strong>那個「我們」。</strong></p>
+
+      <div class="highlight">
+        <strong>敘述的人稱，在這裡改變了</strong>
+        使徒行傳前面都是「他們」——路加在轉述。<br><br>而從十六章十節開始：「保羅既看見這異象，<strong>我們</strong>隨即想要往馬其頓去。」<br><br>——「我們」。<br><br>路加自己加入了。<br><br>所以那個被攔阻的轉向，不只帶出了馬其頓的呼聲，<strong>也帶出了這位記錄者。</strong>
+      </div>
+
+      <p>那麼，聖靈在教會中的工作有哪些？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三項工作</h2>
+      <p class="card-hook">管理、分授、領導</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖靈在教會中的工作，有三項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 管理教會</span>
+          「<strong>聖靈立你們作全群的監督</strong>，你們就當為自己謹慎，也為全群謹慎，牧養神的教會，就是他用自己血所買來的。」（徒廿 28）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 分授恩賜</span>
+          「恩賜原有分別，聖靈卻是一位……這一切都是這位聖靈所運行、<strong>隨己意分給各人</strong>的。」（林前十二 4～8、11）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 領導工作</span>
+          「<strong>聖靈說</strong>：要為我分派巴拿巴和掃羅。」「他們既被<strong>聖靈差遣</strong>。」（徒十三 2～4）<br>「<strong>聖靈既然禁止</strong>他們在亞細亞講道……<strong>耶穌的靈卻不許</strong>。」（徒十六 6）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第一項——<strong>管理教會</strong>——那節經文的措辭很重。</p>
+
+      <div class="highlight">
+        <strong>「聖靈立你們作全群的監督」</strong>
+        保羅對以弗所的長老說這句話時，用的是「<strong>立</strong>」。<br><br>——不是「你們被選上了」，不是「大家推舉了你們」。<br><br>是<strong>聖靈設立的</strong>。<br><br>而那節接下來的話，把責任講得極重：<br><br>「牧養神的教會，就是他用<strong>自己血所買來的</strong>。」<br><br>——那群羊的價碼，是血。<br><br>所以牧養不是一份職務，是<strong>受託管理一件用血買來的東西。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐑</span>
+        而保羅在同一段裡，用了一個很沉的比喻：<br><br>「我知道，我去之後必有兇暴的<strong>豺狼</strong>進入你們中間，不愛惜羊群。也必有人起來，說悖謬的話，要引誘門徒跟從他們。」<br><br>——所以那個「監督」的職務，包含<strong>看守</strong>。<br><br>而經文說：「<strong>所以你們應當警醒</strong>。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項——<strong>分授恩賜</strong>——哥林多前書十二章那一段，有一個反覆出現的重點。</p>
+
+      <div class="highlight">
+        <strong>「同一位聖靈」，說了很多次</strong>
+        「恩賜原有分別，<strong>聖靈卻是一位</strong>。」<br>「這人蒙聖靈賜他智慧的言語，那人也蒙<strong>這位聖靈</strong>賜他知識的言語。」<br>「又有一人蒙<strong>這位聖靈</strong>賜他信心……」<br>「這一切都是<strong>這位聖靈</strong>所運行、隨己意分給各人的。」<br><br>——保羅在幾節裡重複了好幾次。<br><br>而他要處理的問題是什麼？<strong>哥林多教會正在因恩賜而分裂、比較、彼此輕看。</strong><br><br>所以他一再強調：<strong>恩賜不同，源頭是同一位。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎼</span>
+        而保羅接著用了身體的比喻：眼、耳、手、腳。<br><br>而他問了一句很有畫面的話：「<strong>若全身是眼，從哪裡聽聲呢？</strong>」<br><br>——如果每個人的恩賜都一樣，那個身體是殘缺的。<br><br>所以差異不是問題。<strong>差異是設計。</strong><br><br>而「隨己意分給各人」——那個分配權，不在人手上。
+      </div>
+
+      <p>下一篇，我們談那個最實際的問題：教會怎麼「跟隨」祂的領導？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">安提阿那一天，他們在做什麼？</h2>
+      <p class="card-hook">聖靈說話之前，經文記了兩件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳十三章那一段，常被引用來說明「聖靈差派」。</p>
+
+      <p>而那節經文的<strong>前半句</strong>，同樣重要：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他們事奉主、禁食的時候，聖靈說：「要為我分派巴拿巴和掃羅，去做我召他們所做的工。」
+        </p>
+        <p class="scripture-ref">使徒行傳 十三章二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「他們事奉主、禁食的時候」</strong>
+        兩件事：<strong>事奉主</strong>，和<strong>禁食</strong>。<br><br>而「事奉主」那個字（leitourgeō），在七十士譯本中常用於<strong>祭司在聖所的事奉</strong>——也就是敬拜。<br><br>所以那個場景是：<strong>一群人在敬拜、在禁食禱告。</strong><br><br>而就在那個時候，聖靈說話了。<br><br>——不是在會議桌上。是在敬拜裡。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        我覺得這個順序很值得注意。<br><br>我們常常的順序是：<strong>先討論出方案，然後求神祝福。</strong><br><br>而那一段的順序是：<strong>先敬拜、先禁食，然後聽見。</strong><br><br>——而「禁食」這個動作本身，就是一種宣告：<strong>我把自己的需要放下，先聽祢的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而聖靈說話之後，教會做了什麼？經文記得很簡短：</p>
+
+      <div class="highlight">
+        <strong>「於是禁食禱告，按手在他們頭上，就打發他們去了。」</strong>
+        ——沒有評估，沒有討論可行性，沒有問「那教會少了兩個人怎麼辦」。<br><br>而值得注意的是：<strong>被差出去的那兩位，是那間教會最重要的兩個人。</strong><br><br>經文前一節列了安提阿教會的先知和教師，共五位。而巴拿巴排第一，掃羅排最後。<br><br>——差出去的，包含了排第一的那一位。<br><br>而那間教會沒有留住他。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而使徒行傳十五章，記載了另一種模式——當事情沒有那麼明確時，教會怎麼做決定。</p>
+
+      <div class="highlight">
+        <strong>耶路撒冷會議的那句結論</strong>
+        當時的爭議是：外邦信徒需不需要受割禮、守摩西的律法。<br><br>而那次的過程是：<strong>辯論</strong>（「辯論已經多了」）、<strong>作見證</strong>（彼得、巴拿巴、保羅陳述）、<strong>引用聖經</strong>（雅各引先知的話）、然後作出決定。<br><br>而他們寫給外邦教會的信裡，那句話很有名：<br><br>「<strong>因為聖靈和我們定意</strong>不將別的重擔放在你們身上。」（徒十五 28）<br><br>——「聖靈<strong>和</strong>我們」。<br><br>那不是「我們自己決定」，也不是「完全沒有人的參與」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        所以聖經其實給了兩種模式：<br><br>一種是<strong>直接的指示</strong>——「聖靈說」、「聖靈禁止」。<br>一種是<strong>在敬拜、查考聖經、彼此商議中形成的共識</strong>——「聖靈和我們定意」。<br><br>而兩種的共同點是：<strong>在敬拜與神的話裡進行。</strong><br><br>——那正是安提阿那一天的場景，也是耶路撒冷那一次的方法。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        所以「聖靈領導工作」在實際上長什麼樣子？<br><br><strong>①</strong> 起點是<strong>敬拜與禱告</strong>，不是策略會議。<br><strong>②</strong> 判準是<strong>神的話</strong>——耶路撒冷會議是引用先知書來確認的。<br><strong>③</strong> 願意<strong>被攔阻</strong>——包括在那些看起來很正當的計畫上。<br><strong>④</strong> 願意<strong>放手</strong>——把最好的差出去。
+      </div>
+
+      <p>下一篇，我們談一個很實際的問題：那怎麼分辨是祂的引導，還是我們自己的想法？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「祂管理」與「我們負責」，不衝突</h2>
+      <p class="card-hook">而把這兩者對立起來，兩邊都會出問題</p>
+    </div>
+    <div class="card-body">
+
+      <p>「聖靈管理教會」這句話，很容易被推向兩個極端。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">極端一：什麼都不規劃</span>
+          「反正聖靈會帶領，我們不用計畫。」<br><br>——而這與聖經的記載不合。<br>保羅有明確的行程規劃（「我路過馬其頓的時候要見你們」），有同工的安排，有奉獻的收集辦法（「每逢七日的第一日，各人要照自己的進項抽出來留著」）。<br><strong>他規劃得很細。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">極端二：完全靠規劃</span>
+          「我們把事情做好就是了。」<br><br>——而這會變成一個沒有那一位的組織。<br>而使徒行傳的每一個轉折點，都是那一位在推動的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而聖經的模式是兩者並存</span>
+          保羅有計畫——而他<strong>隨時準備被改。</strong><br><br>他要去亞細亞，被攔了；他要去庇推尼，不許。<br><br><strong>而他還是有計畫。他只是不把計畫當成最終的。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而雅各書那句話，正好描述這個分寸</strong>
+        「你們有話說：『今日明日我們要往某城裡去，在那裡住一年，做買賣得利。』……<strong>你們只當說：『主若願意，我們就可以活著，也可以做這事，或做那事。』</strong>」<br><br>——注意，雅各<strong>沒有禁止計畫</strong>。<br><br>他禁止的是<strong>把計畫當成必然</strong>。<br><br>而那句「主若願意」，不是一句口頭禪，是一個心態：<strong>我有計畫，而祂可以改。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而關於「分授恩賜」，我想指出一件很實際的事。</p>
+
+      <div class="highlight">
+        <strong>那份分配權不在我們手上——這件事有兩面</strong>
+        <strong>一面是限制</strong>：你不能決定自己要有哪一種恩賜。<br>「隨己意分給各人。」<br><br><strong>另一面是保護</strong>：<strong>你也不需要為自己沒有的恩賜自責。</strong><br><br>保羅在那一段裡連問了幾個反問：「豈都是使徒嗎？豈都是先知嗎？豈都是教師嗎？豈都是行異能的嗎？」<br><br>——那些問句預設的答案，全部是<strong>「不是」</strong>。<br><br>而那正是設計。<br><br>「若全身是眼，從哪裡聽聲呢？」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫱</span>
+        而保羅在那段裡說了一句話，是給那些覺得自己不重要的人的：<br><br>「身上肢體，我們看為<strong>不體面的</strong>，越發給它加上體面……<strong>身上肢體人以為軟弱的，更是不可少的。</strong>」<br><br>——「<strong>更是不可少的</strong>」。<br><br>不是「也有價值」，是「更不可少」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而最後我想回到那個「被攔阻」的經驗。</p>
+
+      <div class="highlight">
+        <strong>因為那是最不容易接受的一種引導</strong>
+        當一件事順利時，我們容易說「這是神的帶領」。<br><br>而當一件正當的、預備了很久的、看起來很好的事被攔下來時——<strong>那也可能是帶領。</strong><br><br>保羅那兩次被攔，經文沒有給理由。<br><br>而如果他們當時堅持要去亞細亞——<strong>那個馬其頓的異象，就不會來了。</strong><br><br>所以有些「不行」，是為了讓另一扇門有機會出現。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">教會不是我們的，是祂用血買來的</h2>
+      <p class="card-hook">寫給那個為教會的事操心的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在使徒行傳二十章那句話上。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">聖靈立你們作全群的監督，你們就當為自己謹慎，也為全群謹慎，牧養神的教會，就是他用自己血所買來的
+        </p>
+        <p class="scripture-ref">使徒行傳 二十章二十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話裡有兩個提醒，方向相反</strong>
+        <strong>一個是責任</strong>：「你們就當為自己謹慎，也為全群謹慎。」<br>——那是真的責任，不是掛名。<br><br><strong>一個是釋放</strong>：「<strong>神的教會，就是他用自己血所買來的。</strong>」<br>——那是祂的，不是你的。<br><br>而這兩件事必須一起拿著。<br><br>只拿前面，會操心到垮掉。<br>只拿後面，會變成不負責任。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐑</span>
+        我想到「牧人」與「羊主」的差別。<br><br>牧人要負責——羊丟了他要去找，狼來了他要擋。<br><br>而那些羊，<strong>不是他的。</strong><br><br>所以他不必為羊的終極安危承擔那份重量。<strong>那是主人的事。</strong><br><br>而主自己說過：「我是好牧人；好牧人為羊捨命。」<br><br>——祂已經為那群羊捨過命了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻正為教會的事操心——為某個沒有解決的問題、為某個離開的人、為某件推不動的事——</p>
+
+      <p>我想把那三項工作，重新放回你手上：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">祂管理</span>
+          那不是你在扛。<strong>設立你的是祂，而祂還在管理。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">祂分授恩賜</span>
+          你缺的那份恩賜，不是你的失職。<strong>那份分配權在祂手上，而祂知道全身需要什麼。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">祂領導工作</span>
+          那些被攔阻的、走不通的、換了方向的——<strong>可能正是祂在帶。</strong><br>而保羅被攔了兩次之後，福音進了歐洲。
+        </div>
+      </div>
+
+      <div class="big-quote">
+        因為聖靈和我們定意
+        <cite>— 使徒行傳 十五章二十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句「聖靈和我們」，我覺得是整個題目最溫暖的一句</strong>
+        因為它沒有把人排除掉。<br><br>不是「聖靈決定，你們照做」。<br>也不是「你們決定，聖靈背書」。<br><br>是<strong>「聖靈和我們」</strong>。<br><br>——祂願意帶著我們一起做決定。<br><br>而那是一份極大的尊重。
+      </div>
+
+      <p>回到我開頭那場討論會。</p>
+
+      <p>我現在會試著在會議開始前，多留一段時間——不是禱告求祝福，是<strong>安靜一下，先問問看。</strong></p>
+
+      <p>因為那一天在安提阿，他們也是這樣做的。</p>
+
+      <p>而聖靈說話的時候，他們正在敬拜。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖靈對教會的工作 · Threads Series
+</footer>
+
+</body>
+</html>

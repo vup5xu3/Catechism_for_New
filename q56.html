@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>十誡明文與大意 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>十<span>句話</span></h1>
+  <p class="subtitle">兩處記載、兩塊石版、一個沒有人注意的前言</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">冰箱上那張貼了很久的家規</h2>
+      <p class="card-hook">同樣一張紙，在不同的家裡，意思完全不一樣</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我去過兩個朋友家，兩家的冰箱上都貼著一張家規。內容差不多——幾點回家、輪流洗碗、不可以在飯桌上滑手機。</p>
+
+      <p>但那兩張紙給我的感覺，天差地遠。</p>
+
+      <p>第一家的孩子，看那張紙的眼神是防備的。那張紙對他而言是一份監控清單，是「我隨時可能犯規」的提醒。他背得很熟，因為他必須知道紅線在哪裡。</p>
+
+      <p>第二家的孩子，根本不太看那張紙。倒是他媽媽跟我說：「那是我們一起討論出來的，貼在那邊是因為好玩。」對他們家來說，那張紙不是威脅，比較像是一種「我們是這樣的一家人」的宣告。</p>
+
+      <div class="highlight">
+        <strong>同樣的條文，兩種完全不同的東西</strong>
+        差別不在條文，在於<strong>這張紙是在什麼關係裡被讀的</strong>。<br><br>如果先有關係，條文就是關係的形狀。<br>如果沒有關係，條文就只是控制。
+      </div>
+
+      <p>我後來發現，我讀十誡的方式，很長一段時間都是第一種。</p>
+
+      <p>我把它當成一份檢查表。「不可殺人」——好，我沒殺人，過關。「不可偷盜」——沒有，過關。「不可貪心」——嗯……這條先跳過。整個過程像在自我稽核，讀完只覺得緊張，沒有一點喜樂。</p>
+
+      <p>直到有一天，我終於認真讀了十誡的<strong>第一句</strong>。</p>
+
+      <p>不是「除了我以外，你不可有別的神」——那是第三句了。我說的是在所有「不可」之前，那句常常被我們當成背景資料匆匆讀過的話。</p>
+
+      <p>那句話，把整份清單的性質完全翻轉了。</p>
+
+      <p>接下來這幾篇，我想陪你把這十句話從頭讀一遍——連同那個被我們跳過的前言。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">在所有「不可」之前的那一句</h2>
+      <p class="card-hook">十誡的第一句話，不是命令，是提醒</p>
+    </div>
+    <div class="card-body">
+
+      <p>出埃及記第二十章，第一節說：「神吩咐這一切的話說。」</p>
+
+      <p>然後，第二節：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我是耶和華你的神，曾將你從埃及地為奴之家領出來</p>
+        <p class="scripture-ref">出埃及記 二十章二節</p>
+      </div>
+
+      <p>這一節裡，<strong>沒有任何一條命令。</strong></p>
+
+      <p>它不是「你要」，也不是「你不可」。它是一句陳述——陳述兩件已經發生的事實：第一，我是耶和華你的神；第二，我已經把你從奴役裡帶出來了。</p>
+
+      <div class="highlight">
+        <strong>順序，決定了一切</strong>
+        請看清楚這個順序：<br><br><strong>先救贖，後誡命。</strong><br><br>神不是說「你們守好這十條，我就把你們救出埃及」。祂是說「我<strong>已經</strong>把你們救出來了，現在，這是你們作為自由人該有的樣子」。<br><br>紅海已經過了。追兵已經沉了。他們站在西奈山下領受這十句話的時候，<strong>身分已經是自由人了</strong>。
+      </div>
+
+      <p>這件事一旦看見，就再也回不去了。因為它意味著：<strong>十誡從來不是得救的條件，十誡是得救之後的生活方式。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛓️</span>
+        想像一個剛被贖出來的奴隸。他在磚窯裡待了四百年，他所知道的一切都是奴隸的規矩：怎麼低頭、怎麼被打不還手、怎麼在恐懼裡度日。<br><br>現在他自由了。可是他不知道自由人怎麼活。<br><br>而十誡，就是那份說明書。它不是新的鎖鏈，它是<strong>「自由人是這樣生活的」</strong>。
+      </div>
+
+      <p>我覺得這也解釋了為什麼十誡的語氣是「不可」。因為對一個剛從奴役裡出來的人來說，最重要的不是有人告訴他該做什麼——而是有人告訴他，<strong>從今以後，沒有人可以再對你做這些事，你也不用再對別人做這些事。</strong></p>
+
+      <p>不可殺人、不可偷盜、不可作假見證、不可貪戀人的房屋——這些在埃及都是家常便飯。奴隸的命不值錢，奴隸的東西隨時被拿走，奴隸沒有休息日。</p>
+
+      <p>而神說：在我的百姓中間，不是這樣。</p>
+
+      <div class="card-divider"></div>
+
+      <p>還有一個細節值得注意：<strong>整段十誡，神都是用「你」而不是「你們」。</strong></p>
+
+      <p>希伯來原文裡，這些命令全部是<strong>單數第二人稱</strong>。神站在一群幾十萬人的會眾面前，說話的方式卻是一對一的。</p>
+
+      <p>「<strong>我是耶和華你的神。</strong>」——你的。</p>
+
+      <p>那麼，這十句話的明文在哪裡？它們的大意是什麼？下一篇，我們把它們完整地排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩處明文，十條精意</h2>
+      <p class="card-hook">而它們正好分成兩半</p>
+    </div>
+    <div class="card-body">
+
+      <p>先回答明文的出處。十誡的明文，聖經中有兩處完整記載：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">出埃及記 二十章一至十七節</span>
+          第一次頒布。場景是西奈山下，百姓親耳聽見雷轟、閃電、角聲和山上的煙，全體站在遠處戰兢。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">申命記 五章六至二十一節</span>
+          四十年後，摩西在摩押平原對<strong>新一代</strong>重述。那一代大多沒有親身站在西奈山下——所以摩西說：「這約不是與我們列祖立的，乃是與我們今日在這裡存活之人立的。」
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>十誡的精意如下：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>誡命</th>
+            <th>對象</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一</td>
+            <td>神以外不可有別的神</td>
+            <td rowspan="4" style="vertical-align:middle;background:rgba(201,168,76,0.06);"><strong>前四誡<br>對神</strong><br><span style="font-size:11.5px;">縱向的關係<br>——你與神</span></td>
+          </tr>
+          <tr>
+            <td class="src">二</td>
+            <td>不可雕刻偶像而跪拜</td>
+          </tr>
+          <tr>
+            <td class="src">三</td>
+            <td>不可妄稱神的名</td>
+          </tr>
+          <tr>
+            <td class="src">四</td>
+            <td>當守安息日</td>
+          </tr>
+          <tr>
+            <td class="src">五</td>
+            <td>當孝敬父母</td>
+            <td rowspan="6" style="vertical-align:middle;background:rgba(74,106,154,0.06);"><strong>後六誡<br>對人</strong><br><span style="font-size:11.5px;">橫向的關係<br>——你與人</span></td>
+          </tr>
+          <tr>
+            <td class="src">六</td>
+            <td>不可殺人</td>
+          </tr>
+          <tr>
+            <td class="src">七</td>
+            <td>不可行淫</td>
+          </tr>
+          <tr>
+            <td class="src">八</td>
+            <td>不可偷盜</td>
+          </tr>
+          <tr>
+            <td class="src">九</td>
+            <td>不可作假見證</td>
+          </tr>
+          <tr>
+            <td class="src">十</td>
+            <td>不可貪心</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>這個「四＋六」的分法，不是後人硬套的</strong>
+        主耶穌自己就是這樣總結的。有人問祂律法上哪一條誡命最大，祂的回答分成兩半：<br><br>「你要盡心、盡性、盡意愛主你的神」——這正是<strong>前四誡</strong>。<br>「其次也相倣，就是要愛人如己」——這正是<strong>後六誡</strong>。<br><br>然後祂說：「這兩條誡命是律法和先知一切道理的總綱。」
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這個結構本身，就在說一件事：<strong>對神的愛，和對人的愛，不能分開。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✝️</span>
+        兩塊版，一縱一橫，剛好構成一個十字。<br><br>這不是一個文字遊戲。約翰壹書把這件事說得毫不客氣：「人若說『我愛神』，卻恨他的弟兄，就是說謊話的；不愛他所看見的弟兄，就不能愛沒有看見的神。」<br><br>前四誡沒有守好，後六誡撐不住；後六誡沒有守好，前四誡就是假的。
+      </div>
+
+      <p>另外還有一個很值得注意的順序。你有沒有發現，後六誡的排列，是<strong>從最外圍往內收</strong>的？</p>
+
+      <p>不可殺人——對別人身體的侵犯。<br>不可行淫——對別人關係的侵犯。<br>不可偷盜——對別人財物的侵犯。<br>不可作假見證——對別人名譽的侵犯。<br>不可貪心——<strong>對別人什麼都還沒做，只在心裡動了念頭。</strong></p>
+
+      <div class="highlight">
+        <strong>第十誡是一道分水嶺</strong>
+        前面九條，都是可以被人看見、可以被法庭審理的行為。<br><br>只有第十條不是。「不可貪心」是唯一一條<strong>完全發生在內心</strong>、沒有任何外顯行為的誡命。沒有任何法官能因為你「貪心」而定你的罪。<br><br>而這一條的存在，等於在整份清單的最後宣告：<strong>這不是一部刑法，這是一面照到心裡去的鏡子。</strong><br><br>保羅後來說得很坦白：「只是非因律法，我就不知何為罪。非律法說『不可起貪心』，我就不知何為貪心。」——他是被第十誡照出來的。
+      </div>
+
+      <p>那麼「十誡」這個名稱在原文裡是什麼？出埃及記和申命記兩次記載，內容完全一樣嗎？下一篇，我們把兩處放在一起比對。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">原文其實不叫「十誡」</h2>
+      <p class="card-hook">兩處記載對照，還有一個關鍵的差異</p>
+    </div>
+    <div class="card-body">
+
+      <p>第一件事可能會讓你意外：<strong>聖經從來沒有把這十句話稱為「十誡」。</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Aseret ha-Devarim<br>希伯來文</div>
+        <div class="term-desc">字面意思是「<strong>十句話</strong>」或「十言」。出埃及記三十四章二十八節、申命記四章十三節、十章四節，用的都是這個說法。<br><br>希伯來文裡有一個專門指「誡命」的字（mitzvah），但聖經在稱呼這十條時，<strong>刻意沒有用它</strong>。用的是 davar——「話語」。</div>
+      </div>
+
+      <p>希臘文的七十士譯本把它譯為 <strong>Dekalogos</strong>（deka 十 + logos 話語），也就是「十言」。英文的 Decalogue 就是從這裡來的。中文譯作「十誡」，強調了它的規範性，卻少了「這是神說的十句話」那層意思。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💬</span>
+        「十條規定」和「十句話」，語感差很多。<br><br>規定是貼在牆上的；<strong>話，是有人對你說的。</strong>而聖經選的是後者。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看兩處記載的比對。整體幾乎一字不差，但有一個差異大到不可能是抄寫失誤——而且它剛好落在最關鍵的地方。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th>出埃及記 二十章</th>
+            <th>申命記 五章</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">安息日<br>的動詞</td>
+            <td>「當<strong>記念</strong>安息日」</td>
+            <td>「當<strong>守</strong>安息日」</td>
+          </tr>
+          <tr>
+            <td class="src">安息日<br>的理由</td>
+            <td><strong>因為創造</strong>：「因為六日之內，耶和華造天、地、海和其中的萬物，第七日便安息」</td>
+            <td><strong>因為救贖</strong>：「你也要記念你在埃及地作過奴僕；耶和華你神用大能的手……將你從那裡領出來」</td>
+          </tr>
+          <tr>
+            <td class="src">孝敬父母<br>的應許</td>
+            <td>「使你的日子在耶和華你神所賜你的地上得以長久」</td>
+            <td>多了一句：「<strong>並使你得福</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">第十誡<br>的次序</td>
+            <td>先「房屋」，後「妻子」</td>
+            <td>先「<strong>妻子</strong>」，後「房屋」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        最值得深思的是安息日那兩個理由。<br><br>出埃及記說：守安息日，<strong>因為神創造</strong>。<br>申命記說：守安息日，<strong>因為神救贖</strong>。<br><br>這不是矛盾，這是兩面。而你有沒有覺得眼熟——<strong>創造與救贖</strong>，正是天上讚美的兩個主題，是神最偉大的兩件工作。<br><br>連一條誡命的理由，都扣在這兩件事上。
+      </div>
+
+      <p>而申命記的版本，還多加了一句出埃及記沒有的話：「使你的僕婢可以和你一樣安息。」摩西對新一代特別強調了這一點——<strong>你曾經是那個沒有休假的人，所以不要讓在你手下的人也沒有。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>最後補充一個常讓人困惑的事：不同教會傳統，十誡的編號其實不一樣。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>傳統</th>
+            <th>第一誡怎麼算</th>
+            <th>第十誡怎麼算</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">猶太傳統</td>
+            <td>把「我是耶和華你的神」當作<strong>第一句話</strong></td>
+            <td>貪戀合為一條</td>
+          </tr>
+          <tr>
+            <td class="src">東正教<br>與多數改革宗</td>
+            <td>「不可有別的神」為第一，<strong>「不可雕刻偶像」獨立為第二</strong></td>
+            <td>貪戀合為一條</td>
+          </tr>
+          <tr>
+            <td class="src">天主教<br>與信義宗</td>
+            <td>前兩條合併為一條</td>
+            <td>把貪戀<strong>拆成兩條</strong>（貪戀人妻／貪戀財物）以湊足十條</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>內容完全相同，只是分段不同。我們這裡採用的，是把「不可雕刻偶像」獨立為第二誡的分法——也就是本系列接下來會逐條展開的順序。</p>
+
+      <p>那麼，這十句話對信徒到底有什麼功用？它們最後又如何被收束成兩條？下一篇，我們往更深處走。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼是「不可」——一種語氣的秘密</h2>
+      <p class="card-hook">還有這份文件真正的體裁</p>
+    </div>
+    <div class="card-body">
+
+      <p>先談語氣。希伯來文表達禁令有兩種方式，而十誡選的是比較重的那一種。</p>
+
+      <div class="term-box">
+        <div class="term-original">Al + 祈使<br>暫時性禁令</div>
+        <div class="term-desc">語氣接近「這次不要這樣做」、「現在別」。是針對具體情境的勸阻。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Lo + 未完成式<br>絕對禁令</div>
+        <div class="term-desc">十誡用的正是這一種。它的語氣不是「這次不要」，而是<strong>「永遠不會、也絕不可以」</strong>——是一種涵蓋一切時間、沒有例外條款的禁止。<br><br>有些學者甚至指出，這個語法形式讀起來近乎一種<strong>陳述</strong>：不只是「你不可殺人」，也帶著「在我的百姓中間，人是不殺人的」那種意味。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚸</span>
+        這個語感的差別，有點像「今天不要闖紅燈」跟「我們家的人不闖紅燈」。<br><br>前者是規定，後者是身分。<strong>而十誡的語氣，更靠近後者。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>接著談體裁。二十世紀的近東文獻研究有一個重要發現：<strong>出埃及記二十章的結構，與當時的「宗主條約」格式高度吻合。</strong></p>
+
+      <p>那是一種大君王與附庸國之間的條約文書，格式相當固定：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 序言：宗主自我介紹</span>
+          「我是耶和華」——大君王先報上自己是誰。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 歷史序言：我為你做過什麼</span>
+          「曾將你從埃及地為奴之家領出來」——列舉恩惠，作為要求效忠的<strong>依據</strong>。這正是我們第二篇談的那個前言。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 條款：你當如何</span>
+          十句話的本體。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 存放與宣讀</span>
+          條約副本存於聖所，定期公開宣讀。約櫃裡的兩塊版，正是如此。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 祝福與咒詛</span>
+          守約蒙福，背約受禍。申命記二十七、二十八章整整兩章，就是這一項。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>這個發現為什麼重要？</strong>
+        因為它告訴我們：<strong>十誡的體裁不是法典，是條約。</strong><br><br>法典的核心是「行為與刑度」；條約的核心是「<strong>關係與忠誠</strong>」。<br><br>你違反法典，是觸法；你違反條約，是<strong>背叛</strong>。<br><br>這也解釋了為什麼舊約先知在譴責以色列人拜偶像時，用的比喻幾乎都是婚姻的不忠——因為他們違反的不是一部法律，是一段有名有分的關係。
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而在所有宗主條約中，「歷史序言」那一段從來不是客套話——<strong>它是整份文件的地基</strong>。大君王先陳述自己為附庸做了什麼，然後才提出要求。邏輯是：<strong>因為我這樣待你，所以你當這樣回應我。</strong></p>
+
+      <p>把這個邏輯放回十誡，整份清單的性質就完全變了。</p>
+
+      <p>它不是：「你守好這十條，我才要你。」<br>而是：「<strong>我已經要了你、贖了你、把你從奴役裡領出來了——所以，這是我們之間該有的樣子。</strong>」</p>
+
+      <p>這也正是為什麼保羅可以說，律法是「訓蒙的師傅，引我們到基督那裡」。十誡從一開始就不是救恩的入場券，它是<strong>已經進場的人，該有的生活形狀</strong>。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">十道護欄，不是十道關卡</h2>
+      <p class="card-hook">寫給那個一讀十誡就開始緊張的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>回到第一篇那兩張貼在冰箱上的家規。</p>
+
+      <p>同樣的條文，在一個家裡是監控清單，在另一個家裡是身分的描述。差別不在條文，在於<strong>先有沒有關係</strong>。</p>
+
+      <p>而十誡把這件事寫在了第一句：「我是耶和華<strong>你的</strong>神，曾將你從埃及地為奴之家領出來。」</p>
+
+      <div class="highlight">
+        <strong>所以讀十誡，永遠要從第二節開始讀</strong>
+        如果你從「除了我以外，你不可有別的神」開始讀，你會讀到一份清單。<br><br>如果你從「我曾將你領出來」開始讀，你會讀到一段關係。<br><br>同樣十句話，起點不同，讀出來就是兩件完全不同的東西。
+      </div>
+
+      <p>我後來慢慢明白，十誡比較像是山路上的護欄，不像是收費站的柵欄。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛤️</span>
+        柵欄是攔住你的——你要付費、要驗證、要達標，它才放你過去。<br><br>護欄不是。護欄不會攔你，它甚至不會碰到你。它只是安靜地立在懸崖那一側，在你偏離的時候擋一下。<br><br>沒有人開車時會抱怨護欄太多。<strong>而且護欄的存在，本身就說明了：路的那一邊，真的是懸崖。</strong>
+      </div>
+
+      <p>不可有別的神、不可拜偶像、不可妄稱祂的名、當守安息、當孝敬父母、不可殺人、不可行淫、不可偷盜、不可作假見證、不可貪心——</p>
+
+      <p>每一條的另一邊，都真的是懸崖。人類幾千年的歷史，把每一道懸崖都摔過了一遍。</p>
+
+      <div class="card-divider"></div>
+
+      <p>而最後我想留下那個文法細節，因為它很溫柔。</p>
+
+      <p>整段十誡，神用的都是<strong>單數的「你」</strong>。</p>
+
+      <p>幾十萬人站在山下，雷轟、閃電、密雲、角聲——那是一個極其宏大的場面。可是神說話的方式，是一對一的。</p>
+
+      <div class="big-quote">
+        我是耶和華<br>「你的」神
+        <cite>— 出埃及記 二十章二節</cite>
+      </div>
+
+      <p>在那麼多人裡面，祂看著的是你。</p>
+
+      <p>祂沒有說「我是以色列的神」，祂說「我是<strong>你的</strong>神」；祂沒有說「我把你們這群人帶出來」，祂說「我曾將<strong>你</strong>領出來」。</p>
+
+      <p>願你下次讀十誡的時候，先停在第二節。先讓那句話落定了，再往下讀。</p>
+
+      <p>因為那十句話，是對一個已經被贖回來的自由人說的。而那個人，是你。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  十句話 · Threads Series
+</footer>
+
+</body>
+</html>

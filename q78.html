@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歷代教會的堅持 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>為什麼<span>不能讓</span></h1>
+  <p class="subtitle">歷代教會為何堅持：耶穌是基督，是永生神的兒子</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「大家各退一步不就好了？」</h2>
+      <p class="card-hook">在很多事上這是對的，但有些事不能</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們這個時代很推崇一種美德：<strong>包容。</strong></p>
+
+      <p>不要那麼絕對，不要那麼排他，各人有各人的路，大家互相尊重。</p>
+
+      <p>而我認同這件事的大部分。在生活的絕大多數領域裡，堅持己見到底，往往是不成熟的表現。</p>
+
+      <div class="highlight">
+        <strong>但我後來想清楚了一件事：包容有它的適用範圍</strong>
+        在<strong>偏好</strong>的問題上，堅持是狹隘的——你喜歡哪種音樂、哪種食物、哪種生活方式，這些沒有對錯。<br><br>在<strong>事實</strong>的問題上，包容是不適用的——一座橋能不能承重、一種藥有沒有效、一架飛機的燃油夠不夠，這些不能各退一步。<br><br>而問題就在這裡：<strong>「耶穌是誰」，屬於哪一類？</strong><br><br>如果它是偏好問題，那堅持它確實顯得狹隘。<br><br>而如果它是事實問題，那「各退一步」就不是包容，是<strong>糊塗。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌉</span>
+        我想到一個工程師的比喻。<br><br>如果有人跟橋梁工程師說：「你們對這座橋的載重計算，太絕對了。要不要包容一下別的算法？」<br><br>工程師不會覺得自己不夠寬容。他會說：<strong>這不是態度問題，是橋會不會塌的問題。</strong><br><br>而他的堅持，恰恰是為了<strong>那些要走過這座橋的人。</strong>
+      </div>
+
+      <p>而歷代教會在這一條上的堅持，性質是一樣的。</p>
+
+      <p>接下來這幾篇，我想陪你看：<strong>為什麼在這一條上，教會不能讓？</strong></p>
+
+      <p>聖經給了三個理由。而這三個理由，一個比一個更貼近你我。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">尼西亞會議上，一場為了一個字母的爭論</h2>
+      <p class="card-hook">而那個字母，決定了整件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>主後三二五年，尼西亞。</p>
+
+      <p>當時的爭論核心，是亞流的主張：聖子是被造的、是次等的、「曾有一時，子不存在」。</p>
+
+      <p>而爭論最後聚焦在兩個希臘字上，而這兩個字<strong>只差一個字母</strong>：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>希臘文</th>
+            <th>意思</th>
+            <th>主張的內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">Homoousios</td>
+            <td><strong>同</strong>本質</td>
+            <td>聖子與聖父，本質完全相同。</td>
+          </tr>
+          <tr>
+            <td class="src">Homoiousios</td>
+            <td><strong>類似</strong>本質</td>
+            <td>聖子與聖父，本質相似——但不是同一個。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>差別只在中間多了一個字母 i</strong>
+        後世有人拿這件事開玩笑，說教會為了一個字母吵翻天，何必呢？<br><br>但那個玩笑，其實沒有看懂。<br><br>因為「<strong>同</strong>本質」和「<strong>類似</strong>本質」，在實際後果上，是兩個完全不同的信仰。<br><br>「類似」的意思是：祂很像神，但不是神。<br><br>而一旦如此，那祂就是一個<strong>受造者</strong>——一個非常崇高、非常接近神的受造者，但終究是受造的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔤</span>
+        我後來覺得，這件事很像醫學上的一個現象：<strong>兩種藥的分子式只差一個原子，藥效卻可能完全相反。</strong><br><br>「差一點點」在有些領域無關緊要，在有些領域是生死之別。<br><br>而在這件事上，那「一點點」的後果是：<strong>如果祂是受造者，那祂的死就救不了任何人。</strong><br><br>因為一個受造者，付不起無限的代價。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那次會議的成果，就是我們今天所知的尼西亞信經的基礎。其中有幾句，正是針對亞流的主張而寫：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">出於神而為神，出於光而為光，出於真神而為真神；受生而非被造，與父同一本質</p>
+        <p class="scripture-ref">尼西亞信經</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「受生而非被造」——這五個字是關鍵</strong>
+        它一句話同時說了兩件事：<br><br><strong>「受生」</strong>——承認父與子之間有那個關係的次序。<br><strong>「非被造」</strong>——但那不是「製造」的關係。祂不在受造物那一邊。<br><br>而「出於光而為光」這個比喻，正是我們談過的太陽與光：<strong>光出於太陽，但沒有一刻是有太陽而無光的。</strong>
+      </div>
+
+      <p>而後來的亞他內西亞信經，把這件事說得更完整：「聖父為神，聖子為神，聖靈亦為神；<strong>非三神，乃一神</strong>。」</p>
+
+      <p>那麼，教會為什麼要這麼較真？下一篇，我們看聖經給的三個理由。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個理由</h2>
+      <p class="card-hook">關乎聖經、關乎生命、關乎教會的本質</p>
+    </div>
+    <div class="card-body">
+
+      <p>歷代教會之所以堅持這個信仰——耶穌是基督，是永生神的兒子——有三個理由：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 因為這信仰是篤信全部聖經為神所默示的表示</span>
+          這個認信，等於是對整本聖經的<strong>信任表態</strong>。<br>因為若否認這一條，就必須同時否認舊約的預言、福音書的記載、使徒的見證——那等於重新編輯聖經。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 因為因著這信仰，信主的人才能因主的名得新生命</span>
+          「但記這些事要叫你們信耶穌是基督，是神的兒子；<strong>並且叫你們信了他，就可以因他的名得生命</strong>。」（約廿 31）<br>這一條，直接關乎<strong>得救</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 因為這信仰能夠使教會與別的宗教明顯分別出來</span>
+          耶穌既是神的獨生愛子，就與任何宗教的教主、和歷代的聖賢，<strong>有天壤之別</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>這三個理由，其實對應了三個不同的層面。而它們是<strong>環環相扣</strong>的：</p>
+
+      <div class="highlight">
+        <strong>第一個理由，關乎「權威」</strong>
+        如果否認這一條，聖經就必須被大幅重寫。<br><br>因為它不是聖經裡的一節經文，它是<strong>貫穿全書的主線</strong>：從創世記那句「女人的後裔」，到眾先知的預言，到福音書的記載，到使徒的見證，到啟示錄的羔羊。<br><br>所以一旦動了這一條，就等於在說：<strong>聖經有一部分是不可信的，而我來決定哪些可信。</strong><br><br>而那個「我來決定」，才是真正的問題——因為從那一刻起，權威就從聖經轉到了我身上。
+      </div>
+
+      <div class="highlight">
+        <strong>第二個理由，關乎「生命」</strong>
+        這一條最實際，也最要緊。<br><br>因為救恩不是一種心理效果，它有一個客觀的機制：<strong>那個代贖，必須是一位既是神、又是人的中保才能完成。</strong><br><br>祂必須是<strong>人</strong>——否則祂無法代表人類，也無法真正地死。<br>祂必須是<strong>神</strong>——否則祂的死只能抵一個人的份，付不起那個無限的代價。<br><br>所以這不是一個抽象的教義問題。<strong>它決定了那個十字架有沒有效。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>第三個理由，關乎「本質」</strong>
+        如果耶穌只是一位偉大的教師、一位道德的典範、一位覺悟的聖賢——<br><br>那基督信仰就只是眾多宗教中的一種，各有各的路，確實應該互相包容。<br><br>而正因為祂是<strong>神的獨生愛子</strong>，這件事才不一樣。<br><br>與任何宗教的教主、與歷代的聖賢——<strong>有天壤之別。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三點的「天壤之別」，我想具體說明一下，因為它常被誤解成一種傲慢。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗺️</span>
+        世上偉大的宗教創始人與聖賢，多半是這樣說話的：<strong>「我找到了一條路，來，我指給你看。」</strong><br><br>他們是<strong>指路的人</strong>。而指路的人，本身也是走在路上的旅人——只是走得比較前面。<br><br>而主耶穌說的話，性質完全不同：<br><br>「<strong>我就是道路、真理、生命。</strong>」<br>「<strong>我就是生命的糧。</strong>」<br>「<strong>到我這裡來的，必定不餓。</strong>」<br>「<strong>凡勞苦擔重擔的人，可以到我這裡來。</strong>」<br><br>祂沒有說「我指給你看那條路」，祂說「我就是」。<br><br>——一個指路的人不會這樣說話。<strong>這種話，要嘛是真的，要嘛就不是一位謙卑的聖賢會說的。</strong>
+      </div>
+
+      <p>下一篇，我們把這件事再往下推——為什麼「中保」必須是神、也是人？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">為什麼中保必須「既是神，又是人」</h2>
+      <p class="card-hook">少了任何一邊，橋就搭不起來</p>
+    </div>
+    <div class="card-body">
+
+      <p>提摩太前書有一節，把這件事的結構講得極清楚：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為只有一位神，在神和人中間，只有一位中保，乃是降世為人的基督耶穌</p>
+        <p class="scripture-ref">提摩太前書 二章五節</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Mesitēs<br>中保</div>
+        <div class="term-desc">字面是「<strong>站在中間的人</strong>」。在當時的用法裡，這是一個法律與外交的詞——指爭議雙方之間的仲裁者、擔保人。<br><br>而一位真正的中保，必須<strong>同時能代表兩邊</strong>。<br><br>若他只屬於其中一邊，他就是代理人，不是中保。</div>
+      </div>
+
+      <p>而這正是關鍵所在。我把兩邊的需求列出來：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>祂必須是「人」，因為……</th>
+            <th>祂必須是「神」，因為……</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">代表性</td>
+            <td>只有人，才能代表人類受罰。「兒女既同有血肉之體，他也照樣親自成了血肉之體。」（來二 14）</td>
+            <td>只有神，其價值才足以涵蓋全人類。一個人只能抵一個人。</td>
+          </tr>
+          <tr>
+            <td class="src">可能性</td>
+            <td>神不能死。要死，必須真的成為人。</td>
+            <td>而要勝過死，必須是那位掌管生命的。</td>
+          </tr>
+          <tr>
+            <td class="src">資格</td>
+            <td>祂必須真的經歷過人的軟弱與試探——「他也曾凡事受過試探，與我們一樣」。</td>
+            <td>祂必須自己是無罪的——一個自己也需要贖罪的人，救不了別人。</td>
+          </tr>
+          <tr>
+            <td class="src">體恤</td>
+            <td>「我們的大祭司並非不能<strong>體恤</strong>我們的軟弱。」祂知道那是什麼感覺。</td>
+            <td>而祂同時有能力真的做點什麼——「凡靠著他進到神面前的人，他都能拯救到底」。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        少了「人」那一半，祂與我們無關——祂體恤不了，也不能真的代表我們。<br><br>少了「神」那一半，祂救不了我們——祂的代價不夠，而且祂自己也需要被救。<br><br>而約伯在他最痛苦的時候，說出了一句幾乎是預言的話：<br><br>「<strong>我們中間沒有聽訟的人可以向我們兩造按手。</strong>」（伯九 33）<br><br>——他要的，正是一位能同時按手在兩邊的中保。<br><br>而幾千年後，有一位站了進來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二個理由——「因這信仰得新生命」——約翰福音把它寫成了整卷書的目的宣告：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但記這些事要叫你們信耶穌是基督，是神的兒子；並且叫你們信了他，就可以因他的名得生命</p>
+        <p class="scripture-ref">約翰福音 二十章三十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意這句話的三段結構</strong>
+        <strong>「記這些事」</strong> → 這是舉證。<br><strong>「要叫你們信耶穌是基督，是神的兒子」</strong> → 這是目的。<br><strong>「叫你們信了他，就可以因他的名得生命」</strong> → 這是結果。<br><br>而那個結果，是<strong>生命</strong>。<br><br>所以這不是一場關於術語的辯論。約翰認為，這一條的成立與否，關乎人能不能得生命。<br><br>——這也是為什麼教會不能讓。<strong>因為讓的不是自己的面子，是別人的生死。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第三個理由，希伯來書一開頭就用一個對比說明了：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神既在古時藉著眾先知多次多方地曉諭列祖，就在這末世藉著他兒子曉諭我們</p>
+        <p class="scripture-ref">希伯來書 一章一至二節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📯</span>
+        「多次多方」——先知的啟示是<strong>片段的、漸進的、一次一部分的</strong>。<br><br>而「藉著他兒子」——這一次不一樣。<br><br>接下來作者用了一連串的描述：「神已經立他為承受萬有的，也曾藉著他創造諸世界。他是神榮耀所發的光輝，是神本體的真像，常用他權能的命令托住萬有。」<br><br>然後整卷希伯來書，就是一連串的「<strong>比……更美</strong>」：比天使更美、比摩西更美、比亞倫更美、更美的約、更美的祭。<br><br>而那個「更美」，不是程度的差異。<strong>是類別的差異。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        所以「與歷代聖賢有天壤之別」這句話，不是在貶低任何人。<br><br>孔子、蘇格拉底、釋迦牟尼——他們的智慧與人格，是人類文明的珍貴遺產。<br><br>而「天壤之別」講的不是<strong>優劣</strong>，是<strong>類別</strong>。<br><br>他們是<strong>受造者中最好的一群</strong>，而祂不在那個類別裡。<br><br>——就像沒有人會說「太陽比最亮的燈泡更好」。<strong>那不是同一種東西。</strong>
+      </div>
+
+      <p>下一篇，我們談一個更難的問題：那這樣算不算排他？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">堅持，與傲慢，不是同一件事</h2>
+      <p class="card-hook">一個很值得分清楚的界線</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想誠實地面對這個指控：<strong>「你們這樣說，不是很排他嗎？」</strong></p>
+
+      <p>而我想先承認一件事：<strong>這個指控，有時候是對的。</strong></p>
+
+      <div class="highlight">
+        <strong>因為「堅持真理」和「態度傲慢」，確實常常被混在一起</strong>
+        教會歷史上，有太多例子是：以真理之名，行傷害之實。<br><br>而聖經自己對這件事有很清楚的要求：<br><br>「有人問你們心中盼望的緣由，就要常作準備，以<strong>溫柔、敬畏</strong>的心回答各人。」（彼前三 15）<br><br>——注意那兩個詞：<strong>溫柔、敬畏。</strong><br><br>彼得沒有說「要有力地駁倒他們」。他說要準備好回答，而且要用溫柔的態度。<br><br>而保羅說：「主的僕人<strong>不可爭競</strong>，只要溫溫和和地待眾人……用溫柔勸戒那抵擋的人。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏥</span>
+        我覺得可以這樣分：<br><br><strong>內容上的堅持</strong>，與<strong>態度上的謙卑</strong>，是兩件可以同時存在的事。<br><br>一位好醫生會堅持診斷——他不會為了讓病人開心而說謊。<br><br>但他說的方式，可以是冷酷的宣判，也可以是坐下來、握著手、慢慢說。<br><br><strong>內容不變，而態度決定了那句話會不會被聽進去。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而我想再說一層：<strong>基督徒的堅持，其實不是「我們的」堅持。</strong></p>
+
+      <div class="highlight">
+        <strong>這一點很關鍵</strong>
+        如果這是我們自己想出來的一套主張，那堅持它確實是傲慢——因為那等於在說「我的想法比你的好」。<br><br>但教會的立場從來不是這樣。<br><br>教會說的是：<strong>這件事不是我們發明的，我們是被告知的。</strong><br><br>保羅說：「我當日所領受又傳給你們的。」——他用的是「領受」與「傳遞」，不是「主張」。<br><br>所以那個堅持的性質，比較像是一個<strong>信差</strong>不肯修改電文——不是因為他覺得自己的文筆最好，是因為<strong>那不是他的信。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✉️</span>
+        而一個信差如果為了討收信人開心，把信的內容改軟一點——<br><br>那不叫體貼，那叫失職。<br><br><strong>他能決定的是遞信的方式，不是信的內容。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而最後，我想指出一件常被忽略的事：<strong>這個「排他」的信仰，在實際歷史上的表現，並不是排他的。</strong></p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">它一開始就跨過了民族的界線</span>
+          第一批門徒全是猶太人。而使徒行傳整卷書的軸線，就是這個信仰<strong>不斷突破族群邊界</strong>的過程——撒瑪利亞人、埃提阿伯的太監、羅馬百夫長哥尼流、外邦人的城市。<br>而使徒行傳十五章那場會議的結論是：<strong>外邦人不必先變成猶太人，才能信。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">它跨過了階級的界線</span>
+          「並不分猶太人、希臘人，自主的、為奴的，或男或女，<strong>因為你們在基督耶穌裡都成為一了</strong>。」（加三 28）<br>在一個階級森嚴的世界裡，這是一句相當激進的話。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">它的門檻，低到只有一個條件</span>
+          不是出身、不是學問、不是道德成績、不是社會地位。<br>「凡求告主名的，就必得救。」<br><br><strong>在「誰能進來」這件事上，它是全然開放的；它「排他」的只有一件事：那扇門的位置。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個分別，我覺得很要緊</strong>
+        說「只有一扇門」——這是排他的。<br>說「任何人都可以從這扇門進來」——這是最不排他的。<br><br>而基督信仰同時是這兩者。<br><br>那個十字架上的強盜，一生的帳算不清、來不及做任何補償、連受洗都沒有——而主對他說：「今日你要同我在樂園裡了。」<br><br><strong>門很窄，但門前沒有守衛在查你的資格。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">他們是用命守住的</h2>
+      <p class="card-hook">寫給那個覺得「教義」離自己很遠的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>「歷代教會堅持這個信仰」——這句話讀起來很平淡，像是一句歷史陳述。</p>
+
+      <p>而我想說：<strong>那不是一句平淡的話。</strong></p>
+
+      <div class="highlight">
+        <strong>因為那個堅持，是有代價的</strong>
+        在羅馬帝國，不肯說「該撒是主」的人，失去的是性命。<br><br>而他們原本可以不必如此。只要說四個字，就可以回家。而他們知道自己心裡信什麼——說一句話，又不改變事實，對吧？<br><br>但他們沒有說。<br><br><strong>因為他們認為，那個名分不能讓。</strong>
+      </div>
+
+      <p>而司提反——第一位殉道者——被石頭打的時候，經文記下了他最後看見的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我看見天開了，人子站在神的右邊</p>
+        <p class="scripture-ref">使徒行傳 七章五十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        有一個細節，很多人注意到過：<br><br>聖經其他地方講到主升天之後，用的幾乎都是「<strong>坐</strong>在神的右邊」——坐，表示工作已經完成。<br><br>而司提反看見的是：「人子<strong>站</strong>在神的右邊。」<br><br>那是唯一一處這樣的記載。<br><br>而歷代有不少人這樣體會：<strong>祂站起來了。</strong>——為那個正在為祂的名受死的人，站了起來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想說的是：那些看起來很抽象的教義，其實是<strong>用命守下來的</strong>。</p>
+
+      <p>尼西亞會議上那些為了一個字母爭論的主教，不是在玩文字遊戲。他們當中有些人身上，還帶著先前逼迫時期留下的傷。</p>
+
+      <p>他們知道那個字母代表什麼，因為<strong>他們已經為它付過代價了。</strong></p>
+
+      <div class="highlight">
+        <strong>所以當我們今天讀到「歷代教會堅持」這句話</strong>
+        我們讀到的，其實是一長串的人：<br><br>是那些在競技場裡不肯改口的；<br>是那些在會議上為一個字爭到底的；<br>是那些在抄本上一筆一劃謄寫、確保這些話能傳下去的；<br>是那些把聖經翻譯成本地語言、因此被燒死的；<br>是那些在你之前，把這個信仰交到你手上的每一個人。<br><br><strong>而那條線，現在傳到了你手上。</strong>
+      </div>
+
+      <div class="big-quote">
+        你是基督，<br>是永生神的兒子
+        <cite>— 馬太福音 十六章十六節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個問題：「大家各退一步不就好了？」</p>
+
+      <p>我現在會這樣回答：</p>
+
+      <p>在很多事上，我很願意退。在做事的方法上、在無關緊要的偏好上、在那些聖經沒有明說的細節上——那些地方，我希望自己可以更柔軟一點。</p>
+
+      <p>但在這一條上，我不能退。</p>
+
+      <p><strong>而理由不是我很固執。理由是：如果這一條讓了，那我手上就沒有東西可以給人了。</strong></p>
+
+      <p>如果祂只是一位好老師，那我能給人的只是一套建議。</p>
+
+      <p>而如果祂是基督，是永生神的兒子——那我能給人的，是生命。</p>
+
+      <p>願你也守住那一條。</p>
+
+      <p>用溫柔的態度，和不退讓的內容。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  歷代的堅持 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神的手書 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>神<span>親手寫</span>的字</h1>
+  <p class="subtitle">全宇宙唯一由祂親筆書寫的東西，寫在石頭上</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">抽屜深處那張手寫的字條</h2>
+      <p class="card-hook">在一個什麼都用打字的時代，手寫變成了一件很重的事</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>整理長輩遺物的時候，我在一個舊餅乾盒的最底層，找到一疊字條。</p>
+
+      <p>不是信，就是一些很日常的字條：「飯在電鍋」、「錢放在第二格」、「明天要下雨，記得帶傘」。字跡有點抖，有幾個字還寫錯了塗掉重寫。</p>
+
+      <p>我在那個下午坐了很久。因為我發現，那些字條給我的感覺，跟手機裡存著的訊息完全不一樣。訊息裡的字，是系統生成的、標準的、任何人打出來都長一樣。可是這些筆畫——那個特有的頓筆、那個習慣把橫劃拉得特別長的寫法——<strong>是那個人的手，親自壓在紙上留下來的。</strong></p>
+
+      <div class="highlight">
+        <strong>手寫為什麼不一樣</strong>
+        因為手寫代表<strong>親自到場</strong>。<br><br>打字可以外包，可以複製貼上，可以由別人代勞。但手寫不行——那隻手必須真的在那裡，握著筆，一筆一劃地移動。所以我們才會為手寫的婚禮誓詞落淚，才會把手寫的卡片收起來，才會覺得一份文件「親筆簽名」才算數。<br><br>手寫，是一種身體的在場證明。
+      </div>
+
+      <p>那天之後，一個念頭忽然浮上來：<strong>神有沒有親手寫過什麼？</strong></p>
+
+      <p>這位造了諸世界、說有就有的神，祂用「說」的就足夠了。創世記第一章從頭到尾都是「神說……就有了」。祂根本不需要動筆。</p>
+
+      <p>可是聖經告訴我們，祂寫過。而且不只寫過一次，聖經還很仔細地記下了祂寫在什麼上面、用什麼寫的、後來放在了哪裡。</p>
+
+      <p>而更耐人尋味的是——<strong>那份手書，中途被人摔碎過。</strong></p>
+
+      <p>接下來這幾篇，我想陪你走這一段。因為這件事的結局，比我原本想的溫柔太多了。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「是神用指頭寫的」</h2>
+      <p class="card-hook">四十晝夜之後，摩西抱著兩塊石版下山</p>
+    </div>
+    <div class="card-body">
+
+      <p>出埃及記第二十四章，摩西上了西奈山。經文說雲彩遮蓋了山，耶和華的榮耀停於其上，在以色列人眼前，形狀如烈火。摩西進入雲中，在山上四十晝夜。</p>
+
+      <p>那四十天裡，神把會幕的設計、祭司的條例、獻祭的規矩，一項一項交代給摩西。而在這一大段交代的最後，第三十一章的結尾，出現了一節很短、卻分量極重的經文：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶和華在西奈山和摩西說完了話，就把兩塊法版交給他，是神用指頭寫的石版</p>
+        <p class="scripture-ref">出埃及記 三十一章十八節</p>
+      </div>
+
+      <p>「<strong>是神用指頭寫的。</strong>」</p>
+
+      <p>你看見這句話的異常了嗎？整個西奈山的敘事，神都是用「說」的——祂說話，摩西記下來。摩西寫了很多，那些條例都是摩西手抄的。</p>
+
+      <p>唯獨這兩塊版不一樣。<strong>這兩塊版，神沒有交給摩西抄，祂自己寫。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✍️</span>
+        這就像一份長達幾百頁的文件，全部由祕書繕打，唯獨最後那一頁——最核心的那幾條——立約的當事人堅持要親筆寫下來。<br><br>那不是因為祕書打得不好，是因為<strong>有些東西，必須由本人親自寫，才算數。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>然後，就在同一天，山下發生了一件事。</p>
+
+      <p>百姓等不到摩西下來，就去找亞倫，說：「起來！為我們做神像，可以在我們前面引路。」於是亞倫收了他們的金環，鑄了一隻牛犢。百姓說：「以色列啊，這是領你出埃及地的神。」</p>
+
+      <p>摩西下山的時候，手裡抱著那兩塊版。經文特別描述了那兩塊版的來歷，像是要讓讀者記清楚它們有多珍貴：「這版是神的工作，字是神寫的，刻在版上。」</p>
+
+      <p>然後他看見了牛犢，聽見了跳舞的聲音。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">摩西便發烈怒，把兩塊版扔在山下摔碎了</p>
+        <p class="scripture-ref">出埃及記 三十二章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>這是人類歷史上最沉重的一次毀損</strong>
+        全宇宙唯一一份由神親筆書寫的文件，碎在山腳下的石地上。<br><br>而摔碎它的，不是仇敵，是神所揀選的僕人；摔碎的原因，不是背叛，是因為看見百姓已經背叛了。<br><br>摩西的動作其實有它的意義——在古代，毀約的一方會被象徵性地毀掉約書。他把版摔碎，等於在說：這約，你們已經先毀了。
+      </div>
+
+      <p>讀到這裡，我第一個反應是：完了。神親手寫的那份，沒了。</p>
+
+      <p>而接下來發生的事，才是整個故事真正要說的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">「其上的字，我要寫在這版上」</h2>
+      <p class="card-hook">祂願意再寫一次——而這一次，版要摩西自己鑿</p>
+    </div>
+    <div class="card-body">
+
+      <p>金牛犢的事之後，摩西為百姓苦苦代求。他在山上又是四十晝夜，不吃飯也不喝水。而在那之後，神開口了：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶和華吩咐摩西說：你要鑿出兩塊石版，和先前你摔碎的那版一樣；其上的字我要寫在這版上</p>
+        <p class="scripture-ref">出埃及記 三十四章一節</p>
+      </div>
+
+      <p>所以，這個問題的答案很清楚：</p>
+
+      <div class="big-quote">
+        神的手書，留在兩塊石版上——<br>就是記載十誡的那兩塊石版
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>但這節經文裡藏著一個很值得注意的差別。<strong>第一次和第二次，分工不一樣了。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>第一次（出卅一 18）</th>
+            <th>第二次（出卅四 1）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">誰鑿的版</td>
+            <td>神。「這版是神的工作」</td>
+            <td><strong>摩西</strong>。「你要鑿出兩塊石版」</td>
+          </tr>
+          <tr>
+            <td class="src">誰寫的字</td>
+            <td>神。「字是神寫的」</td>
+            <td><strong>仍然是神</strong>。「其上的字我要寫在這版上」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>這個差別在說什麼？</strong>
+        第一次，從頭到尾都是神做的，人完全沒有參與。<br>第二次，人要負責準備那個載體——<strong>你自己去鑿，鑿成跟你摔碎的那兩塊一樣。</strong><br><br>你可以想像摩西鑿石頭的那個畫面：一個八十幾歲的老人，在曠野裡一鑿一鑿地敲。每敲一下，大概都會想起自己是怎麼把前一對摔在地上的。<br><br><strong>但那個字，神說：我來寫。</strong>
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>我覺得這裡有一份極深的恩典，而且是兩層的。</p>
+
+      <p><strong>第一層：祂願意再寫一次。</strong></p>
+
+      <p>祂大可以不寫。第一份被摔碎，那是人的責任，祂完全有理由說：機會只有一次。可是祂沒有。祂重新動筆，把同樣的字，再寫一遍。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪨</span>
+        我一直覺得這一段像是在說：<strong>被摔碎的，不是關係的終點。</strong><br><br>但同時，那句「你要鑿出兩塊，和先前你摔碎的那版一樣」也不是輕描淡寫地帶過。神沒有假裝那件事沒發生。祂讓摩西親手去準備一個新的承載——這裡面有恩典，也有承擔。
+      </div>
+
+      <p><strong>第二層：祂只要求人準備載體，內容仍由祂來寫。</strong></p>
+
+      <p>這其實是整本聖經一貫的模式。神從來不要求我們自己生出那些話語、自己想出那套標準、自己撐出那份聖潔。祂要求的，是我們把自己預備成一塊可以承載的版。<strong>鑿石頭的是我們，落筆的是祂。</strong></p>
+
+      <p>那麼，這兩塊版後來去了哪裡？「神用指頭寫」在原文裡是什麼意思？聖經裡神還親手寫過什麼？下一篇，我們把這幾件事查清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">兩塊版、一個櫃，和三次親筆</h2>
+      <p class="card-hook">為什麼是「兩塊」？這個細節比你想的重要</p>
+    </div>
+    <div class="card-body">
+
+      <p>先從一個常見的誤解說起。</p>
+
+      <p>我們大部分人腦中的圖像，是「兩塊版，前五誡刻一塊，後五誡刻另一塊」。這個圖像來自後世的繪畫，不是來自聖經——聖經從來沒有說內容是分開刻的。</p>
+
+      <p>而古代近東的條約文書研究，提供了一個更有說服力的解釋：</p>
+
+      <div class="term-box">
+        <div class="term-original">兩份副本<br>條約慣例</div>
+        <div class="term-desc">在當時的宗主條約中，立約完成後會製作<strong>兩份完全相同的副本</strong>——立約雙方各存一份，通常分別存放在各自的神廟裡，由各自的神明作見證。<br><br>所以「兩塊版」很可能不是內容的上下集，而是<strong>同一份約書的兩份正本</strong>：一份屬神，一份屬以色列。</div>
+      </div>
+
+      <p>而這裡有一個極動人的轉折：<strong>這兩塊版，最後都放進了同一個地方。</strong></p>
+
+      <p>它們一起被放進約櫃——希伯來文叫 <strong>aron ha-berit</strong>，字面就是「約的櫃」。而約櫃安放在至聖所裡，也就是神的所在。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📦</span>
+        照慣例，屬於以色列的那一份，應該存放在以色列自己的地方。可是兩份都被收進了神的至聖所。<br><br>這等於是說：<strong>連你那一份，都由我來保管。</strong>祂不但立了約，還替我們保管我們的那一份約書——因為祂知道，交給我們保管，我們是會摔碎的。
+      </div>
+
+      <p>幾百年後，所羅門把約櫃抬進聖殿時，經文特別記了一句：「約櫃裡惟有兩塊石版，就是以色列人出埃及地後，耶和華與他們立約的時候，摩西在何烈山所放的。」</p>
+
+      <p>經過了曠野、士師時代、掃羅、大衛——那麼多年、那麼多次遷移，<strong>櫃子裡剩下的，就是那兩塊石版。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>接著看「神用指頭寫的」這個說法。</p>
+
+      <div class="term-box">
+        <div class="term-original">Etsba Elohim<br>神的指頭</div>
+        <div class="term-desc">「指頭」在希伯來文中是一種<strong>擬人化的表達</strong>，用來描述神直接的、親自的作為。埃及的術士看見神蹟時說「這是神的手段（指頭）」；主耶穌說「我若靠著神的能力（原文作「指頭」）趕鬼」。<br><br>它強調的不是神真的有一根手指，而是——<strong>這件事沒有經過中介，是祂自己做的。</strong></div>
+      </div>
+
+      <p>而聖經裡，神「親手寫字」的記載，其實出現過三次。把它們排在一起看，非常有意思：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>寫在哪裡</th>
+            <th>寫了什麼</th>
+            <th>對象與意義</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">石版上<br>出卅一 18</td>
+            <td>十誡</td>
+            <td>對祂的百姓。這是<strong>立約</strong>——是關係的建立。</td>
+          </tr>
+          <tr>
+            <td class="src">王宮的粉牆上<br>但五 5</td>
+            <td>彌尼、彌尼、提客勒、烏法珥新</td>
+            <td>對伯沙撒王。這是<strong>審判</strong>——「你被稱在天平裡，顯出你的虧欠」。同一隻手，這次寫的是宣判。</td>
+          </tr>
+          <tr>
+            <td class="src">地上<br>約八 6、8</td>
+            <td>經文沒有記載</td>
+            <td>主耶穌在那些要用石頭打死婦人的人面前，彎著腰在地上寫字。<strong>聖經刻意沒有告訴我們祂寫了什麼</strong>——只記下結果：控告的人從老到少一個一個都出去了。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結</strong>
+        三次親筆，三種材質：<strong>石頭、牆壁、塵土。</strong><br><br>石頭上的，是為了長存——那是約。<br>牆壁上的，是為了當下——那是判決。<br>而塵土上的，寫完就被風吹散了——那是赦免。<br><br>最堅固的材質留給了約，最容易消失的材質留給了罪的控告。這個安排，本身就是福音。
+      </div>
+
+      <p>那麼，石版最後怎麼了？神的手書如今在哪裡？下一篇，我們跟著這條線走到它真正的終點——那個終點，出乎意料地近。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">從石版，到心版</h2>
+      <p class="card-hook">神的手書，最後搬到了一個沒有人想得到的地方</p>
+    </div>
+    <div class="card-body">
+
+      <p>石版的下落，聖經沒有交代。聖殿被巴比倫毀滅之後，約櫃就從歷史記載中消失了。它去了哪裡，兩千多年來眾說紛紜，沒有答案。</p>
+
+      <p>而我認為，聖經之所以不交代，是因為它要我們把注意力放到別的地方去。因為早在聖殿被毀之前，先知就已經預告了：<strong>神打算換一種材質來寫。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">我要將我的律法放在他們裡面，寫在他們心上。我要作他們的神，他們要作我的子民</p>
+        <p class="scripture-ref">耶利米書 三十一章三十三節</p>
+      </div>
+
+      <p>「<strong>寫在他們心上。</strong>」</p>
+
+      <p>耶利米說這話的時候，國家正在崩塌。聖殿要沒了，約櫃要沒了，石版要沒了。而神藉先知說：不要緊，我要換一塊版——我要寫在人的心上。</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>幾百年後，保羅寫信給哥林多教會，把這個應許講成了一件已經發生的事。而他用的比喻，直接呼應西奈山：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們明顯是基督的信，藉著我們修成的。不是用墨寫的，乃是用永生神的靈寫的；不是寫在石版上，乃是寫在心版上</p>
+        <p class="scripture-ref">哥林多後書 三章三節</p>
+      </div>
+
+      <p>請注意保羅在這裡做的三組對比：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">材質：石版 → 心版</span>
+          從外面的石頭，搬進裡面的人心。石版可以被摔碎，心版不會。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">墨水：墨 → 永生神的靈</span>
+          墨會褪色，會被水化開。而聖靈所寫的，不褪色。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">文件：法版 → 一封信</span>
+          保羅說「你們明顯是基督的信」——最驚人的一句。<strong>神現在的手書，是人。</strong>你這個人，就是祂寫出來、要給世界讀的一封信。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>「石版」與「心版」的關鍵差別</strong>
+        石版是<strong>在你外面的標準</strong>——它告訴你什麼不可以，但它不會給你不去做的力量。它像一把尺，量得出你的歪斜，卻扶不正你。<br><br>心版是<strong>在你裡面的性情</strong>——它不只告訴你標準，它改變你想要什麼。<br><br>這就是為什麼聖經說新約「更美」。不是標準降低了，是<strong>能力從外面搬到了裡面</strong>。
+      </div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <div class="analogy">
+        <span class="analogy-icon">🎼</span>
+        我想到學樂器的過程。<br><br>剛開始，譜架上擺著樂譜，你的眼睛必須一直盯著它，稍一分神就會彈錯。樂譜在你外面。<br><br>但練到某一天，你會發現自己不用看譜了。那首曲子已經進到你的手裡、你的身體裡。你不是「照著規則彈」，你是<strong>「你就會彈了」</strong>。<br><br>樂譜沒有變，標準也沒有降低——改變的是它在哪裡。
+      </div>
+
+      <p>而這裡還有一層更深的呼應。還記得第三篇那個細節嗎？第二次立版時，<strong>神說：你去鑿版，我來寫字。</strong></p>
+
+      <p>這件事到今天依然如此。神不會強行寫在一顆完全封閉的心上。祂要的，是一顆願意被鑿開、被預備好的心——而那顆心一旦預備好了，<strong>字，仍然是祂親自寫的。</strong></p>
+
+      <p>以西結書把這件事說得更徹底：「我也要賜給你們一個新心，將新靈放在你們裡面，又從你們的肉體中除掉石心，賜給你們肉心。」——連那塊版，最後都是祂換的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">摔碎過的人，還可以再被寫一次</h2>
+      <p class="card-hook">寫給那個覺得自己已經把一切搞砸了的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把整個系列，收在西奈山下那一地的碎石上。</p>
+
+      <p>那是一個看起來完全沒有轉圜餘地的場面。神親手寫的約，碎了。而且不是碎在仇敵手裡，是碎在自己人手裡。百姓拜了金牛犢，領袖摔了法版。整件事看起來已經結束了。</p>
+
+      <p>可是神說的那句話是：<strong>「你要鑿出兩塊石版……其上的字我要寫在這版上。」</strong></p>
+
+      <div class="highlight">
+        <strong>這句話裡有三件事，我想留給你</strong>
+        <strong>第一，祂沒有假裝沒發生。</strong>祂說「和先前你摔碎的那版一樣」——那件事被清楚地提到了，沒有被含糊帶過。真正的恩典從不需要靠遺忘來成立。<br><br><strong>第二，祂要你參與重建。</strong>「你要鑿出兩塊」——祂沒有替你做完全部。你要親手去預備那塊版，而那個過程本身，就是修復的一部分。<br><br><strong>第三，字，還是祂寫。</strong>你不需要自己想辦法把那些話重新刻回去。你只要把版準備好，落筆的是祂。
+      </div>
+
+      <p>如果你此刻正站在自己摔碎的東西前面——一段關係、一個承諾、一份你曾經以為自己會守住的信仰熱度——我想請你記得，聖經對這種場面的處理方式，不是就此翻頁。</p>
+
+      <p>神的手書留在兩塊石版上。但那兩塊石版，其實有一份「第二版」的故事——而那個第二版，是在人失敗之後才有的。</p>
+
+      <div class="card-divider"></div>
+
+      <p>而今天，那塊版已經換了。它不在約櫃裡，不在任何一座聖殿裡，也不在任何考古隊還在找的洞穴裡。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">不是寫在石版上，乃是寫在心版上</p>
+        <p class="scripture-ref">哥林多後書 三章三節</p>
+      </div>
+
+      <p>神今天的手書，寫在人心上。而保羅說得更直接：<strong>你就是那封信。</strong></p>
+
+      <p>這意味著兩件事。一件是安慰：寫在你心上的，不會被任何人摔碎——約櫃可以失蹤，聖殿可以被燒，但那塊版在你裡面。</p>
+
+      <p>另一件是責任：<strong>你是一封被寫出來、要給人讀的信。</strong>你走過的地方、你對人說話的方式、你在壓力下的反應——都有人在讀。</p>
+
+      <div class="big-quote">
+        其上的字，<br>我要寫在這版上
+        <cite>— 出埃及記 三十四章一節</cite>
+      </div>
+
+      <p>回到我一開始說的那疊字條。</p>
+
+      <p>手寫之所以珍貴，是因為那隻手必須真的在場。而聖經告訴我們，那位造諸世界的，曾經親自把手放在石頭上，一筆一劃地寫。</p>
+
+      <p>而如今，同一隻手，正在你心上寫字。</p>
+
+      <p>願你今天願意把那塊版，遞出去。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  神親手寫的字 · Threads Series
+</footer>
+
+</body>
+</html>

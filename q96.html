@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖靈在信徒身上的工作 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>祂在你<span>裡面</span>做的事</h1>
+  <p class="subtitle">聖靈在信徒身上的工作</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那半秒鐘的停頓</h2>
+      <p class="card-hook">話已經到嘴邊，然後我停住了</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一次跟人爭執，我心裡已經組好了一句話——那句話很準，而且我知道它會傷到對方最痛的地方。</p>
+
+      <p>而就在要說出口的那一刻，我停了半秒。</p>
+
+      <p>然後我沒有說。</p>
+
+      <div class="highlight">
+        <strong>而那半秒鐘，不是我的修養</strong>
+        我很清楚不是。因為在那之前和之後，我都說過很多不該說的話。<br><br>那半秒是「有東西進來」的感覺——不是聽見聲音，是<strong>忽然知道</strong>。<br><br>而那件事後來讓我對一節經文有了不同的理解：<br><br>「他要將一切的事<strong>指教</strong>你們，並且要叫你們<strong>想起</strong>我對你們所說的一切話。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤚</span>
+        我後來發現，聖靈的工作大多是這個尺寸的。<br><br>不是雷聲，不是異象。<br><br>是<strong>半秒的停頓</strong>、<strong>忽然想起的一節經文</strong>、<strong>心裡的不平安</strong>、<strong>對一句話的刺痛</strong>。<br><br>而正因為小，它常常被錯過。
+      </div>
+
+      <p>而聖經對祂在信徒身上的工作，列得相當完整。</p>
+
+      <p>接下來這幾篇，我想陪你把那份清單看一次——而你可能會發現，那些你以為是自己的變化，其實有另一位在做。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「與你們同在」，「在你們裡面」</h2>
+      <p class="card-hook">主用了兩個不同的介系詞</p>
+    </div>
+    <div class="card-body">
+
+      <p>約翰福音十四章，主介紹保惠師的時候，用了一組很細的措辭：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">就是真理的聖靈，乃世人不能接受的；因為不見他，也不認識他。你們卻認識他，因他常與你們同在，也要在你們裡面
+        </p>
+        <p class="scripture-ref">約翰福音 十四章十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「與你們同在」＋「在你們裡面」</strong>
+        兩個介系詞，兩種關係。<br><br><strong>「同在」</strong>（para）——在旁邊、陪著。<br><strong>「在裡面」</strong>（en）——內住。<br><br>而主說的順序是：<strong>「常與你們同在」（現在），「也要在你們裡面」（將來）。</strong><br><br>——那個「將來」，指的是五旬節之後。<br><br>所以從那天起，那份同在的方式改變了：<strong>從旁邊，搬進了裡面。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        而這個差別很實際。<br><br>一個陪在旁邊的朋友，能幫你很多。但他不能替你改變你的想法、不能在你半夜醒來時就在那裡、不能在你獨處時提醒你。<br><br>而「在裡面」可以。<br><br>——這也是為什麼主說「我去是與你們有益的」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而還有一句，把這件事說得更深：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們從主所受的恩膏常存在你們心裡，並不用人教訓你們，自有主的恩膏在凡事上教訓你們
+        </p>
+        <p class="scripture-ref">約翰壹書 二章二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「並不用人教訓你們」——這句話常被誤讀</strong>
+        它不是說「不需要教會的教導」——因為約翰自己就正在寫信教導他們。<br><br>它的上下文，是在講那些<strong>引誘人的異端</strong>。<br><br>約翰的意思是：<strong>你們裡面有一位，那些人騙不了你們。</strong><br><br>——那是一份保護，不是一份許可。<br><br>而那位在裡面「教訓」的，正是聖靈。
+      </div>
+
+      <p>那麼，祂在信徒身上的工作有哪些？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">七項任務，六種果效</h2>
+      <p class="card-hook">祂住在裡面，與信徒同在</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖靈住在信徒裡面，與信徒同在。而祂的任務，聖經列了七項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">教訓 · 提醒</span>
+          「他要將一切的事<strong>指教</strong>你們，並且要叫你們<strong>想起</strong>我對你們所說的一切話。」（約十四 26）<br>「自有主的恩膏在凡事上教訓你們。」（約壹二 27）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">督責</span>
+          「他既來了，就要叫世人為罪、為義、為審判，<strong>自己責備自己</strong>。」（約十六 8）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">引導</span>
+          「他要<strong>引導</strong>你們明白一切的真理。」（約十六 13）<br>「聖靈對腓利說：『你去！貼近那車走。』」（徒八 29）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">安慰</span>
+          保惠師——被召到旁邊來的那一位。（約十四 16～17）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">祝禱 · 加力</span>
+          「聖靈親自用說不出來的歎息<strong>替我們禱告</strong>。」（羅八 26）<br>「藉著他的靈，叫你們心裡的力量<strong>剛強起來</strong>。」（弗三 16）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這些任務，產生的果效是什麼？聖經同樣列得清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>果效</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">使人知罪</td>
+            <td>「叫世人為罪、為義、為審判，自己責備自己。」（約十六 8）</td>
+          </tr>
+          <tr>
+            <td class="src">分別是非</td>
+            <td>「他要引導你們明白一切的真理。」（約十六 13）</td>
+          </tr>
+          <tr>
+            <td class="src">明白真理</td>
+            <td>同上——而「真理的靈」這個稱呼本身，就指向這件事。</td>
+          </tr>
+          <tr>
+            <td class="src">勝過舊人</td>
+            <td>「你們當<strong>順著聖靈而行</strong>，就不放縱肉體的情慾了。」（加五 16）</td>
+          </tr>
+          <tr>
+            <td class="src">成為聖潔</td>
+            <td>「求你用真理使他們<strong>成聖</strong>；你的道就是真理。」（約十七 17）</td>
+          </tr>
+          <tr>
+            <td class="src">知足喜樂的人生</td>
+            <td>「因為神的國不在乎吃喝，只在乎公義、<strong>和平，並聖靈中的喜樂</strong>。」（羅十四 17）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想特別停在<strong>「勝過舊人」</strong>那一項，因為加拉太書那節的措辭很關鍵。</p>
+
+      <div class="highlight">
+        <strong>「順著聖靈而行，就不放縱肉體的情慾了」</strong>
+        注意這句話的結構：<strong>它給的不是一個「不要做」的命令。</strong><br><br>如果保羅說「不要放縱肉體的情慾」——那是一個要靠意志力執行的禁令。<br><br>而他說的是：<strong>「順著聖靈而行，<span style="font-size:inherit;">就</span>不放縱了。」</strong><br><br>——那個「就」字，是一個<strong>結果</strong>。<br><br>所以方法不是「用力壓住」，是<strong>換一個方向走</strong>。<br><br>而下一節說得更清楚：「你們若被聖靈引導，<strong>就不在律法以下</strong>。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚶</span>
+        「行」那個字（peripateō），字面是<strong>「走路」</strong>——而且是<strong>持續進行的時態</strong>。<br><br>所以「順著聖靈而行」的畫面，不是一次重大的決定，是<strong>一步一步地走</strong>。<br><br>而走路有一個特性：<strong>你只能往一個方向走。</strong><br><br>當你往這邊走的時候，你自然就不在那邊了。<br><br>——這比「站在原地努力不要往那邊看」，容易得多。
+      </div>
+
+      <p>下一篇，我們細看那個「督責」——因為那是最不舒服、卻最必要的一項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「自己責備自己」——那個字，原本用在法庭</h2>
+      <p class="card-hook">而它的目的不是定罪，是使人看見</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Elenchō<br>責備 · 使知罪</div>
+        <div class="term-desc">約翰福音十六章八節：「他既來了，就要叫世人為罪、為義、為審判，<strong>自己責備自己</strong>。」<br><br>而這個字在當時的用法，帶有<strong>法庭</strong>的意味：把證據攤開，使真相顯明，讓對方無法迴避。<br><br>——重點不是「罵」，是<strong>「使之看見」</strong>。<br><br>所以它的方向是：<strong>從遮蔽到看清。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>而主列了三項：為罪、為義、為審判</strong>
+        而祂自己接著解釋了每一項：<br><br><strong>為罪</strong>——「因為他們不信我。」<br>那個根本的罪，不是某個行為，是<strong>不信</strong>。<br><br><strong>為義</strong>——「因為我往父那裡去，你們就不再見我。」<br>祂的升天，證明了那個代贖被悅納——<strong>那是義的宣告</strong>。<br><br><strong>為審判</strong>——「因為這世界的王受了審判。」<br>十字架已經定了那個結局。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔦</span>
+        我覺得「督責」這件事，很像燈打開的那一刻。<br><br>房間本來就髒。燈打開，髒沒有變多——<strong>只是被看見了。</strong><br><br>而那一刻不舒服，是正常的。<br><br>但如果沒有那盞燈，人會一直住在髒裡而以為沒事。<br><br>——這就是為什麼「督責」是一份恩典，雖然它不好受。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想再提一次那個分辨，因為它在這裡很關鍵：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>聖靈的督責</th>
+            <th>控告的聲音</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">內容</td>
+            <td><strong>具體</strong>——「你昨天說的那句話」</td>
+            <td><strong>籠統</strong>——「你就是這種人」</td>
+          </tr>
+          <tr>
+            <td class="src">方向</td>
+            <td><strong>往前</strong>——所以你可以去處理、去道歉</td>
+            <td><strong>往下</strong>——它不給你任何可做的事</td>
+          </tr>
+          <tr>
+            <td class="src">結果</td>
+            <td>讓你<strong>想跑向神</strong></td>
+            <td>讓你<strong>想躲開神</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        判斷的方法很簡單：<strong>看它把你推向哪裡。</strong><br><br>因為聖靈的目的是<strong>引導你明白真理</strong>、是<strong>使你成聖</strong>——那些都是往前的。<br><br>而「控告弟兄的」那一位，目的是讓你卡在羞恥裡，不敢往前走。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「引導」那一項，使徒行傳第八章有一個很具體的例子，值得看：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">聖靈對腓利說：「你去！貼近那車走。」</p>
+        <p class="scripture-ref">使徒行傳 八章二十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        那段的完整過程，很值得注意：<br><br>先是「主的<strong>使者</strong>」對腓利說：「起來！向南走，往那從耶路撒冷下迦薩的路上去。」——那條路是<strong>曠野</strong>。<br><br>腓利就起身去了。<strong>而經文沒有記他問任何問題。</strong><br><br>然後他遇見了那個埃提阿伯的太監。<br><br>而這時「<strong>聖靈</strong>對腓利說：你去！貼近那車走。」<br><br>——注意那個指示有多小：<strong>「貼近那車走。」</strong><br><br>不是「去向他傳福音」，不是一整套計畫。<br><br><strong>只是：走過去一點。</strong><br><br>而腓利照做之後，那個人剛好正在讀以賽亞書五十三章。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛤️</span>
+        我覺得這一段很能說明「引導」的實際樣子。<br><br>它常常不是一整張地圖。<strong>它是下一步。</strong><br><br>而腓利做的，只是<strong>照著那一小步去做</strong>。<br><br>——然後那一小步，接上了一整個非洲的故事。
+      </div>
+
+      <p>下一篇，我們談那個最實際的問題：怎麼分辨那是不是祂？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">怎麼知道那是聖靈，不是我自己的念頭？</h2>
+      <p class="card-hook">聖經給了幾條可以對照的線</p>
+    </div>
+    <div class="card-body">
+
+      <p>這是一個很多人問過、也很實際的問題。</p>
+
+      <p>而聖經雖然沒有給一套判斷公式，卻給了幾條可以對照的線。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 與聖經一致嗎？</span>
+          祂是<strong>真理的靈</strong>。而祂「不是憑自己說的」。<br><br>所以任何與神的話相牴觸的「感動」——在定義上就有問題。<br><strong>這是第一道，也是最硬的一道濾網。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 它榮耀誰？</span>
+          「他要<strong>榮耀我</strong>。」<br><br>如果一件事的結果是<strong>基督被高舉</strong>，那方向是對的。<br>如果結果是某個人、某種體驗、某種現象被高舉——那要小心。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 它結什麼果子？</span>
+          「聖靈所結的果子，就是仁愛、喜樂、和平、忍耐、恩慈、良善、信實、溫柔、節制。」（加五 22～23）<br><br>——這是一份可以檢查的清單。<br><strong>而它全部是品格，沒有一項是現象。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 它讓你更愛人，還是更自我？</span>
+          羅馬書說：「神的國……在乎公義、和平，並聖靈中的喜樂。」<br>而以弗所書講「被聖靈充滿」之後，接的是<strong>夫妻、父母子女、主僕</strong>的關係。<br><br>——聖靈的工作，會落在關係上。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第三項，我想多說一句</strong>
+        「聖靈所結的果子」那份清單，值得注意的地方是：<strong>它是「果子」，不是「工作」。</strong><br><br>而且原文是<strong>單數</strong>——「果子」，不是「果子們」。<br><br>那意味著：<strong>那九樣是一整串，不是九選一。</strong><br><br>而果子的特性是：<strong>它是長出來的，不是做出來的。</strong><br><br>——一棵樹不會用力結果。它扎根、吸收、連結，然後果子就長出來了。<br><br>所以如果一個人問「我怎麼結出更多果子」，答案通常不在果子上，<strong>在根上。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而我想指出一件很多人沒注意的事：<strong>那份清單裡的每一項，都需要有「對象」。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👥</span>
+        仁愛——對誰？<br>忍耐——忍耐誰？<br>恩慈、良善、溫柔——對象是誰？<br><br>——<strong>全部需要另一個人。</strong><br><br>所以聖靈的果子，沒有辦法在獨處中被驗證。<br><br>它只有在<strong>關係裡</strong>才長得出來，也才看得出來。<br><br>而這也解釋了為什麼保羅在講完那份清單之前，先列了一長串「情慾的事」——而那些事，大多也是關係中的：<strong>仇恨、爭競、忌恨、惱怒、結黨、紛爭、異端、嫉妒。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而關於「安慰」那一項，我想留一個很實際的提醒。</p>
+
+      <div class="highlight">
+        <strong>保惠師的安慰，不一定是「感覺變好」</strong>
+        羅馬書那節說：「聖靈親自用<strong>說不出來的歎息</strong>替我們禱告。」<br><br>——注意，那份幫助的形式，是<strong>歎息</strong>。<br><br>不是「讓你不再難過」。<strong>是在你難過得說不出話時，替你說。</strong><br><br>而那節的前一句是：「我們的軟弱有聖靈幫助；<strong>我們本不曉得當怎樣禱告</strong>。」<br><br>——所以那份安慰，是在承認軟弱的前提下運作的。<br><br>它不取消軟弱。<strong>它在軟弱裡工作。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那些變化，不全是你自己做到的</h2>
+      <p class="card-hook">寫給那個覺得自己毫無長進的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一個可能會安慰你的角度上。</p>
+
+      <div class="highlight">
+        <strong>回頭看，有些變化是你沒注意到的</strong>
+        那個以前一定會說出口的話，現在會停一下。<br>那件以前完全不覺得有什麼的事，現在會不安。<br>那個以前恨得咬牙的人，現在想起來，火沒有那麼大了。<br>那段以前讀不下去的經文，現在會停在某一句。<br><br>——這些變化很小，小到不會被當成「見證」。<br><br>而它們正是那份清單上的東西：<strong>知罪、分別是非、明白真理、勝過舊人、成為聖潔。</strong><br><br>而那不全是你自己做到的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        我想到植物的生長。<br><br>你不會看見它長。你每天看，它都一樣。<br><br>而三個月後回頭看照片，你會嚇一跳。<br><br>——而植物做了什麼？它沒有「努力生長」。<strong>它只是待在有光、有水、有土的地方。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己毫無長進——</p>
+
+      <div class="highlight">
+        <strong>那份清單本身，就是一個提醒</strong>
+        因為那七項任務，主詞全部是<strong>祂</strong>：<br><br><strong>他</strong>要指教你們。<br><strong>他</strong>要叫你們想起。<br><strong>他</strong>要引導你們。<br><strong>聖靈親自</strong>替我們禱告。<br><strong>藉著他的靈</strong>，叫你們心裡的力量剛強起來。<br><br>——沒有一項的主詞是「你」。<br><br>所以「長進」這件事，不是你一個人的責任。<br><br><strong>你要做的，是不要銷滅祂的感動，不要叫祂擔憂，並且讓祂充滿。</strong>
+      </div>
+
+      <div class="big-quote">
+        他要將一切的事指教你們，<br>並且要叫你們想起<br>我對你們所說的一切話
+        <cite>— 約翰福音 十四章二十六節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那半秒鐘的停頓。</p>
+
+      <p>我後來學會了一件事：<strong>當那半秒出現時，要當一回事。</strong></p>
+
+      <p>因為那不是我的修養，也不是巧合。</p>
+
+      <p>那是有一位，在裡面說話。</p>
+
+      <p>而祂說話的方式，多半就是那麼小——一個停頓、一句忽然想起的話、一份說不出來的不平安。</p>
+
+      <p>願你今天，聽得見那半秒。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖靈在信徒身上的工作 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>升天之後的工作 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>祂在天上<span>做的事</span></h1>
+  <p class="subtitle">耶穌升天，與我們有五重關係</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「祂現在在做什麼？」</h2>
+      <p class="card-hook">一個我很久沒想過的問題</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一次禱告到一半，我腦中忽然冒出一個很奇怪的問題：</p>
+
+      <p><strong>「主現在在做什麼？」</strong></p>
+
+      <p>不是兩千年前，不是將來再來的時候。是<strong>此刻</strong>——我正在禱告的這一分鐘，祂在做什麼？</p>
+
+      <div class="highlight">
+        <strong>而我發現自己答不出來</strong>
+        我對祂的認識，有一個很明顯的空白。<br><br>過去：祂道成肉身、被釘、復活、升天——這一段我很熟。<br>將來：祂要再來、要審判、要與我們同住——這一段我也知道。<br><br>而<strong>中間這一段</strong>——就是我現在正活著的這幾十年——我腦中是空的。<br><br>好像祂升天之後就「暫停」了，要等到再來的時候才「恢復」。
+      </div>
+
+      <p>而聖經完全不是這樣說的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        使徒行傳的第一句話，其實已經在暗示這件事了。<br><br>路加對提阿非羅說：「我已經作了前書，論到耶穌<strong>開頭</strong>一切所行所教訓的。」<br><br>——「開頭」。<br><br>那意味著：福音書記的，只是<strong>開頭</strong>。<br><br>而使徒行傳所記的，不是「使徒的行傳」而已——那是<strong>升天之後的主，藉著聖靈繼續在做的事。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看聖經列的五項——<strong>祂升天之後，正在做的事。</strong></p>
+
+      <p>而你會發現，那五項，每一項都直接關係到你。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">司提反看見的那一幕</h2>
+      <p class="card-hook">他在被石頭打死之前，抬頭看見了</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第七章，司提反在公會面前講完那篇長長的講道之後，眾人「就極其惱怒，向司提反咬牙切齒」。</p>
+
+      <p>而經文接著寫：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但司提反被聖靈充滿，定睛望天，看見神的榮耀，又看見耶穌站在神的右邊，就說：我看見天開了，人子站在神的右邊
+        </p>
+        <p class="scripture-ref">使徒行傳 七章五十五至五十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>這是整本新約中，唯一一次「站」</strong>
+        其他地方提到升天之後的主，用的幾乎都是「<strong>坐</strong>在神的右邊」——坐，表示工作完成、表示掌權。<br><br>而司提反看見的是：<strong>「站」在神的右邊。</strong><br><br>而歷代以來有不少人這樣體會：<strong>祂站起來了。</strong><br><br>為那個正在為祂的名受死的人。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而這一幕，正好把「祂現在在做什麼」這個問題，回答得非常具體。<br><br>祂在<strong>看著</strong>。<br><br>而且不只是看著——祂為那個在地上正在受苦的人，<strong>站了起來。</strong><br><br>那不是一位退休了的、在遠處休息的主。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅在羅馬書第八章，把這件事講得更完整。他在那一整段講「誰能控告我們」的時候，說：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">誰能定他們的罪呢？有基督耶穌已經死了，而且從死裡復活，現今在神的右邊，也替我們祈求
+        </p>
+        <p class="scripture-ref">羅馬書 八章三十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意那四個動作的時序</strong>
+        「已經死了」——過去。<br>「從死裡復活」——過去。<br>「現今在神的右邊」——<strong>現在</strong>。<br>「也替我們祈求」——<strong>現在進行式</strong>。<br><br>而保羅列這四項，是為了回答一個問題：<strong>「誰能定他們的罪呢？」</strong><br><br>而那最後一項——「替我們祈求」——是他這串論證的收尾。<br><br>因為<strong>當那位審判者右邊的那一位正在為你辯護時，控告就站不住了。</strong>
+      </div>
+
+      <p>那麼，祂升天後的工作，具體有哪五項？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五項工作</h2>
+      <p class="card-hook">而每一項，都指向你</p>
+    </div>
+    <div class="card-body">
+
+      <p>耶穌升天與我們有很大的關係，因為<strong>祂升天後的工作十分重要</strong>——共五項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 擄掠仇敵，賜下恩賜</span>
+          「他升上高天的時候，<strong>擄掠了仇敵，將各樣的恩賜賞給人</strong>。」（弗四 8）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 差遣聖靈，輔導信徒</span>
+          「我若不去，保惠師就不到你們這裡來；<strong>我若去，就差他來</strong>。」（約十六 7）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 任大祭司，長期代求</span>
+          「現今在神的右邊，也<strong>替我們祈求</strong>。」（羅八 34）<br>「在父那裡我們有一位<strong>中保</strong>，就是那義者耶穌基督。」（約壹二 1）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 在天堂，預備住處</span>
+          「在我父的家裡有許多住處……我去<strong>原是為你們預備地方去</strong>。」（約十四 2）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 坐神右邊，為教會元首</span>
+          「連於元首基督。」（弗四 15）「他也是<strong>教會全體之首</strong>。」（西一 18）<br>而司提反所看見的，正是那一位（徒七 55～56）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>第一項用的意象，來自古代的<strong>凱旋遊行</strong>。</p>
+
+      <div class="highlight">
+        <strong>「擄掠了仇敵，將各樣的恩賜賞給人」</strong>
+        當時的君王得勝歸來時，會有一場遊行：被擄的敵人跟在後面示眾，而<strong>君王會沿路把戰利品分給百姓。</strong><br><br>而保羅說：祂升天，就是那場凱旋。<br><br>被擄的是仇敵——歌羅西書說：「既將一切執政的、掌權的擄來，明顯給眾人看，就仗著十字架誇勝。」<br><br>而分出去的戰利品，是<strong>恩賜</strong>。<br><br>——所以你今天所領受的每一份恩賜，來源是那場凱旋。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎁</span>
+        而以弗所書接著列出祂賞給人的是什麼：<br><br>「他所賜的，有使徒，有先知，有傳福音的，有牧師和教師。」<br><br>注意——<strong>祂賜的是「人」。</strong><br><br>那些在你生命中教導過你、牧養過你、把福音傳給你的人——<strong>他們是那場凱旋分下來的禮物。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三項——<strong>長期代求</strong>——我覺得是這五項裡最貼身的一項。</p>
+
+      <div class="highlight">
+        <strong>希伯來書把「長期」這件事講得很明確</strong>
+        「凡靠著他進到神面前的人，他都能拯救到底；<strong>因為他是長遠活著，替他們祈求。</strong>」（來七 25）<br><br>——「<strong>長遠活著，替他們祈求</strong>」。<br><br>那是一個沒有中斷的動作。<br><br>所以回到我第一篇那個問題：「主現在在做什麼？」<br><br>答案之一是：<strong>祂正在為你禱告。</strong><br><br>就是現在。就是你讀這一行的時候。
+      </div>
+
+      <p>下一篇，我們細看這件事——因為聖經還記載了祂為某一個人禱告的具體內容。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「我已經為你祈求」</h2>
+      <p class="card-hook">祂對彼得說的那句話，時態很特別</p>
+    </div>
+    <div class="card-body">
+
+      <p>最後的晚餐上，主對彼得說了一段話。而那段話裡有一個時態，值得注意：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">西門，西門！撒但想要得著你們，好篩你們像篩麥子一樣；但我已經為你祈求，叫你不至於失了信心
+        </p>
+        <p class="scripture-ref">路加福音 二十二章三十一至三十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「我<span style="font-size:inherit;">已經</span>為你祈求」</strong>
+        ——在彼得跌倒<strong>之前</strong>。<br><br>主沒有等他跌倒之後才去禱告。祂在事情發生前就已經求了。<br><br>而祂求的內容也很值得看：<strong>不是「求你不要讓他跌倒」。</strong><br><br>是「<strong>叫你不至於失了信心</strong>」。<br><br>——那次跌倒，主沒有攔阻。祂求的是：跌倒之後，不要就此完了。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌾</span>
+        而「篩麥子」這個意象也很有意思。<br><br>篩麥子的目的是什麼？<strong>把糠秕篩掉，留下麥子。</strong><br><br>撒但的意圖是要毀掉他。而那個過程，在神的手中，卻成了篩去糠秕的過程。<br><br>而主接著說：「<strong>你回頭以後，要堅固你的弟兄。</strong>」<br><br>——「你回頭以後」。<br><br>祂已經預告了那個回頭。<strong>在跌倒還沒發生之前，祂已經在講回頭之後的事了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而這段話，正是「祂替我們祈求」的一個具體樣本。從它，我們可以看見那份代求的幾個特徵：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>特徵</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">預先的</td>
+            <td>「我<strong>已經</strong>為你祈求」——在你知道自己有需要之前。</td>
+          </tr>
+          <tr>
+            <td class="src">指名的</td>
+            <td>「西門，西門」——祂叫了名字，而且叫了兩次。</td>
+          </tr>
+          <tr>
+            <td class="src">切中要害的</td>
+            <td>不是求免去試煉，是求「不至於失了信心」——祂知道真正的危險在哪裡。</td>
+          </tr>
+          <tr>
+            <td class="src">帶著盼望的</td>
+            <td>「你<strong>回頭以後</strong>」——那份代求裡，已經包含了復原。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而約翰壹書用了一個法律的詞來描述這個角色：<br><br>「在父那裡我們有一位<strong>中保</strong>（paraklētos），就是那義者耶穌基督。」<br><br>而 paraklētos 這個字，字面是「<strong>被召到旁邊來的那一位</strong>」——在法庭上，就是<strong>辯護人</strong>。<br><br>而有意思的是：<strong>這正是主稱呼聖靈的同一個字。</strong>約翰福音裡的「保惠師」，原文就是 paraklētos。<br><br>所以：<strong>一位在天上，在父那裡為你辯護；一位在地上，在你裡面幫助你。</strong><br><br>而約翰福音十四章那句「我要求父，<strong>另外</strong>賜給你們一位保惠師」——「另外一位」，正是這個意思。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看第四項——<strong>預備住處</strong>。而約翰福音那節經文的措辭，非常溫暖：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">在我父的家裡有許多住處；若是沒有，我就早已告訴你們了。我去原是為你們預備地方去
+        </p>
+        <p class="scripture-ref">約翰福音 十四章二節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏡</span>
+        「<strong>若是沒有，我就早已告訴你們了</strong>」——這一句，語氣像是在安撫。<br><br>祂知道門徒會擔心，所以先把話堵住：<strong>如果沒有，我不會騙你們。</strong><br><br>而「父的家裡有許多住處」——「許多」。<br><br>不是剛好夠、不是要排隊、不是名額有限。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而下一節那句，是整段的重點：<br><br>「我若去為你們預備了地方，就<strong>必再來接你們到我那裡去；我在哪裡，叫你們也在那裡。</strong>」<br><br>——注意那個目的。<br><br>祂沒有說「好叫你們有地方住」。<br><br>祂說的是：「<strong>我在哪裡，叫你們也在那裡。</strong>」<br><br>那個「住處」的重點，不是房子。<strong>是「跟祂在一起」。</strong>
+      </div>
+
+      <p>下一篇，我們談第五項——祂作教會的元首，這在實際上意味著什麼。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「元首」不是一個榮譽職</h2>
+      <p class="card-hook">頭與身體的關係，是活的</p>
+    </div>
+    <div class="card-body">
+
+      <p>第五項說：祂坐神右邊，為<strong>教會元首</strong>。</p>
+
+      <p>而「元首」這個詞，很容易被讀成一種榮譽稱號——像是名譽會長那樣。</p>
+
+      <div class="highlight">
+        <strong>而聖經用的比喻，是「頭與身體」</strong>
+        「他也是教會全體之首。」（西一 18）<br>「教會是他的身體。」（弗一 23）<br><br>——而頭與身體的關係，不是象徵性的。<strong>它是活的、是即時的、是不可分離的。</strong><br><br>頭決定方向。<br>頭感受身體每一處的痛。<br>而身體離了頭，就不能活。<br><br>歌羅西書說得更具體：全身「<strong>靠著他，筋節得以相助聯絡，就因神大得長進</strong>」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧠</span>
+        而這個比喻有一個很實際的意義：<strong>當身體的某一處受傷，頭是知道的。</strong><br><br>你踩到一根釘子，痛的訊號會傳到腦子。<strong>你不需要「通報」它。</strong><br><br>而掃羅在往大馬士革的路上，那個聲音問他的是：<br><br>「<strong>掃羅，掃羅！你為甚麼逼迫我？</strong>」<br><br>——掃羅逼迫的是誰？是教會、是信徒、是那些他抓起來下監的人。<br><br>而主說：<strong>你為甚麼逼迫「我」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這五項工作，其實構成了一個很完整的圖像。我把它們按「方向」重新排一次：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">向上——為我們代求</span>
+          在父那裡，替我們祈求。這是<strong>祭司</strong>的職分。<br>而這一項處理的是：我的罪、我的軟弱、我的控告。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">向下——差遣聖靈</span>
+          把保惠師差到我們裡面。<br>而這一項處理的是：我的無力、我的孤單、我的不明白。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">向外——賜下恩賜</span>
+          擄掠仇敵，把恩賜分給人。<br>而這一項處理的是：教會的建造、彼此的服事。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">向內——作教會元首</span>
+          頭與身體，活的連結。<br>而這一項處理的是：方向、生命的供應、被知道。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">向前——預備住處</span>
+          而這一項處理的是：終點。<strong>「我在哪裡，叫你們也在那裡。」</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這五個方向合起來，回答了一個問題</strong>
+        <strong>祂離開了，那我們現在算什麼？</strong><br><br>答案是：<strong>我們不是被留下的。</strong><br><br>上面有一位在為我們求；裡面有一位在扶持我們；手上有祂分下來的恩賜；生命連於那個頭；而前面有一個已經預備好的地方。<br><br>——那不是「被留下」。<strong>那是被安置在一個完整的照顧裡。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而主自己在升天前說的最後一句話，正好把這件事收了起來：</p>
+
+      <div class="big-quote">
+        我就常與你們同在，<br>直到世界的末了
+        <cite>— 馬太福音 二十八章二十節</cite>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔄</span>
+        我一直覺得這件事有一個很美的對稱：<br><br>祂出生時的名字是「<strong>以馬內利——神與我們同在</strong>」。<br><br>而祂離開時說的最後一句是：「<strong>我就常與你們同在。</strong>」<br><br>頭尾兩端，同一件事。<br><br>而中間發生的一切——十字架、復活、升天——都是為了讓那個「同在」，變成一種不再會被奪走的同在。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">此刻，有一位正在為你禱告</h2>
+      <p class="card-hook">寫給那個禱告不下去的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一件很具體的事上。</p>
+
+      <p>那件事是：<strong>當你禱告不出來的時候，有兩位正在替你禱告。</strong></p>
+
+      <div class="highlight">
+        <strong>羅馬書第八章，把這兩位都寫了出來</strong>
+        <strong>在你裡面的那一位：</strong><br>「況且，我們的軟弱有聖靈幫助；我們本不曉得當怎樣禱告，只是聖靈親自用<strong>說不出來的歎息</strong>替我們禱告。」（羅八 26）<br><br><strong>在父那裡的那一位：</strong><br>「有基督耶穌……現今在神的右邊，也<strong>替我們祈求</strong>。」（羅八 34）<br><br>——一位在裡面，一位在上面。<br><br>而它們出現在同一章裡，相距不到十節。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        「我們本不曉得當怎樣禱告」——這句話，是保羅寫的。<br><br>那個寫了大半本新約的人，說他有時候不曉得該怎麼禱告。<br><br>而聖靈的幫助方式，是「<strong>說不出來的歎息</strong>」。<br><br>——連那份代禱，都不是用完整句子的。<br><br>所以如果你此刻只能歎氣，只能坐在那裡什麼都說不出來——<strong>那也已經在被翻譯了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個問題：「主現在在做什麼？」</p>
+
+      <p>我現在的答案是這五項：</p>
+
+      <p><strong>祂在分恩賜</strong>——所以你手上有的那份，是祂給的。</p>
+
+      <p><strong>祂差了聖靈來</strong>——所以你不是自己在撐。</p>
+
+      <p><strong>祂在為你代求</strong>——就是現在，而且是長遠地、不中斷地。</p>
+
+      <p><strong>祂在預備地方</strong>——而目的是「我在哪裡，叫你們也在那裡」。</p>
+
+      <p><strong>祂作教會的頭</strong>——所以你受的傷，那個頭是知道的。</p>
+
+      <div class="highlight">
+        <strong>而司提反那一幕，我想留到最後</strong>
+        他被石頭打的時候，看見「人子<strong>站</strong>在神的右邊」。<br><br>那是新約唯一一次「站」。<br><br>而如果你今天正在一個很難的地方——被誤解、被虧待、撐得很辛苦、覺得沒有人知道——<br><br>我想把那一幕留給你：<br><br><strong>那位坐在寶座右邊的，會為祂的人站起來。</strong>
+      </div>
+
+      <div class="big-quote">
+        我看見天開了，<br>人子站在神的右邊
+        <cite>— 使徒行傳 七章五十六節</cite>
+      </div>
+
+      <p>祂升天了，而祂沒有離開這件事。</p>
+
+      <p>祂只是換了一個位置——換到一個可以同時看顧所有人的位置。</p>
+
+      <p>而在那個位置上，祂正在做的其中一件事，是<strong>叫你的名字</strong>。</p>
+
+      <p>就像祂當年說：「西門，西門。」</p>
+
+      <p>願你今天，也知道自己被這樣記著。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  升天之後的工作 · Threads Series
+</footer>
+
+</body>
+</html>

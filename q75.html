@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>稱耶穌為主 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>稱祂為<span>主</span></h1>
+  <p class="subtitle">你們不是自己的人，因為你們是重價買來的</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「我的人生我作主」</h2>
+      <p class="card-hook">這句話聽起來很好，直到你發現自己主得很爛</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我們這個時代最推崇的一句話，大概就是「做自己的主人」。</p>
+
+      <p>而這句話有它動人的地方——它反對的是被操控、被安排、被迫活成別人期待的樣子。這些反對，都是對的。</p>
+
+      <p>可是我後來發現一件事：<strong>「我作主」這件事，實際執行起來並沒有想像中那麼好。</strong></p>
+
+      <div class="highlight">
+        <strong>因為當你是自己的主人，你也同時是</strong>
+        自己的<strong>裁判</strong>——所以你會不斷評分，而且對自己特別嚴苛。<br>自己的<strong>供應者</strong>——所以什麼都得自己張羅，沒有人兜底。<br>自己的<strong>拯救者</strong>——所以出事的時候，只能靠自己爬出來。<br>自己的<strong>意義來源</strong>——所以你必須不斷證明這一生值得。<br><br>這些職位加起來，其實非常累。<br><br>而最累的一點是：<strong>你不能休息，因為沒有人可以接手。</strong>
+      </div>
+
+      <p>有一年我很清楚地經歷了這件事。事情多到我睡不著，而讓我最不安的不是工作量，是那個念頭：<strong>「如果我垮了，這些事就沒人管了。」</strong></p>
+
+      <p>那個念頭聽起來像是責任感。但它其實是一種很深的孤獨——<strong>它預設了：這一切都靠我。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚓</span>
+        後來我讀到保羅那句話，整個人被止住了：<br><br>「<strong>豈不知你們的身子就是聖靈的殿嗎……並且你們不是自己的人，因為你們是重價買來的。</strong>」<br><br>「你們不是自己的人」——這句話，第一次讀是有點刺耳的。<br><br>可是那天我讀到它的時候，心裡的感覺完全不是抗拒。<br><br>是<strong>鬆了一口氣。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看「稱耶穌為主」這件事。而你會發現，它不是一個關於服從的話題。</p>
+
+      <p>它是一個關於<strong>歸屬</strong>的話題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">在羅馬，說「耶穌是主」是會出事的</h2>
+      <p class="card-hook">因為那個位置，已經有人坐了</p>
+    </div>
+    <div class="card-body">
+
+      <p>「耶穌是主」——這句話在今天聽起來，像是一句溫和的信仰告白。</p>
+
+      <p>但在第一世紀的羅馬帝國，它是一句<strong>非常危險的話</strong>。</p>
+
+      <div class="highlight">
+        <strong>因為「主」這個頭銜，是有主人的</strong>
+        羅馬帝國推行皇帝崇拜。在許多地方，公民被要求向皇帝的像獻香，並宣告一句話：<br><br><strong>「該撒是主。」</strong>（Kyrios Kaisar）<br><br>這在當時被視為政治忠誠的表態——不是宗教問題，是效忠問題。<br><br>而基督徒不肯說。<br><br>他們願意為皇帝禱告，願意納稅，願意守法。<strong>但他們不肯說那四個字。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        因為在他們的認信裡，那個位置已經有人了。<br><br>「<strong>耶穌是主</strong>」（Kyrios Iēsous）——這是初代教會最早、也最核心的認信之一。保羅說：「你若口裡認耶穌為主，心裡信神叫他從死裡復活，就必得救。」<br><br>而這兩句話——「該撒是主」與「耶穌是主」——在文法上完全對稱，在內容上完全排他。<br><br><strong>你只能說一句。</strong>
+      </div>
+
+      <p>所以初代教會的殉道，很多不是因為他們信什麼奇怪的東西，而是因為<strong>他們不肯把那個頭銜給別人。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>而「主」這個字的分量，還有另一層。</p>
+
+      <div class="highlight">
+        <strong>七十士譯本的翻譯選擇</strong>
+        我們談過，猶太人不敢直呼神聖四字名 YHWH，讀經時改念「Adonai」（我的主）。<br><br>而當舊約被譯成希臘文時，譯者面對同樣的問題。他們的處理方式是：<strong>把 YHWH 譯作 Kyrios（主）。</strong><br><br>所以在希臘文舊約裡，「主」這個字，指的就是耶和華。<br><br>而新約作者，把同一個字用在耶穌身上。<br><br>更關鍵的是：新約多次<strong>把舊約中論到耶和華的經文，直接應用在耶穌身上</strong>。比如「凡求告主名的，就必得救」——約珥書原文說的是耶和華的名，而保羅在羅馬書引用它，上下文講的是耶穌。
+      </div>
+
+      <p>所以「稱耶穌為主」，在當時的語境裡，同時撞上了兩堵牆：<strong>對羅馬人，那是政治的挑戰；對猶太人，那是神學的震撼。</strong></p>
+
+      <p>那麼，我們為什麼稱祂為主？下一篇，我們看聖經給的理由——而那個理由，跟「權柄」的關係不大。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">理由是：祂付了錢</h2>
+      <p class="card-hook">而那個價，是祂自己的血</p>
+    </div>
+    <div class="card-body">
+
+      <p>我們稱耶穌為「主」，聖經給的理由，出乎意料地具體：</p>
+
+      <div class="big-quote">
+        因為你們是重價買來的
+        <cite>— 哥林多前書 六章二十節</cite>
+      </div>
+
+      <p>把整件事說完整，是這樣的：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 祂為我們捨身，流出寶血</span>
+          「你曾被殺，用自己的血從各族、各方、各民、各國中買了人來，叫他們歸於神。」（啟五 9～10）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 付出重價，贖回我們歸於父神</span>
+          不是象徵性的、不是打折的。是<strong>重價</strong>——而那個價，是祂的命。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 所以我們不再是自己的，乃是屬祂的</span>
+          「你們不是自己的人。」（林前六 19～20）<br>「我們沒有一個人為自己活，也沒有一個人為自己死……我們或活或死總是主的人。」（羅十四 7～8）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 因此，稱祂為主，是理所當然的</span>
+          這不是一種額外的虔誠表現。<strong>這是事實的陳述。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>我想在「理所當然」這四個字上停一下。</p>
+
+      <div class="highlight">
+        <strong>因為這改變了整件事的性質</strong>
+        大部分人理解的「以耶穌為主」，是一個<strong>決定</strong>——我決定讓祂作我的主，我把主權交給祂。<br><br>而這個理解不算錯，但它把重心放錯了地方。<br><br>因為按照聖經的邏輯，<strong>祂是不是主，不取決於我的決定。</strong><br><br>祂已經付了那個價。而付了價的人，就是所有者——這是一個<strong>已經完成的事實</strong>，不是一個等待我批准的提案。<br><br>所以「稱祂為主」，不是<strong>授予</strong>祂一個頭銜，而是<strong>承認</strong>一個已經存在的事實。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        這就像一間房子已經被人買下、過戶完成、款項付清。<br><br>而住在裡面的人，可以繼續假裝這房子是自己的——但那不改變產權登記上的名字。<br><br>「承認」與「不承認」，差別不在產權，<strong>差別在住在裡面的人活得多辛苦。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這裡有一件事，我覺得是整個題目最溫柔的地方：</p>
+
+      <div class="highlight">
+        <strong>「不是自己的人」，其實是一句好消息</strong>
+        如果「作自己的主」意味著：所有的事我得自己扛、所有的價值我得自己掙、所有的意義我得自己找、所有的爛攤子我得自己收——<br><br>那「不是自己的人」的意思就是：<strong>有一位負責。</strong><br><br>不是「你失去了自由」，而是「<strong>你有歸屬了</strong>」。<br><br>羅馬書那節說得極美：「我們若活著，是為主而活；若死了，是為主而死。所以，我們<strong>或活或死總是主的人</strong>。」<br><br>——連死了都還是屬祂的。<strong>沒有任何一種狀態，會讓你變回「無人認領」。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧒</span>
+        我想到走失的孩子。<br><br>一個在人群中走失的孩子，最怕的不是沒有自由，是<strong>沒有人來找。</strong><br><br>而當有人蹲下來說「你是誰家的孩子」，然後把他帶回去的時候——<strong>那個孩子失去了什麼嗎？</strong><br><br>他失去的，是那種「我一個人在這裡，沒有人知道我」的恐懼。
+      </div>
+
+      <p>那麼「主」這個字，原文的內容是什麼？「重價買來」在當時是什麼意思？下一篇，我們往下看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「重價買來」——一個奴隸市場的詞</h2>
+      <p class="card-hook">而保羅選這個詞，是有原因的</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Kyrios<br>主</div>
+        <div class="term-desc">這個字在當時的希臘文裡有很寬的用法：可以是禮貌的稱呼（相當於「先生」），可以是奴隸對主人的稱呼，也可以指神明或皇帝。<br><br>而它的核心意思是：<strong>擁有權柄、擁有所有權的那一位。</strong><br><br>七十士譯本用它翻譯 YHWH，而新約把它用在耶穌身上——這個延續本身，就是一種宣告。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Agorazō<br>買來</div>
+        <div class="term-desc">「重價<strong>買來</strong>」用的字，來自 agora——<strong>市場</strong>。<br><br>所以這個字的字面就是「在市場上買下」。它是一個商業用詞，非常實際、非常不浪漫。<br><br>而啟示錄五章九節那首新歌，用的也正是這個字：「用自己的血……<strong>買了</strong>人來。」</div>
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅在寫給哥林多人的信裡用這個詞，是有針對性的</strong>
+        哥林多是一座港口城市，奴隸買賣是日常景象。他的讀者對「在市場上被買下」這個畫面，非常熟悉。<br><br>而當時確實有一種做法：<strong>贖買奴隸的自由。</strong>有人替奴隸付出贖價，奴隸就得釋放。<br><br>所以保羅的意思是：<strong>你們曾經在那個台上，而有一位付了價。</strong><br><br>只是這次付的，不是銀子。彼得說得很清楚：「知道你們得贖……不是憑著能壞的金銀等物，乃是憑著基督的寶血，如同無瑕疵、無玷污的羔羊之血。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而希臘文裡還有一個相關的字，把這件事說得更完整：</p>
+
+      <div class="term-box">
+        <div class="term-original">Exagorazō<br>買出來</div>
+        <div class="term-desc">在 agorazō 前面加上 ex（出去）。意思是「<strong>買下並帶離市場</strong>」——買了之後，不再放回去販售。<br><br>加拉太書說：「基督既為我們受了咒詛，就贖出我們脫離律法的咒詛。」用的正是這個字。<br><br><strong>不只是被買，而是被買走。</strong>從此離開那個市場。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛓️</span>
+        兩個字合起來，畫面就完整了：<br><br><strong>agorazō</strong>——有人為你付了錢。<br><strong>exagorazō</strong>——而且把你帶走了，你不會再被擺回去賣。<br><br>而這也解釋了為什麼「你們不是自己的人」不是壞消息。<br><br>因為在那個奴隸市場上，「屬於自己」從來不是一個選項。<strong>選項只有：屬於誰。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅在羅馬書第六章，把這件事講得非常直白。他用了一個奇特的說法：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們從前作罪的奴僕……但現今，你們既從罪裡得了釋放，作了神的奴僕</p>
+        <p class="scripture-ref">羅馬書 六章二十、二十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        注意保羅沒有說「你們現在自由了，誰的奴僕都不是」。<br><br>他說的是<strong>換了主人</strong>。<br><br>而他自己在寫信時的自稱，也一貫是這個：「<strong>耶穌基督的僕人保羅</strong>」——原文那個字（doulos）就是「奴隸」。<br><br>雅各、彼得、猶大，寫信時的自稱都一樣。<br><br>這是一個很值得注意的選擇：他們大可以自稱「使徒」——那是更高的頭銜。而他們常常先說「僕人」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而最後，我想提舊約律法裡一個非常美的制度，因為它正好對應這件事。</p>
+
+      <div class="highlight">
+        <strong>甘心作僕人的奴隸</strong>
+        出埃及記二十一章規定：一個希伯來奴僕，服事六年，第七年可以自由出去，不用付贖金。<br><br>但律法接著說：「<strong>倘或奴僕明說：『我愛我的主人和我的妻子兒女，不願意自由出去。』</strong>」<br><br>那麼，主人要領他到門前，用錐子穿他的耳朵——而他就永遠服事主人。<br><br>——注意那個理由：<strong>「我愛我的主人。」</strong><br><br>不是因為還不起債，不是因為沒有別的去處。是因為<strong>他愛。</strong><br><br>而那個穿過的耳洞，成為一輩子看得見的記號。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        我一直覺得這是舊約律法裡最動人的一條。<br><br>它創造了一種在邏輯上很奇怪的東西：<strong>自願的、出於愛的、永久的歸屬。</strong><br><br>那個人是自由的。他可以走。而他選擇留下。<br><br>而詩篇四十篇有一句，希伯來書引用時應用在基督身上：「<strong>你已經開通我的耳朵。</strong>」<br><br>——那位本可以不來的，選擇了留下來服事。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        所以「稱祂為主」這件事，有兩個層次：<br><br><strong>第一層是事實</strong>：祂付了價，我屬祂。這不取決於我。<br><br><strong>第二層是回應</strong>：像那個到了第七年卻說「我愛我的主人」的僕人一樣——<strong>我留下，不是因為我沒有選擇，是因為我願意。</strong>
+      </div>
+
+      <p>下一篇，我們談一個很實際的問題：「以祂為主」在日常生活裡，具體長什麼樣子？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「主啊，主啊」，卻不遵行</h2>
+      <p class="card-hook">主自己指出了這個落差</p>
+    </div>
+    <div class="card-body">
+
+      <p>主耶穌說過一句話，直接針對「稱祂為主」這件事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們為甚麼稱呼我「主啊，主啊」，卻不遵我的話行呢？</p>
+        <p class="scripture-ref">路加福音 六章四十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>這句話的邏輯很簡單，也很不留情</strong>
+        「主」這個詞，本身就包含了「聽命」的意思。<br><br>所以「稱祂為主，卻不聽祂的」——在語意上就是矛盾的。<br><br>就像一個人不斷說「這是我的老闆」，卻從來不做他交代的事。<strong>那個稱呼，是空的。</strong><br><br>這也是我們在第三誡談過的「妄稱」——把一個名分，用在一個沒有實質的地方。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>那麼，「以祂為主」在實際上長什麼樣子？我想它至少涵蓋幾個很具體的層面：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 時間</span>
+          一個人的行事曆，比他的口頭宣告誠實得多。<br><strong>你把時間給了誰，誰就在你生活裡有分量。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 金錢</span>
+          「你的財寶在哪裡，你的心也在那裡。」<br>而奉獻的意義，不在於神需要那筆錢，在於<strong>那個動作在提醒你：這一切是誰的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 身體</span>
+          保羅那句「你們不是自己的人」，上下文正是在談身體：「豈不知你們的身子就是聖靈的殿嗎？」<br>怎麼使用它、怎麼照顧它、怎麼保守它——<strong>都在這個範圍內。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 決定</span>
+          最實際的一項。<strong>當我的想法與祂的話衝突時，哪一個讓步？</strong><br>而這個問題，通常不是在大事上被回答的，是在很多小事上一次一次累積的。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 未來</span>
+          雅各書提醒：「你們只當說：『主若願意，我們就可以活著，也可以做這事，或做那事。』」<br>不是禁止計畫，而是<strong>計畫的時候，記得計畫的不是自己。</strong>
+        </div>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想誠實地談一個很多人心裡的疑慮：<strong>這樣會不會失去自我？</strong></p>
+
+      <div class="highlight">
+        <strong>聖經的回答，恰好相反</strong>
+        主說：「凡要救自己生命的，必喪掉生命；凡為我喪掉生命的，必得著生命。」<br><br>這句話乍聽像一個矛盾。但它描述的，其實是一個很多人都驗證過的經驗：<br><br><strong>越是緊抓著「我要活出我自己」的人，往往越焦慮、越空、越不知道自己是誰。</strong><br><br>因為「自我」如果沒有一個外在的參照，它就會不斷變形——變成別人的期待、變成社群的風向、變成這個月流行的樣子。<br><br>而反過來，一個知道自己屬於誰的人，反而穩得住。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪁</span>
+        我想到風箏。<br><br>風箏之所以能飛，正是因為有那條線。線不是限制，<strong>線是它能對抗風、能往上升的原因。</strong><br><br>剪斷線的風箏會怎樣？它不會飛得更高。它會翻滾幾下，然後掉下來。<br><br>「不是自己的人」——那條線，是讓你飛得起來的東西。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>最後我想留一個很重要的分辨。</p>
+
+      <div class="highlight">
+        <strong>「主」不是「暴君」</strong>
+        有些人聽到「主權」、「順服」、「不是自己的人」，會本能地緊繃——因為他們過去被權威傷害過。<br><br>而聖經對這位主的描述，值得對照著讀：<br><br>祂是那位<strong>為羊捨命</strong>的好牧人。<br>祂是那位在最後的晚餐上<strong>脫了外衣、替門徒洗腳</strong>的主。<br>祂說：「我的軛是容易的，我的擔子是輕省的。」<br>祂說：「以後我不再稱你們為僕人……<strong>我乃稱你們為朋友。</strong>」<br><br>——一位會為僕人洗腳、又稱僕人為朋友的主。<br><br><strong>這是全宇宙唯一一位，值得把主權交出去的主。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「我的主！我的神！」</h2>
+      <p class="card-hook">寫給那個累到不想再自己扛的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在多馬身上。</p>
+
+      <p>因為在整本福音書裡，最完整的一次「稱祂為主」，是從一個懷疑的人口中說出來的。</p>
+
+      <div class="highlight">
+        <strong>多馬錯過了那一次</strong>
+        主復活的那天晚上向門徒顯現，而多馬剛好不在。<br><br>其他人告訴他「我們已經看見主了」，他說了那句有名的話：「我非看見他手上的釘痕，用指頭探入那釘痕，又用手探入他的肋旁，<strong>我總不信。</strong>」<br><br>然後他等了八天。<br><br>八天裡，其他人都在喜樂中，只有他一個人卡在那裡。
+      </div>
+
+      <p>八天後，門又關著，主來站在當中，說：「願你們平安。」</p>
+
+      <p>然後祂轉向多馬——而祂說的話，正是多馬那天說過的每一句：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">伸過你的指頭來，摸我的手；伸出你的手來，探入我的肋旁。不要疑惑，總要信</p>
+        <p class="scripture-ref">約翰福音 二十章二十七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        主耶穌不在場的時候，多馬說的那些話，祂全部知道。<br><br>而祂沒有責備他的懷疑。<strong>祂照著多馬提出的每一個條件，一項一項給他。</strong><br><br>「伸過你的指頭來」——祂主動伸出手。<br><br>而經文沒有記多馬真的去摸。他只是說了一句話。
+      </div>
+
+      <div class="big-quote">
+        我的主！我的神！
+        <cite>— 約翰福音 二十章二十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>「我的」——兩次</strong>
+        這是整卷約翰福音裡，最完整的一次認信。而它出自那個最懷疑的人。<br><br>而我最喜歡的是那兩個「<strong>我的</strong>」。<br><br>不是「你是主」，不是「他是神」。是<strong>「我的」</strong>。<br><br>那是一個歸屬的宣告——不只是承認祂的身分，更是承認：<strong>我是屬祂的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個睡不著的夜晚，和那個念頭：「如果我垮了，這些事就沒人管了。」</p>
+
+      <p>我現在會這樣回答那個念頭：</p>
+
+      <p><strong>這些事本來就不是我在管的。</strong></p>
+
+      <p>不是因為我不負責任，而是因為——我不是這一切的主。而好消息是：<strong>有一位是。</strong></p>
+
+      <p>而祂管理這一切的能力，遠遠超過我；祂對這些事的在乎，也遠遠超過我。</p>
+
+      <div class="highlight">
+        <strong>所以「你們不是自己的人」，我現在讀起來是這樣的：</strong>
+        你不必再當自己的<strong>裁判</strong>——因為有一位已經宣告了你的價值，用祂的血標了價。<br><br>你不必再當自己的<strong>供應者</strong>——「你們需用的這一切東西，你們的天父是知道的。」<br><br>你不必再當自己的<strong>拯救者</strong>——那個位置，已經有人在兩千年前佔了。<br><br>你不必再當自己的<strong>意義來源</strong>——因為「我們或活或死總是主的人」。<br><br><strong>你可以下班了。</strong>
+      </div>
+
+      <p>「重價買來」——那個價，是祂付的，不是你付的。</p>
+
+      <p>而一個已經被買下、被帶走、被認領的人，可以睡一個好覺。</p>
+
+      <p>願你今晚，就是這樣。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  稱祂為主 · Threads Series
+</footer>
+
+</body>
+</html>

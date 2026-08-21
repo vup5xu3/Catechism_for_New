@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基督何時再來 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>那日子，<span>沒有人知道</span></h1>
+  <p class="subtitle">只有天父知道——而這件事本身，是恩典</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那些「算出來」的日子，一個都沒有到</h2>
+      <p class="card-hook">而每一次落空之後，都留下一地的傷</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>教會歷史上，有過很多次「算出日期」的事件。</p>
+
+      <p>每一次的模式都很像：有人根據某些經文、某些數字、某些天象，推算出一個明確的日子。然後訊息傳開，有人賣掉房子、辭掉工作、變賣家產，聚集起來等候。</p>
+
+      <p>然後那一天過去了。什麼都沒有發生。</p>
+
+      <div class="highlight">
+        <strong>而落空之後留下的，往往不只是失望</strong>
+        有人失去了全部的積蓄。<br>有人被家人和鄰居當成笑話。<br>有人從此不再信了——不是不信基督，是<strong>不敢再信任何屬靈的話</strong>。<br><br>而更麻煩的是：那些事件會被拿來當作嘲笑整個信仰的材料。<br><br>——「你看，他們又算錯了。」
+      </div>
+
+      <p>而這件事最令人不解的地方是：<strong>聖經在這一點上，講得再清楚不過了。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚫</span>
+        主耶穌自己說的那句話，沒有任何模糊的空間：<br><br>「但那日子，那時辰，<strong>沒有人知道</strong>，連天上的使者也不知道，<strong>子也不知道</strong>，惟有父知道。」<br><br>祂把範圍列得很完整：人不知道、天使不知道、<strong>連子也不知道</strong>。<br><br>而祂還是說了。<strong>祂大可以不提最後那一項。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這件事。而我想說的重點不是「不要算」——那太顯而易見了。</p>
+
+      <p>我想說的是：<strong>「不知道」這件事本身，是一份設計。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">門徒問過同一個問題，而祂沒有回答</h2>
+      <p class="card-hook">升天前的最後一次對話</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第一章，門徒在祂升天前問了最後一個問題。</p>
+
+      <p>而那個問題，非常人性：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">主啊，你復興以色列國就在這時候嗎？</p>
+        <p class="scripture-ref">使徒行傳 一章六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而主的回答，是一句拒絕加一句差派</strong>
+        「<strong>父憑著自己的權柄所定的時候、日期，不是你們可以知道的。</strong>」——這是拒絕。<br><br>「<strong>但聖靈降臨在你們身上，你們就必得著能力，並要在耶路撒冷、猶太全地，和撒瑪利亞，直到地極，作我的見證。</strong>」——這是差派。<br><br>祂沒有回答那個時間問題。<strong>祂把話題轉到了他們該做的事上。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">↩️</span>
+        我覺得這個轉向，本身就是答案。<br><br>門徒問的是：<strong>什麼時候？</strong><br><br>而主回答的是：<strong>你們要去做什麼。</strong><br><br>——那不是迴避，那是<strong>把注意力放回該放的地方</strong>。<br><br>而緊接著祂就升天了，然後天使說：「你們為甚麼站著望天呢？」<br><br>同一個訊息，說了兩次。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主在馬太福音二十四章講到這件事時，用了幾個比喻。而那些比喻的重點，全部一致：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>比喻</th>
+            <th>重點</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">挪亞的日子</td>
+            <td>「不知不覺洪水來了，把他們全都沖去。」——那日子是<strong>在人毫無防備時</strong>來的。</td>
+          </tr>
+          <tr>
+            <td class="src">家主與賊</td>
+            <td>「若是家主知道幾更天有賊來，就必警醒……<strong>所以，你們也要預備</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">忠心的僕人</td>
+            <td>「主人來到，看見他這樣行，那僕人就有福了。」——重點在<strong>主人不在的時候，他在做什麼</strong>。</td>
+          </tr>
+          <tr>
+            <td class="src">十個童女</td>
+            <td>「新郎<strong>遲延</strong>的時候，她們都打盹睡著了。」——那個「遲延」，是比喻的一部分。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而每一個比喻的結論，都是同一句</strong>
+        「<strong>所以，你們要警醒</strong>，因為不知道你們的主是哪一天來到。」<br>「<strong>所以，你們要警醒</strong>；因為那日子，那時辰，你們不知道。」<br><br>——注意那個邏輯：<strong>「因為不知道，所以要警醒。」</strong><br><br>而反過來說：如果知道了，就不必一直警醒了。<strong>只要在最後那幾天準備一下就好。</strong><br><br>而那，正是「不知道」要防止的事。
+      </div>
+
+      <p>那麼，聖經對這件事的立場是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">沒有人知道，只有天父知道</h2>
+      <p class="card-hook">而推算的人，必要蒙羞</p>
+    </div>
+    <div class="card-body">
+
+      <p>基督什麼時候再來？答案很簡單：</p>
+
+      <div class="big-quote">
+        沒有人知道，<br>天使和主耶穌也不知道，<br>只有天父知道。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">但那日子，那時辰，沒有人知道，連天上的使者也不知道，子也不知道，惟有父知道
+        </p>
+        <p class="scripture-ref">馬可福音 十三章三十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而由此帶出一個很明確的判準</strong>
+        <strong>若有人根據任何經文，推算基督再來的年、月、日——必要蒙羞，顯為虛妄。</strong><br><br>而聖經自己就對這種事提出過警告：<br><br>「無論有靈、有言語、有冒我名的書信，說主的日子現在到了，<strong>不要輕易動心，也不要驚慌</strong>。」（帖後二 1～3）<br><br>「若有人對你們說：『基督在曠野裡』，你們不要出去！或說：『基督在內屋中』，你們不要信！」（太廿四 23～28）
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>帖撒羅尼迦後書那段，值得多看一眼——因為它描述的情況，正是後世一再重演的模式。</p>
+
+      <div class="highlight">
+        <strong>保羅列了三種傳播管道</strong>
+        「無論有<strong>靈</strong>」——有人聲稱是聖靈的感動、是屬靈的啟示。<br>「有<strong>言語</strong>」——有人口傳，說某某人說的。<br>「有<strong>冒我名的書信</strong>」——甚至有偽造的文件，掛著使徒的名。<br><br>——兩千年前就有這三種了。<br><br>而保羅的吩咐是：「<strong>不要輕易動心，也不要驚慌。</strong>」<br><br>注意那兩個詞：不要動心（不要被煽動），不要驚慌（不要被嚇到）。<br><br><strong>這一類訊息，通常同時具備這兩種效果。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而主在馬太福音二十四章給的判準，更簡單也更好用：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">若有人對你們說：「基督在曠野裡」，你們不要出去！或說：「基督在內屋中」，你們不要信！</p>
+        <p class="scripture-ref">馬太福音 二十四章二十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚡</span>
+        而祂接著給了理由：<br><br>「<strong>閃電從東邊發出，直照到西邊；人子降臨也要這樣。</strong>」<br><br>——閃電的特徵是什麼？<strong>不需要有人通知你。</strong><br><br>沒有人會在閃電之後說「剛才有閃電，你知道嗎」。因為只要你在戶外，你就看見了。<br><br>而主的意思是：<strong>祂再來的時候，不會是一個需要別人告訴你的消息。</strong><br><br>所以只要有人說「祂在某個地方，來，我帶你去」——<strong>那就一定不是。</strong>
+      </div>
+
+      <p>而這個判準，涵蓋了幾乎所有的相關偏差。下一篇，我們把它整理成一套可用的辨別方法。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「時候、日期」與「預兆」，是兩回事</h2>
+      <p class="card-hook">而混淆這兩者，正是問題的來源</p>
+    </div>
+    <div class="card-body">
+
+      <p>這裡有一個需要分清楚的地方，因為它常被混在一起。</p>
+
+      <div class="highlight">
+        <strong>聖經同時說了兩件事</strong>
+        <strong>一、日期不可知</strong>——「那日子，那時辰，沒有人知道。」<br><br><strong>二、預兆可以察看</strong>——主自己講了無花果樹的比喻：「你們看見這一切的事，也該知道人子近了，正在門口了。」<br><br>——這兩件事不矛盾。而分別在於：<br><br><strong>預兆告訴你「近了」，但它不會告訴你「哪一天」。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        主用的那個比喻很好懂：<br><br>「你們可以從無花果樹學個比方：當樹枝發嫩長葉的時候，你們就知道<strong>夏天近了</strong>。」<br><br>——樹發芽，你知道夏天近了。<br><br>而你能因此算出「夏天從六月十七日下午三點開始」嗎？<strong>不能。</strong><br><br>季節的判斷與日期的計算，是兩種不同的東西。<br><br>而主接著說的正是：「但那日子，那時辰，沒有人知道。」<br><br><strong>祂把這兩句話放在同一段裡。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而使徒行傳一章七節那句話的原文用字，也把這件事分得很清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>原文</th>
+            <th>意思</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">Chronos<br>時候</td>
+            <td>指<strong>時間的長度</strong>——多久、幾年。英文 chronology（年代學）從此而來。</td>
+          </tr>
+          <tr>
+            <td class="src">Kairos<br>日期</td>
+            <td>指<strong>時機、特定的時刻</strong>——那個「時候到了」的點。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        主說「父憑著自己的權柄所定的<strong>時候、日期</strong>」——祂把兩個字都用上了。<br><br>也就是說：<strong>不論是「還要多久」，還是「哪一個時刻」，都不是我們可以知道的。</strong><br><br>祂把這兩條路都封住了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>那麼，實際上怎麼分辨？我整理成幾個問題：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 有沒有給出具體日期？</span>
+          年、月、日——只要出現具體日期，<strong>就已經違背了主明說的話</strong>。不需要再看內容。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 有沒有要你「去某個地方」？</span>
+          「基督在曠野裡」「基督在內屋中」——主說：<strong>不要出去，不要信。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 有沒有要你變賣、辭職、切斷關係？</span>
+          聖經對等候的教導，一貫是<strong>「照常做工」</strong>。<br>帖撒羅尼迦後書就處理過這個問題：有人「不作工，反倒專管閒事」，而保羅的吩咐是：「<strong>安靜做工，吃自己的飯。</strong>」
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 它讓你「動心」還是「驚慌」？</span>
+          保羅點出的正是這兩種反應。<strong>一個訊息如果同時讓你亢奮又恐懼，那要特別小心。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而第三項，是帖撒羅尼迦後書整卷書的實際處境。<br><br>那間教會因為聽信「主的日子現在到了」，有人開始不工作了。<br><br>而保羅的處理方式，非常務實：<br><br>「若有人不肯做工，就不可吃飯。」<br>「我們聽說，在你們中間有人不按規矩而行，甚麼工都不做，反倒專管閒事。」<br>「我們靠主耶穌基督吩咐、勸戒這樣的人，要<strong>安靜做工，吃自己的飯</strong>。」<br><br>——「安靜做工」。<br><br><strong>這就是聖經所教的等候方式。</strong>
+      </div>
+
+      <p>下一篇，我們談那個更深的問題：為什麼神不告訴我們？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「不知道」，是一份設計</h2>
+      <p class="card-hook">如果知道了，會發生什麼事？</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想認真想一個問題：<strong>如果神告訴我們確切的日期，會怎麼樣？</strong></p>
+
+      <p>做一個思想實驗。假設現在公布：那日子是四十年後的某一天。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">前三十九年會發生什麼？</span>
+          <strong>沒有人會警醒。</strong><br>因為不需要——反正還早。<br>而「警醒」這個吩咐，就會失去意義。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">最後一年會發生什麼？</span>
+          會出現一場大規模的、集體的「臨時抱佛腳」。<br>而那種出於恐懼的悔改，<strong>是關於自保，不是關於愛。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而那些在日期之前就過世的人呢？</span>
+          他們會活在一種「這件事與我無關」的心態裡。<br>——而聖經要每一代人都活在那個盼望裡。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>所以「不知道」，保護了兩件事</strong>
+        <strong>第一，它保護了「警醒」的真實性。</strong><br>一個因為不知道而時時預備的人，和一個因為算準了日子而臨時準備的人——他們的生命是不一樣的。<br><br><strong>第二，它保護了動機。</strong><br>出於恐懼的預備，和出於愛的等候，是兩回事。<br><br>而聖經要的是後者：「等候<strong>所盼望的福</strong>」、「凡愛慕他顯現的人」。<br><br>——「<strong>愛慕</strong>」。那不是害怕的語氣。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        我想到一個很日常的對照。<br><br>如果家裡有人明天要突擊檢查，你今晚會大掃除。<br><br>而如果一個你很愛的人隨時可能回來——你會<strong>一直把家保持在他回來時會喜歡的樣子</strong>。<br><br>兩種都會讓房子乾淨。<strong>但那是兩種完全不同的生活。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而還有一個問題，值得認真面對：<strong>「子也不知道」是什麼意思？</strong></p>
+
+      <p>這句話讓很多人困惑：如果祂是神，怎麼會有不知道的事？</p>
+
+      <div class="highlight">
+        <strong>而歷代對這句話的理解，多半連於「虛己」</strong>
+        腓立比書說：「他本有神的形像，不以自己與神同等為強奪的，<strong>反倒虛己</strong>，取了奴僕的形像。」<br><br>那個「虛己」（kenoō），意思是「倒空自己」。<br><br>而歷代教會多半這樣理解：<strong>祂在道成肉身的狀態中，自願不使用某些屬於祂的權柄與知識</strong>，完全順服父的安排。<br><br>就像路加福音說祂「<strong>智慧和身量……一齊增長</strong>」——那是一個真實的人的成長過程。<br><br>而這件事本身，反而更顯出那份順服的深度：<strong>祂連「什麼時候完成」都交在父手裡。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而我覺得這裡有一個很值得學的態度。<br><br>如果連祂都說「我不知道，那在父的權柄裡」——<br><br>那我們對這件事的態度，大概也該是這樣。<br><br><strong>不知道，而且不需要知道，因為那不在我的權柄裡。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而那個「不知道」，其實對應了一個很實際的心態：<strong>今天就有可能。</strong></p>
+
+      <div class="highlight">
+        <strong>而這才是那份未知的作用</strong>
+        它不是要讓人焦慮，是要讓人活得<strong>不留尾巴</strong>。<br><br>那件一直想道歉卻沒說的事。<br>那個一直想聯絡卻沒打的電話。<br>那個一直想處理卻拖著的問題。<br>那句一直想說卻沒說出口的話。<br><br>——「今天就有可能」這個念頭，<strong>會讓人把事情排出優先順序。</strong><br><br>而這，正是主那些比喻的重點：主人不在的時候，那個僕人在做什麼。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">你不必知道日期，才能預備好</h2>
+      <p class="card-hook">寫給那個被末世訊息弄得心慌的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一個很簡單的結論上。</p>
+
+      <div class="highlight">
+        <strong>「不知道日期」不是一個缺口，是一個安排</strong>
+        神沒有隱瞞什麼重要的東西。<br><br>你需要知道的，祂都說了：<strong>祂會來、要警醒、要預備、要安靜做工。</strong><br><br>而你不需要知道的那一項——日期——祂明說了那在父的權柄裡。<br><br>而申命記那句話，正好適用：「<strong>隱祕的事是屬耶和華我們神的；惟有明顯的事是永遠屬我們和我們子孫的，好叫我們遵行這律法上的一切話。</strong>」<br><br>——注意那個目的：<strong>「好叫我們遵行。」</strong><br><br>已啟示的，是給我們去行的。而未啟示的，屬於祂。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你曾經被某些末世訊息弄得心慌——那種讓人睡不著、讓人恐懼、讓人想做一些極端決定的訊息——</p>
+
+      <p>我想給你保羅那句話：</p>
+
+      <div class="big-quote">
+        不要輕易動心，<br>也不要驚慌
+        <cite>— 帖撒羅尼迦後書 二章二節</cite>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        而保羅給那間教會的處方，樸實到有點好笑：<br><br><strong>「安靜做工，吃自己的飯。」</strong><br><br>——去上班。把飯吃了。把該做的事做完。<br><br>那就是聖經所教的等候方式。<br><br>而路加福音那句話，也是同樣的意思：主人回來的時候，那有福的僕人在做什麼？<br><br>經文說：<strong>「主人來到，看見僕人這樣行。」</strong><br><br>——他在做他平常在做的事。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下最後一個角度。</p>
+
+      <div class="highlight">
+        <strong>對每一個人來說，那個日子其實都是「隨時」</strong>
+        因為除了主再來，還有另一種可能：<strong>我先走。</strong><br><br>而那個時間，同樣沒有人知道。<br><br>所以「預備好」這件事，對每一個人來說，本來就是每天的功課——<strong>不論主哪一天來。</strong><br><br>詩篇說：「求你指教我們怎樣數算自己的日子，好叫我們得著智慧的心。」<br><br>——「<strong>數算自己的日子</strong>」。<br><br>那不是算出總數，是知道每一天都是被數過的。
+      </div>
+
+      <p>那日子，那時辰，沒有人知道。</p>
+
+      <p>而這件事的意思不是「所以隨便過」，也不是「所以要恐慌」。</p>
+
+      <p>它的意思是：<strong>今天，就好好活。</strong></p>
+
+      <p>把該說的話說了，把該做的事做了，然後安靜做工，吃自己的飯。</p>
+
+      <p>而那位知道日期的，會在祂定的時候來。</p>
+
+      <p>願你在等候的日子裡，心是安的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  那日子沒有人知道 · Threads Series
+</footer>
+
+</body>
+</html>

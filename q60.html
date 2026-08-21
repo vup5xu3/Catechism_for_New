@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第二誡 不可造像 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>第二誡 · <span>不造像</span></h1>
+  <p class="subtitle">不可雕刻偶像，也不可做任何形像去事奉</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">牆上那幅畫，我看了二十年</h2>
+      <p class="card-hook">一個金髮碧眼的耶穌，溫柔地看著遠方</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我小時候常去的那個地方，客廳牆上掛著一幅畫。</p>
+
+      <p>是一幅很典型的耶穌像——長髮微捲，膚色白皙，眼睛是淺色的，臉朝著斜上方，光從左後方灑下來。旁邊還有一隻小羊。</p>
+
+      <p>我從小看到大。那幅畫在我心裡，就是「耶穌長這樣」。</p>
+
+      <p>直到有一年，我在讀一本講中東歷史的書，看到一段關於第一世紀猶太人外貌的描述——深色捲髮、橄欖色皮膚、身高大約一米六幾、常年在戶外行走曬得很黑。我把書合上，腦中忽然閃過牆上那幅畫。</p>
+
+      <div class="highlight">
+        <strong>那一刻我意識到一件很不舒服的事</strong>
+        我腦中那個「耶穌的樣子」，不是從聖經來的。<br><br>聖經從頭到尾，<strong>沒有描述過主耶穌的長相</strong>。一句都沒有。四福音書記載了祂說的話、做的事、去過的地方、遇見的人——卻完全沒有描述祂的外貌。<br><br>而以賽亞書唯一提到的一句，還是反方向的：「他無佳形美容；我們看見他的時候，也無美貌使我們羨慕他。」<br><br>所以我腦中那張臉，是十九世紀某個歐洲畫家想像出來的。而我看了二十年，把它當成真的。
+      </div>
+
+      <p>這件事讓我開始認真面對第二誡。</p>
+
+      <p>而我很快發現，這一誡遠比我想的難處理。因為它碰觸的不是「拜不拜偶像」這麼簡單的問題——它碰觸的是：<strong>我腦中那個神的形象，是誰給我的？</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🖼️</span>
+        我後來想到一個比喻。<br><br>如果有人從來沒見過你，只根據傳聞畫了一幅你的畫像，然後把那幅畫掛起來，天天對著它說話、想念你——他到底是在想念你，還是在想念那幅畫？<br><br>更麻煩的是：<strong>當有一天你本人出現，而你跟畫上不一樣的時候，他會相信哪一個？</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你認真看這一誡。它的提示比大部分人以為的，要嚴格得多。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">金牛犢那天，他們其實沒有換神</h2>
+      <p class="card-hook">這是整件事最令人不安的地方</p>
+    </div>
+    <div class="card-body">
+
+      <p>大部分人讀金牛犢那一段，會理解成：以色列人背棄了耶和華，改拜別的神了。</p>
+
+      <p>可是如果你仔細讀經文，會發現事情<strong>沒有那麼單純</strong>。</p>
+
+      <p>亞倫鑄好牛犢之後，百姓說：「以色列啊，這是領你出埃及地的神。」</p>
+
+      <p>——「<strong>領你出埃及地的</strong>」。他們指的是誰？他們指的就是耶和華。</p>
+
+      <p>而更關鍵的是下一節。亞倫看見了，就在牛犢面前築壇，然後宣告：「明日要向<strong>耶和華</strong>守節。」</p>
+
+      <div class="highlight">
+        <strong>請看清楚這件事的性質</strong>
+        他們<strong>沒有改拜巴力</strong>，沒有改拜埃及的神明。他們口中念的，仍然是耶和華的名。他們獻的，是要獻給耶和華的祭。他們守的，是要為耶和華守的節。<br><br>他們違反的<strong>不是第一誡</strong>（除了我以外，不可有別的神）。<br>他們違反的是<strong>第二誡</strong>——<strong>他們替耶和華做了一個像。</strong>
+      </div>
+
+      <p>這一點非常重要，因為它把第一誡和第二誡的分別，說清楚了。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>第一誡</th>
+            <th>第二誡</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">禁止的是</td>
+            <td>拜<strong>錯誤的對象</strong></td>
+            <td>用<strong>錯誤的方式</strong>拜正確的對象</td>
+          </tr>
+          <tr>
+            <td class="src">問題出在</td>
+            <td>你拜的不是祂</td>
+            <td>你拜的是祂，但你把祂做成了一個東西</td>
+          </tr>
+          <tr>
+            <td class="src">典型案例</td>
+            <td>以色列人拜巴力</td>
+            <td><strong>金牛犢</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐂</span>
+        為什麼是牛？因為在當時的近東世界，公牛是力量與豐饒的象徵，也常被用作神明的坐騎或象徵。<br><br>所以百姓的邏輯大概是這樣的：摩西上山四十天沒回來，我們需要一個<strong>看得見的東西</strong>來代表那位帶我們出來的神。用最有力量的象徵——公牛，很合理吧？<br><br>他們不覺得自己在背叛。他們覺得自己是在<strong>解決一個實際的問題</strong>：那位神看不見，我們需要一個可以指著說「祂在這裡」的東西。
+      </div>
+
+      <p>而神的反應，強烈到摩西必須替他們代求才止住。因為在神眼中，這件事的性質，就是背叛。</p>
+
+      <div class="card-divider"></div>
+
+      <p>為什麼這麼嚴重？申命記給了理由，而那個理由我們在別處已經看過：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們在何烈山耶和華從火中對你們說話的那日，沒有看見甚麼形像，所以你們要分外謹慎，惟恐敗壞自己，雕刻偶像</p>
+        <p class="scripture-ref">申命記 四章十五至十六節</p>
+      </div>
+
+      <p>邏輯很清楚：<strong>既然你們沒有看見過，那你們造出來的任何形像，都只能是你們自己想像的產物。</strong>而想像的材料，只能取自受造之物——「上天、下地和地底下、水中的百物」。</p>
+
+      <div class="highlight">
+        <strong>所以第二誡真正防的，是這件事</strong>
+        <strong>用受造之物的樣子，去代表創造主。</strong><br><br>而一旦這樣做，發生的事必然是：那位無限的、超越的、不可測度的神，被縮小成了一個我看得見、摸得到、放得下的東西。<br><br>而看得見的，就管得動。這就是偶像的邏輯。
+      </div>
+
+      <p>那麼，這一誡對我們的提示是什麼？下一篇，我們把它說清楚——而它比很多人以為的嚴格。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">不可做，也不可事奉——包括耶穌像</h2>
+      <p class="card-hook">而「耶穌像」不是「耶穌」</p>
+    </div>
+    <div class="card-body">
+
+      <p>第二誡對我們的提示，說起來很短，但需要一點勇氣去接受：</p>
+
+      <div class="big-quote">
+        不可做，也不可事奉任何形像——<br>包括耶穌像。
+      </div>
+
+      <p>這裡有一個關鍵的分辨，必須先說清楚：</p>
+
+      <div class="highlight">
+        <strong>「耶穌像」不是「耶穌」</strong>
+        這是整件事的核心。<br><br>那幅畫、那尊像、那個掛在牆上或戴在頸上的形體——<strong>它不是主。</strong>它是某個人根據自己的想像所製作出來的一個物件。<br><br>而一旦我們對著它禱告、對著它下拜、在心裡把它當成主的所在，我們做的事，本質上與金牛犢那天發生的事，是同一件。<br><br>他們也以為自己是在敬拜耶和華。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>教材的建議是明確的：<strong>除了聖經經文以外，最好任何像都不可掛。</strong></p>
+
+      <p>我第一次讀到這句話時，覺得是不是太嚴格了。一幅畫而已，我又沒有拜它。</p>
+
+      <p>但後來我想通了幾件事。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 那個形像會取代真實</span>
+          就像我開頭說的——我看了二十年那幅畫，那張臉就成了我心裡的預設值。<strong>圖像的力量遠大於我們以為的</strong>，它會繞過理性，直接寫進印象裡。而那張臉，不是聖經給我的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 「不拜」的界線很難守</span>
+          今天只是掛著看，明天心情不好時看著它禱告，後天覺得對著它禱告比較「有感覺」，再來搬家時捨不得丟、覺得丟了不吉利——<strong>這條滑坡，人類走了幾千年。</strong>第二誡不是在防範第一步，是在防範整條路。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 神自己選了另一種媒介</span>
+          最關鍵的一點：<strong>神不是沒有給我們認識祂的方式，祂給的是「話語」，不是「圖像」。</strong>「這樣看來，信道是從聽道來的，聽道是從基督的話來的。」<br><br>所以掛經文是合宜的——那正是神所選用的媒介。
+        </div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        我覺得這個對比很有意思：<strong>周圍的宗教用圖像，聖經的信仰用文字。</strong><br><br>圖像給你一個固定的、封閉的、可以一眼看完的東西。<br>文字給你的是一個必須被聆聽、被思想、會隨著你的生命一再開啟的東西。<br><br>同一節經文，你二十歲讀和五十歲讀，會讀出不同的深度。<strong>但一幅畫，看一百次還是那一幅。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>那可能有人會問：那藝術怎麼辦？聖經反對藝術嗎？</p>
+
+      <p>不反對。而且證據就在同一本書裡——<strong>神親自吩咐建造的會幕，充滿了藝術。</strong></p>
+
+      <p>金銀的工藝、藍紫朱紅線的刺繡、雕刻的基路伯、精雕的燈臺（做成杏花的樣式，有球有花）。神甚至指名比撒列，說「我以我的靈充滿了他，使他有智慧、有聰明、有知識，能做各樣的工」——聖經裡第一個被記載「被聖靈充滿」的人，是一位工匠。</p>
+
+      <div class="highlight">
+        <strong>所以界線不在「美不美」，在「拿來做什麼」</strong>
+        會幕裡有雕刻的基路伯，但<strong>沒有一尊神的像</strong>。至聖所裡，兩個基路伯之間是空的——那個空位，正是神的所在。<br><br>整個古代世界的神廟中心都擺著神像，唯獨以色列的至聖所，那個位置是空的。當羅馬將軍龐培攻進耶路撒冷、闖入至聖所時，據說他極為震驚——因為裡面什麼都沒有。<br><br><strong>那個「空」，本身就是最強烈的宣告。</strong>
+      </div>
+
+      <p>那麼原文的用字是什麼？第二誡究竟禁止了哪幾件事？下一篇，我們逐字看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">第二誡其實禁止了三件事</h2>
+      <p class="card-hook">做、拜、事奉——一層比一層深</p>
+    </div>
+    <div class="card-body">
+
+      <p>把第二誡的經文攤開，你會發現它是一個三段結構：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">不可為自己雕刻偶像，也不可做甚麼形像彷彿上天、下地和地底下、水中的百物。不可跪拜那些像，也不可事奉它</p>
+        <p class="scripture-ref">出埃及記 二十章四至五節</p>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>禁止的動作</th>
+            <th>原文</th>
+            <th>禁止的層次</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">不可雕刻／做</td>
+            <td>Asah<br>製作</td>
+            <td><strong>製造</strong>的層次。連做出來都不行——不是「做了不要拜」，是根本不要做。</td>
+          </tr>
+          <tr>
+            <td class="src">不可跪拜</td>
+            <td>Shachah<br>俯伏</td>
+            <td><strong>身體姿態</strong>的層次。這個字的字面是「彎下、伏在地上」。</td>
+          </tr>
+          <tr>
+            <td class="src">不可事奉</td>
+            <td>Abad<br>服事</td>
+            <td><strong>生命歸屬</strong>的層次。就是第一誡那個「作奴僕」的字——把一生的勞動與倚靠交給它。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        注意這三層是<strong>由外而內</strong>的，而禁令從最外面那一層就開始了。<br><br>神沒有說「你可以做，但不要拜」。祂從「做」就禁止了。<br><br>為什麼？因為<strong>製造本身，就已經是一個神學動作。</strong>當你動手把那位無限者做成一個形狀時，你已經在心裡替祂設定了邊界——你已經決定了祂看起來像什麼、有多大、什麼材質。<br><br><strong>那個決定，本身就是僭越。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">Pesel<br>雕刻的偶像</div>
+        <div class="term-desc">字根意為「鑿、刻」，指用鑿子從石頭或木頭中<strong>削出來</strong>的像。這個字本身就帶著「人手加工」的痕跡。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Temunah<br>形像</div>
+        <div class="term-desc">「樣式、外形、相似之物」。範圍比 pesel 寬得多——不限於雕刻，任何「做出來彷彿某物」的形體都算。<br><br>這正是申命記說「你們沒有看見甚麼形像（temunah）」時用的同一個字。<strong>你們沒看見 temunah，所以不要做 temunah。</strong></div>
+      </div>
+
+      <p>而「彷彿上天、下地和地底下、水中的百物」這一句，涵蓋的範圍是<strong>整個受造界</strong>——天空的、陸地的、水裡的。這是一種希伯來式的完整表達法，意思是：<strong>沒有任何一樣受造之物，可以用來代表創造主。</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>接著看新約怎麼延續這件事。有一段講得極清楚——保羅在雅典，站在一座滿是神像的城市裡：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們既是神所生的，就不當以為神的神性像人用手藝、心思所雕刻的金、銀、石
+        </p>
+        <p class="scripture-ref">使徒行傳 十七章二十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        保羅的論證非常犀利，值得慢慢讀：<br><br>「<strong>我們既是神所生的</strong>」——人是照神的形像造的，人是神的後裔。<br>「<strong>就不當以為神的神性像……雕刻的金銀石</strong>」——那麼，把神做成一塊石頭，等於<strong>把祂降到比人還低的層次</strong>。<br><br>人是有位格的、活的、能愛的。而一尊像是死的、不能動的、不能回應的。<strong>用死的東西代表活的神，方向完全顛倒了。</strong><br><br>詩篇一一五篇對此有一段近乎諷刺的描寫：「有口卻不能言，有眼卻不能看，有耳卻不能聽，有鼻卻不能聞……造他們的要和他們一樣。」
+      </div>
+
+      <p>最後那一句是整段最重的警告：<strong>造他們的要和他們一樣。</strong>你會變得像你所拜的。拜一個死的，人就會變得遲鈍；拜一個不會回應的，人的心就會變硬。</p>
+
+      <p>下一篇，我們談一個更深的問題：那基督呢？祂是神的像啊——這不是矛盾嗎？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">神自己選了兩個「像」</h2>
+      <p class="card-hook">而那兩個，都不是人做的</p>
+    </div>
+    <div class="card-body">
+
+      <p>這裡有一個看似矛盾的地方，值得認真處理。</p>
+
+      <p>第二誡禁止製作神的形像。可是新約明明說：「愛子是<strong>那不能看見之神的像</strong>」。</p>
+
+      <p>那到底可不可以有「像」？</p>
+
+      <p>答案是：<strong>可以，但那個像不是人做的。神自己選了兩個。</strong></p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 基督——神所立的像</span>
+          「愛子是那不能看見之神的像。」（西一 15）「他是神本體的真像。」（來一 3）<br><br>這是<strong>神自己給的</strong>那個像。不是人手所造，是道成肉身。人若想知道神長什麼樣子，答案不是一幅畫，是<strong>看那一位怎麼活、怎麼說話、怎麼對待人、怎麼死</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 人——神所造的像</span>
+          「神就照著自己的形像造人。」（創一 27）<br><br>這是<strong>神自己造的</strong>那個像。而且是活的、會呼吸的、有位格的。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>把這兩點放在一起，第二誡就顯出一個驚人的邏輯</strong>
+        神禁止人造像，<strong>不是因為祂不要有像</strong>——祂已經有了兩個，而且都是活的。<br><br>祂禁止的，是人再去造一個<strong>死的</strong>來取代。<br><br>當你想看見神的樣子，聖經指的方向是：<strong>去看基督</strong>；而當你想知道該怎麼對待神的形像，聖經指的方向是：<strong>去看你旁邊那個人。</strong>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>雅各書有一句話，把第二誡從牆上拉到了人際關係裡，而且說得很不客氣：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們用舌頭頌讚那為主、為父的，又用舌頭咒詛那照著神形像被造的人</p>
+        <p class="scripture-ref">雅各書 三章九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👥</span>
+        這個角度我覺得極其震撼：<strong>踐踏一個人，某種意義上是在對神的形像做事。</strong><br><br>我們很小心不對一幅畫下拜，卻可能很隨意地羞辱一個活生生的、真正帶著神形像的人。<br><br>第二誡防的是「把神縮小成一個東西」。而把一個人當成工具、當成數字、當成可以隨意消耗的資源——<strong>那也是把神的形像縮小成一個東西。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後我想談一個更難的層面：<strong>心裡的偶像。</strong></p>
+
+      <p>你可以家裡一張圖都不掛，卻在心裡有一個非常具體的、被自己修改過的神。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">被刪掉聖潔的神</span>
+          「祂不會真的計較這個。」——一位什麼都無所謂的神。這個版本很好相處，但它是我做出來的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">被刪掉慈愛的神</span>
+          「祂大概已經對我失望了。」——一位隨時準備扣分的神。這個版本讓人恐懼，而它同樣是我做出來的。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">被改成工具的神</span>
+          「只要我夠虔誠，祂就得讓我的事順利。」——一位可以被操作的神。這是最接近異教邏輯的一種。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">被改成我這一邊的神</span>
+          「祂當然贊成我的立場。」——一位剛好跟我意見一致的神。這個版本最難察覺，因為它從不反對我。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>這些，全都是雕刻</strong>
+        只是材料不是木頭或金屬，是<strong>我自己的偏好、恐懼和需要</strong>。<br><br>我拿掉我不喜歡的部分，保留我需要的部分，最後得到一個「比較好相處的神」。<br><br>而檢查的方法只有一個：<strong>回到聖經。</strong>去讀那些讓我不舒服的段落，去讀那些不符合我想像的地方。<br><br>因為<strong>一位從來不會讓你意外、從來不反對你的神，多半是你自己做的。</strong>真實的那一位，會不斷地打破你對祂的預設。
+      </div>
+
+      <p>這也是為什麼「除了聖經經文以外，最好任何像都不可掛」這句話，比它表面看起來更深。</p>
+
+      <p>它不只是在講牆上掛什麼，它是在講：<strong>讓神的話來塑造你對祂的認識，而不是讓你的想像來塑造。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">至聖所裡那個「空」，是最溫柔的設計</h2>
+      <p class="card-hook">寫給那個渴望「看見一點什麼」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切收在至聖所裡那個空位上。</p>
+
+      <p>整個古代世界，每一座神廟的最深處，都擺著一尊神像。那是宗教的常識——你進到廟裡，總得看到什麼。</p>
+
+      <p>而以色列的至聖所裡，兩個金基路伯之間，是空的。</p>
+
+      <div class="highlight">
+        <strong>那個空位，一開始讓我覺得冷</strong>
+        什麼都沒有？那我要對著什麼禱告？<br><br>可是後來我明白了：<strong>那個空位不是「沒有」，那個空位是「不受限」。</strong><br><br>如果那裡擺著一尊像，那尊像就會告訴我：神只有這麼大、只長這個樣子、只在這個地方。<br><br>而那個空位說的是：<strong>祂不是你能放進去的任何東西。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>不過我也想誠實地說：<strong>「想看見一點什麼」這件事，本身不是罪。</strong></p>
+
+      <p>金牛犢那天，百姓的動機並不是想背叛。他們是害怕——摩西不見了，前面是曠野，他們需要一個可以指著說「祂在這裡」的東西。</p>
+
+      <p>那份渴望，我完全能理解。我也常常希望能看見一點什麼。</p>
+
+      <p>而神對這份渴望的回應，不是斥責，是——<strong>祂自己來了。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">從來沒有人看見神，只有在父懷裡的獨生子將他表明出來</p>
+        <p class="scripture-ref">約翰福音 一章十八節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        我覺得這是整件事最溫柔的地方。<br><br>神沒有說「你們就忍著吧，反正看不見」。祂知道人需要一個「可以指著」的。<br><br>所以祂沒有給我們一尊像——<strong>祂給了我們一個人。</strong>一個會餓、會累、會哭、會被摸到的人。腓力說「求主將父顯給我們看」，主的回答是：「人看見了我，就是看見了父。」<br><br>百姓想要一隻金牛犢，神給的是一個真實走進歷史的兒子。
+      </div>
+
+      <div class="big-quote">
+        不可為自己雕刻偶像，<br>也不可做甚麼形像
+        <cite>— 出埃及記 二十章四節</cite>
+      </div>
+
+      <p>回到我開頭說的那幅畫。</p>
+
+      <p>我後來明白，真正的問題不是那幅畫畫得像不像。真正的問題是——<strong>我對主的認識，是從哪裡長出來的？</strong></p>
+
+      <p>如果是從一幅畫來的，那我認識的是畫家的想像。</p>
+
+      <p>如果是從福音書來的，那我認識的是：一位會在半夜起來禱告的、會為朋友的死流淚的、會摸麻風病人的、會替門徒洗腳的、會在被釘的時候說「父啊，赦免他們」的——<strong>那一位。</strong></p>
+
+      <p>而那個形象，遠比任何一幅畫，都要清晰得多。</p>
+
+      <p>願你認識的那一位，是聖經裡的那一位。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  第二誡 · 不造像 · Threads Series
+</footer>
+
+</body>
+</html>

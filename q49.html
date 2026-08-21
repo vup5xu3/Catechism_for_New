@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神住在哪裡 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>祂究竟<span>住在哪裡</span></h1>
+  <p class="subtitle">「我們在天上的父」——可是「天上」到底在哪裡？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">被一個孩子問住的那一次</h2>
+      <p class="card-hook">「神住在天上，那飛機飛過去會不會撞到祂？」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>那是在兒童聚會的一次分組時間。我剛帶完主禱文，講到「我們在天上的父」，一個大概六歲的孩子舉手，問了一個讓全組突然安靜下來的問題：「老師，神住在天上，那飛機飛過去的時候，會不會撞到祂？」</p>
+
+      <p>旁邊幾個孩子笑了。我也笑了——但我笑完之後，心裡卻沒有那麼輕鬆。因為我知道，這個問題其實一點都不幼稚。它只是把大人心裡那個沒說出口的困惑，用最誠實的方式問了出來。</p>
+
+      <div class="highlight">
+        <strong>兩種偏差的想像</strong>
+        我後來慢慢發現，我們對「神住在哪裡」的想像，常常會往兩個方向偏。<br><br>一種是<strong>把祂推得太遠</strong>：神住在天上，很高、很遠、很忙，管的是戰爭、瘟疫、國家興衰這種大事。我這點小煩惱，實在不好意思拿去打擾祂。於是禱告變成了一種「向遠方寄信」的行為——寄出去了，但不確定會不會到。<br><br>另一種是<strong>把祂拉得太近、太廉價</strong>：神就在我身邊，像一個隨叫隨到的助手，或者口袋裡一個保平安的護身符。這種親近感很舒服，卻讓「敬畏」這兩個字整個消失了。
+      </div>
+
+      <p>坦白說，我兩種都經歷過。有一段時間我禱告時，總覺得自己是在對著天花板說話，聲音發出去就散了；也有一段時間，我把神當成了背景音樂，隨時都在，卻從來不真的在意。</p>
+
+      <p>而這兩種偏差，其實來自同一個沒有處理好的問題：<strong>那位又高又遠、又近又在的神，到底該怎麼安放？</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📮</span>
+        這有點像我們對「總統府」和「家人」的兩種感覺。總統府很有分量，但你不會半夜跑去敲門；家人隨時都在，但你可能連正眼都懶得看一眼。有沒有一種存在，是同時擁有絕對的尊榮，卻又願意在你半夜哭的時候，就坐在床邊？
+      </div>
+
+      <p>接下來這幾篇，我想陪你把這個問題認真走一遍。而第一站，我們要去看一個人——他花了七年建成全世界最華美的聖殿，卻在落成典禮那天，親口說這座殿裝不下神。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">獻殿那天，所羅門說了一句奇怪的話</h2>
+      <p class="card-hook">在最盛大的時刻，他親手拆掉了那個最容易產生的誤會</p>
+    </div>
+    <div class="card-body">
+
+      <p>那是以色列歷史上最風光的一天。</p>
+
+      <p>聖殿建了七年。黎巴嫩的香柏木、精金包裹的內殿、兩個十肘高的基路伯、精雕的門扇——這是當時世界上最華美的建築之一。約櫃被抬進至聖所，雲彩充滿殿宇，榮光濃到祭司都站立不住，無法供職。全國的長老、族長、支派首領都聚在那裡。</p>
+
+      <p>然後所羅門站起來，向全會眾祝福，接著跪下，向天舉手禱告。而他禱告中最核心的那一句，說出來幾乎像是在潑自己冷水：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神果真住在地上嗎？看哪，天和天上的天尚且不足你居住的，何況我所建的這殿呢？</p>
+        <p class="scripture-ref">列王紀上 八章二十七節</p>
+      </div>
+
+      <p>請你體會一下這個場面的張力。<strong>在他一生最大的成就落成的那一刻，在所有人都仰望著這座金碧輝煌的建築時，建造者自己站出來說：這裡裝不下祂。</strong></p>
+
+      <p>而且他說得更絕——不只是這座殿裝不下，「天和天上的天」都不足祂居住。他把整個受造的空間都算了進去，然後說：都不夠。</p>
+
+      <div class="highlight">
+        <strong>他在防範什麼？</strong>
+        所羅門知道人心會往哪裡走。有了一座這麼美的殿，人很自然就會想：神在裡面。再走一步，就變成：神在裡面，所以只要我來這裡、獻上祭物，就能「找到」祂、甚至「操作」祂。這正是周圍所有異教神廟的邏輯——神明住在偶像裡，你餵養祂，祂就保佑你。<br><br>所羅門在落成的第一天，就親手把這條路堵死了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>可是——同一篇禱告裡，接下來的內容才真正有意思。</p>
+
+      <p>說完「這殿裝不下祢」之後，所羅門立刻求：「願你晝夜看顧這殿」、「你僕人向此處禱告的時候，求你在天上你的居所垂聽」。他一連舉了七種情況：百姓得罪神被仇敵擊敗時、天閉塞不下雨時、國中有饑荒瘟疫時、外邦人慕名前來禱告時、百姓被擄到遠方時——每一種，他都求神「在天上垂聽」。</p>
+
+      <p>你看見那個結構了嗎？<strong>所羅門同時說了兩件看似矛盾的話：祢裝不下在這裡，可是求祢在這裡。</strong>他既守住了神的浩大，又抓住了神的臨近。他沒有在兩者之間選一個——他兩個都要。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏛️</span>
+        這就好像一個人對一位極尊貴的君王說：「這間小屋根本配不上您，您的疆域遼闊無邊。但如果您願意，我求您把眼目常常放在這裡。」——不是因為屋子夠大，而是因為君王願意屈尊。<strong>神的臨在從來不是因為我們的容器夠格，而是因為祂的恩典夠深。</strong>
+      </div>
+
+      <p>還有一個更早的例子。雅各逃亡的路上，在一塊石頭上睡著，夢見天梯。他醒來時說了一句話，我覺得那是所有人遲早都會說的一句：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶和華真在這裡，我竟不知道！</p>
+        <p class="scripture-ref">創世記 二十八章十六節</p>
+      </div>
+
+      <p>注意：神不是因為雅各做了夢才來的。神本來就在那裡。改變的不是神的位置，是雅各的眼睛。</p>
+
+      <p>那麼，聖經到底怎麼說？神是住在天上，還是無所不在？下一篇，我們正面把這兩句話放在一起。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩句話都要說：住在天上，也無所不在</h2>
+      <p class="card-hook">少了任何一句，信仰就會塌掉半邊</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經對「神住在哪裡」的回答，其實是兩句話，而這兩句話缺一不可。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 祂住在天上</span>
+          主耶穌教導門徒禱告，第一句就是「我們在天上的父」（太六 9）。這裡的「天上」，指的是地方的極處、極榮耀之處——天堂。這句話定住了神的<strong>尊榮與主權</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 然而神是靈，不受空間限制</span>
+          「神是個靈」（約四 24）。靈不佔據體積、不受牆壁阻隔、不需要移動才能抵達。所以祂能處處與敬畏祂的人同在，鑒察一切、保護一切、管理一切。因此我們也可以說，祂是<strong>「無所不在」</strong>的（詩一三九 1～12）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>神學上，這兩句話各有一個名字：<strong>超越性</strong>與<strong>臨在性</strong>。而理解它們最快的方式，是去看「只保留其中一句」會發生什麼事。</p>
+
+      <div class="term-box">
+        <div class="term-original">只講超越<br>神在天上，遠離世界</div>
+        <div class="term-desc">結果是<strong>自然神論</strong>：神像一個鐘錶匠，把宇宙做好、上緊發條，然後就離開了。祂很偉大，但祂與你無關。禱告在這個框架裡沒有意義——因為那位「在天上」的，並不在聽。</div>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">只講臨在<br>神在萬物之中</div>
+        <div class="term-desc">結果是<strong>泛神論</strong>：神就是這棵樹、這塊石頭、這條河。聽起來很有詩意，實際上卻取消了神——因為如果什麼都是神，那就沒有一位可以向祂禱告、可以拯救你的<strong>祂</strong>了。這正是多神教與萬有神教所走的路，與我們所信的完全不同。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>所以聖經兩句都說</strong>
+        祂住在天上——所以祂配得敬畏，祂的旨意高過我的計畫，我來到祂面前要脫鞋。<br>祂無所不在——所以我此刻在這裡的呼求，祂聽得見；我此刻在這裡的軟弱，祂看得見。<br><br>把這兩句放在一起，你會得到一個既不冷漠、也不廉價的神：<strong>一位夠大、大到值得你交託一生；又夠近，近到聽得見你此刻的嘆息。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>那回到那個孩子的問題：飛機會不會撞到神？</p>
+
+      <p>不會。因為「住在天上」從來不是一個地理座標。這裡的關鍵，在於那句「<strong>神是個靈</strong>」。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎵</span>
+        我常用這個方式向孩子解釋：一首歌住在哪裡？它在你的手機裡，也在音響裡，也在唱歌的人心裡，同時在一百個不同的房間裡響著——而你不會問「那它到底在哪一間」。歌不是一個佔位子的東西。<strong>而神，比這還要更不受限制。</strong>祂不是「很大，所以塞滿了空間」；祂根本就不是靠佔空間來存在的。
+      </div>
+
+      <p>所以「天上」這兩個字，指的是<strong>層級</strong>，不是<strong>方位</strong>。它說的是「至高、至榮、擁有絕對主權的那一位所在之處」，而不是「往上飛幾萬公里就會到的地方」。</p>
+
+      <p>不過，中文的「天」這個字本身，其實承載了很多歷史。而希伯來文的「天」還分成好幾層。下一篇，我們就進到這個字裡面去看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「天」原來有三層——而我們常常搞混了</h2>
+      <p class="card-hook">把第三層天讀成第一層天，很多誤會就是這樣來的</p>
+    </div>
+    <div class="card-body">
+
+      <p>希伯來文的「天」是 <strong>שָׁמַיִם（shamayim）</strong>，這個字有個很特別的地方——它的字尾是雙數／複數形式。也就是說，希伯來人講「天」的時候，語感上本來就不是指單一個層面。</p>
+
+      <p>而在聖經的用法裡，「天」大致可以分出三層：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>層次</th>
+            <th>指的是什麼</th>
+            <th>經文線索</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">第一層天<br>大氣天</td>
+            <td>我們抬頭看見的天空，鳥飛的地方，雲和雨所在之處。</td>
+            <td>「要有雀鳥飛在地面以上、天空之中」（創一 20）</td>
+          </tr>
+          <tr>
+            <td class="src">第二層天<br>星空天</td>
+            <td>日、月、星辰運行的宇宙空間。</td>
+            <td>「天上要有光體……作記號，定節令、日子、年歲」（創一 14）</td>
+          </tr>
+          <tr>
+            <td class="src">第三層天<br>神的居所</td>
+            <td>超越受造空間的榮耀所在，就是所羅門所說的「天上的天」。</td>
+            <td>保羅說他認得一個人「被提到第三層天上去」（林後十二 2）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        很多誤會，就是把<strong>第三層天讀成了第一層天</strong>。那個孩子問「飛機會不會撞到神」，正是這個混淆——他把神的居所放進了大氣層。而所羅門那句「天和天上的天尚且不足你居住」，正好是在說：連第三層天都不足以「容納」祂，何況前兩層。<br><br>換句話說，神的居所不是宇宙裡的某個位置。<strong>祂不在受造空間的某一格裡，祂是那位造出所有格子的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>接著看這個字在不同語言裡的旅程：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>語言／傳統</th>
+            <th>用詞</th>
+            <th>語意重心與風險</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">希伯來文</td>
+            <td>Shamayim</td>
+            <td>雙數形，本身就暗示多層次。既指物理天空，也指神的居所，靠上下文分辨。</td>
+          </tr>
+          <tr>
+            <td class="src">希臘文<br>新約</td>
+            <td>Ouranos</td>
+            <td>沿用同樣的多義結構。馬太福音常說「天國」，其實是猶太人避諱直呼「神」，而以「天」代稱——所以「天國」講的不是一個地點，而是<strong>神掌權的領域</strong>。</td>
+          </tr>
+          <tr>
+            <td class="src">中文<br>文化語境</td>
+            <td>天</td>
+            <td>漢語的「天」本身就帶有主宰的意味——「老天爺」、「天意」、「天理」。這是傳福音時極好的橋樑，但風險是容易滑成一種模糊的、非位格的命運觀。</td>
+          </tr>
+          <tr>
+            <td class="src">中文<br>譯詞</td>
+            <td>天堂</td>
+            <td>指極榮耀之處、地方的極處，也就是第三層天。要留意與「天國」區分：一個偏重<strong>所在</strong>，一個偏重<strong>掌權</strong>。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-divider"></div>
+
+      <p>再看「無所不在」這一面。詩篇一三九篇是整本聖經對這件事最完整、也最美的一段描寫。而它的結構本身，就是一張精心繪製的地圖——大衛把所有「可能躲得掉」的方向，一個一個排除掉：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我往哪裡去躲避你的靈？我往哪裡逃、躲避你的面？</p>
+        <p class="scripture-ref">詩篇 一三九篇七節</p>
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">↑ 最高處</span>
+          「我若升到天上，你在那裡。」
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">↓ 最深處</span>
+          「我若在陰間下榻，你也在那裡。」——連死亡的領域都不例外。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">→ 最遠處</span>
+          「我若展開清晨的翅膀，飛到海極居住。」這是全詩最美的一句意象：晨光掠過海面的速度，是古人所能想像最快的移動。就算以那樣的速度奔向世界的盡頭——「就是在那裡，你的手必引導我。」
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">✦ 最隱密處</span>
+          「我若說：黑暗必定遮蔽我……黑暗也不能遮蔽我，使你不見……黑暗和光明，在你看都是一樣。」
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">◦ 最起初處</span>
+          「我在母腹中，你已覆庇我。」連我還沒有意識、還不會躲的時候，祂就在了。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        注意大衛的用字：他不是說「你的能力達得到那裡」，他說的是「<strong>你在那裡</strong>」。這是無所不在最精確的表述——不是遙控，是親臨。<br><br>而更值得留意的是這首詩的語氣。大衛列出這一切，最後的結論不是恐懼，而是「這樣的知識奇妙，是我不能測的」，然後他求：「神啊，求你鑒察我，知道我的心思。」<strong>他從「躲不掉」，走到了「請你看」。</strong>
+      </div>
+
+      <p>下一篇，我們把「無所不在」再挖深一層——因為這個詞其實很容易被誤解成另一種東西。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「在」與「同在」，是兩件不同的事</h2>
+      <p class="card-hook">祂在每一個地方，卻不是與每一個人同在</p>
+    </div>
+    <div class="card-body">
+
+      <p>先澄清一個常見的誤解。「無所不在」不是說神被稀釋、攤薄在宇宙的每一個角落，好像一團無邊無際的霧氣，這裡有一點、那裡有一點。那樣的理解，最後會滑回泛神論。</p>
+
+      <div class="term-box">
+        <div class="term-original">Omnipresence<br>無所不在</div>
+        <div class="term-desc">正確的理解是：神<strong>以祂完整的存有，臨在於每一處</strong>。不是「一部分的神在這裡」，而是「全部的祂在這裡」——同時，全部的祂也在那裡。這在受造界找不到類比，因為凡佔空間的東西，都必須把自己分配出去；而祂不佔空間。</div>
+      </div>
+
+      <p>經院神學為了說清楚這件事，區分了神臨在的三種方式，我覺得這個區分非常有幫助：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 本質的臨在</span>
+          祂托住萬有的存在。若祂撤回這份維繫，萬物即刻歸於無有。這一層是<strong>普遍的</strong>——連反對祂的人，此刻的呼吸都倚靠這份維繫。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 權能的臨在</span>
+          祂管理、鑒察、掌權。這一層也是普遍的——沒有任何角落在祂的治理之外，包括那些看起來完全失控的地方。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 恩慈的臨在</span>
+          祂與敬畏祂的人相交、同在、賜福。這一層<strong>不是普遍的</strong>——這是恩典的同在，是關係中的同在。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>一個關鍵的分辨：「在」與「同在」</strong>
+        聖經在用詞上其實區分得很細。神「<strong>在</strong>」每一個地方——包括惡人所在之處，所以耶利米書說：「人豈能在隱密處藏身，使我看不見他呢？我豈不充滿天地嗎？」沒有人逃得掉。<br><br>但「<strong>同在</strong>」不一樣。「耶和華與約瑟同在」、「我必與你同在」、「祂能處處與敬畏祂的人同在」——這是應許，是恩典，是關係。<br><br>所以「神無所不在」對兩種人是完全不同的消息：對逃避祂的人，那是「你躲不掉」；對倚靠祂的人，那是「你不會孤單」。同一個真理，兩種截然不同的重量。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>約翰福音第四章那句「神是個靈」，出現的上下文極其重要——因為那整段對話，問的正是「神住在哪裡」這個問題。</p>
+
+      <p>撒瑪利亞婦人在井邊對耶穌說：「我們的祖宗在這山上禮拜，你們倒說，應當禮拜的地方是在耶路撒冷。」這是當時橫亙在猶太人與撒瑪利亞人之間、爭了幾百年的問題：<strong>敬拜的正確地點在哪裡？</strong>基利心山，還是錫安山？</p>
+
+      <p>耶穌的回答，等於把整個問題廢除了：「時候將到，你們拜父，也不在這山上，也不在耶路撒冷……時候將到，如今就是了，那真正拜父的，要用心靈和誠實拜他。」然後祂給出理由：<strong>因為神是個靈。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛰️</span>
+        這是一場地理問題的終結。她問的是「哪一座山」，主的回答是「不是山的問題」。從此以後，敬拜的關鍵不再是你站在哪塊土地上，而是你用什麼樣的心。<strong>對一位無所不在的神來說，「你在哪裡」從來不是問題，「你是誰、你怎麼來」才是。</strong>
+      </div>
+
+      <p>而中世紀有一個流傳很廣的說法，把這件事講得很有畫面感：<strong>神是一個無限的球體，其中心無所不在，其圓周無處可尋。</strong>意思是——無論你站在宇宙的哪一點，你都站在圓心上；而你永遠找不到那個邊緣，因為根本沒有邊緣。</p>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>最後，我想指出聖經裡一條非常驚人的軌跡。神「居所」的敘事，在整本聖經裡是一路往下、往近的：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">天上的天</span>
+          起初，祂的居所在受造界之上，人不得靠近。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">曠野的會幕</span>
+          祂說：「當為我造聖所，使我可以住在他們中間。」祂搬進了帳棚——一個會跟著百姓遷移的帳棚。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">耶路撒冷的聖殿</span>
+          從帳棚到石殿。所羅門一邊建，一邊說：這裡裝不下祢。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">道成肉身</span>
+          「道成了肉身，住在我們中間。」（約一 14）這裡的「住」，原文是「支搭帳棚」——呼應曠野的會幕。神的居所，變成了一個人。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">信徒的身體</span>
+          「豈不知你們的身子就是聖靈的殿嗎？」（林前六 19）最後，那位天和天上的天都容不下的神，住進了你。
+        </div>
+      </div>
+
+      <p>你看這條線的方向：<strong>從至高處，一路往下，一直走到你裡面。</strong>整本聖經其實是在回答一個問題——這位裝不進任何空間的神，如何來到人這裡。而最後一篇，我們就要去看這條路的終點。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂住在天上——然後，祂搬到了你這裡</h2>
+      <p class="card-hook">寫給那個覺得自己被留在角落裡的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>整本聖經對「神住在哪裡」的最終答案，其實藏在一個名字裡：<strong>以馬內利——神與我們同在。</strong></p>
+
+      <p>這個名字很值得停下來想。神大可以選擇一個彰顯威嚴的名字：全能者、至高者、萬軍之耶和華——這些名字聖經裡都有。但當祂親自進入人類歷史的時候，天使給的那個名字是「神與我們同在」。<strong>祂用「在哪裡」來定義自己，而祂選的位置，是「與我們一起」。</strong></p>
+
+      <p>約翰說：「道成了肉身，住在我們中間。」那個「住」字，原文的意思是「支搭帳棚」。這個用字太精準了——它讓人想起曠野裡的會幕，那個跟著百姓一站一站遷移的帳棚。神沒有蓋一棟宮殿等我們去朝聖，祂搭了一個帳棚，跟著我們走。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">道成了肉身，住在我們中間，充充滿滿地有恩典有真理</p>
+        <p class="scripture-ref">約翰福音 一章十四節</p>
+      </div>
+
+      <p>而聖經的最後一卷書，給了這條路一個終點。你可能以為聖經的結局是「我們終於上到天上去」——但約翰看見的異象，方向剛好相反：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">看哪，神的帳幕在人間。他要與人同住，他們要作他的子民；神要親自與他們同在，作他們的神</p>
+        <p class="scripture-ref">啟示錄 二十一章三節</p>
+      </div>
+
+      <p><strong>是神搬下來，不是我們搬上去。</strong>從「天上的天」，到會幕，到聖殿，到一個嬰孩，到你的身體，最後到「神的帳幕在人間」——整條線的方向，從頭到尾都是往下、往近的。</p>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>寫在最後</strong>
+        回到最開始那個問題：神住在哪裡？<br><br>祂住在天上——所以當你覺得世界失控的時候，你可以確定，有一位坐在最高處，祂的手仍然握著方向。<br>祂無所不在——所以此刻，無論你人在哪裡，祂都在。<strong>在急診室的走廊，在加班到十一點的辦公室，在你已經連續失眠好幾天的那張床邊，在你以為沒有人看見的那個角落。</strong><br><br>你不需要跑到某座山上，也不需要進到某一棟建築裡，才能找到祂。你此刻所在的地方，就是那個地方。<br><br>而那位天和天上的天都不足以容納的神，最後選擇住的地方——是你。
+      </div>
+
+      <div class="big-quote">
+        我往哪裡去躲避你的靈？<br>我若在陰間下榻，你也在那裡
+        <cite>— 詩篇 一三九篇七、八節</cite>
+      </div>
+
+      <p>雅各在曠野的石頭上醒來時說：「耶和華真在這裡，我竟不知道！」</p>
+
+      <p>願你在今天，也有這樣的一刻——不是因為神來了，而是因為你終於看見，祂一直都在。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  祂住在哪裡 · Threads Series
+</footer>
+
+</body>
+</html>
