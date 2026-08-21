@@ -201,8 +201,116 @@
             letter-spacing: 1px;
         }
 
+
+        /* ── 附錄：問答展開（手風琴） ── */
+        .acc-card {
+            background: #fff;
+            margin-bottom: 10px;
+            border-left: 5px solid var(--gold);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: box-shadow .2s;
+        }
+        .acc-card.open { box-shadow: 0 4px 18px rgba(0,0,0,0.09); }
+        .acc-q {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 17px 20px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background .18s;
+        }
+        .acc-q:hover { background: #FBF7EE; }
+        .acc-num {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            min-width: 40px;
+            color: var(--gold);
+            font-size: 16px;
+            padding-top: 1px;
+        }
+        .acc-qt { flex: 1; font-weight: 700; font-size: 15px; line-height: 1.6; color: var(--ink); }
+        .acc-toggle {
+            flex-shrink: 0;
+            width: 24px; height: 24px;
+            border: 1px solid var(--gold);
+            border-radius: 50%;
+            color: var(--gold);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; line-height: 1;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: .2s;
+        }
+        .acc-card.open .acc-toggle { background: var(--gold); color: #fff; }
+        .acc-a {
+            display: none;
+            padding: 2px 24px 22px 74px;
+            font-size: 14px; line-height: 2.0; color: #3A3229;
+            user-select: text; -webkit-user-select: text;
+        }
+        .acc-card.open .acc-a { display: block; }
+        .acc-a b { color: #7A5D1E; font-weight: 700; }
+        .acc-sep { height: 1px; background: rgba(201,168,76,.22); margin: 0 20px 14px 74px; }
+        .acc-item { display: flex; gap: 10px; margin: 12px 0; }
+        .acc-mark { color: var(--gold); font-weight: 700; flex-shrink: 0; }
+        .acc-sub { display: block; color: var(--ink); margin-bottom: 1px; }
+        .acc-head { margin: 20px 0 4px; font-weight: 700; color: var(--ink); font-size: 15px; }
+        .acc-head:first-child { margin-top: 4px; }
+        .acc-head .acc-mark { margin-right: 8px; }
+        .acc-p { margin: 10px 0; }
+        .acc-p:first-child { margin-top: 4px; }
+
+        /* ── 附錄：使徒信經 ── */
+        .creed {
+            background: #fff;
+            box-shadow: 0 2px 16px rgba(0,0,0,.07);
+            border-top: 4px solid var(--gold);
+            padding: 46px 44px 38px;
+        }
+        .creed-eyebrow {
+            font-family: 'Cinzel', serif;
+            font-size: 11px; letter-spacing: 5px;
+            color: var(--gold); text-align: center;
+        }
+        .creed-title {
+            font-size: 36px; font-weight: 900; text-align: center;
+            letter-spacing: 8px; margin: 12px 0 0; color: var(--ink);
+        }
+        .creed-rule { width: 56px; height: 2px; background: var(--gold); margin: 20px auto 34px; }
+        .creed-sec { margin-bottom: 30px; }
+        .creed-sec-label {
+            font-family: 'Cinzel', serif;
+            font-size: 10px; letter-spacing: 4px; color: var(--gold);
+            text-align: center; margin-bottom: 12px;
+        }
+        .creed-line {
+            font-size: 19px; line-height: 2.05; text-align: center;
+            color: var(--ink); margin: 0 0 2px; font-weight: 500;
+        }
+        .creed-line .cw { color: var(--gold); font-weight: 900; letter-spacing: 2px; }
+        .creed-amen {
+            text-align: center; font-family: 'Cinzel', serif;
+            letter-spacing: 10px; color: var(--gold); font-size: 15px;
+            margin-top: 30px; padding-top: 22px;
+            border-top: 1px solid rgba(201,168,76,.25);
+        }
+        .creed-note {
+            margin-top: 34px; padding: 20px 22px;
+            background: #FBF7EE; border-left: 3px solid var(--gold);
+            font-size: 13px; line-height: 2.0; color: var(--smoke);
+        }
+        .creed-note b { color: #7A5D1E; }
+
         /* ── 手機響應式 ── */
         @media (max-width: 600px) {
+            .creed { padding: 30px 20px 26px; }
+            .creed-title { font-size: 26px; letter-spacing: 5px; }
+            .creed-line { font-size: 16px; line-height: 1.95; }
+            .creed-note { padding: 16px 16px; }
+            .acc-a { padding: 2px 18px 20px 20px; }
+            .acc-sep { margin-left: 20px; }
+
             .main-nav { justify-content: flex-start; overflow-x: auto; }
             .nav-tab { font-size: 10.5px; padding: 14px 14px; letter-spacing: 1px; }
             .sub-nav { padding: 8px 14px; gap: 8px; }
@@ -1452,175 +1560,175 @@
 		},
 	  ],
 	  att1: [
-	  		{
+		{
 		  num: '173',
 		  title: '伊甸園裏的兩棵特別的果樹是甚麼？',
-		  href: 'q173.html'
+		  desc: '兩棵樹是<b>生命樹</b>和<b>分別善惡樹</b>（創二 9）。神把牠們一同栽在園子當中；分別善惡樹的果子是唯一被禁止的（創二 16～17）。'
 		},
 		{
 		  num: '174',
 		  title: '若亞當吃了另一棵特別的果樹的果子時，結果怎樣？',
-		  href: 'q174.html'
+		  desc: '若亞當在犯罪之後又吃了<b>生命樹</b>的果子，他就要「永遠活著」（創三 22）——也就是<b>帶著罪永遠活下去</b>，永無指望。所以神把他趕出伊甸園，又安設基路伯和四面轉動發火焰的劍，把守生命樹的道路。<br>那個「趕出去」看似刑罰，其實是<b>憐憫</b>：神攔住人在罪中永生，好為將來的救贖留下餘地。而啟示錄末了，生命樹又出現了（啟廿二 2、14）。'
 		},
 		{
 		  num: '175',
 		  title: '為甚麼人類自設的道德標準不可靠，只有神的標準才是永遠準確？',
-		  href: 'q175.html'
+		  desc: '一、人的標準<b>隨時代、地域、風俗而改變</b>——今日以為對的，明日可能改；此地認為善的，彼地未必。<br>二、人的標準出於<b>已經有罪的人心</b>：「人心比萬物都詭詐，壞到極處」（耶十七 9）；士師時代的寫照就是「各人任意而行」（士廿一 25）。<br>三、人是<b>被造者</b>，沒有資格為自己定終極的標準。<br>四、神是<b>聖潔、不改變</b>的，祂的話「立定在天，直到永遠」（詩一一九 89）；主也說：「天地要廢去，我的話卻不能廢去」（太廿四 35）。'
 		},
 		{
 		  num: '176',
 		  title: '試述「最大的罪就是離棄神」的理由。',
-		  href: 'q176.html'
+		  desc: '一、第一條誡命就是「除了我以外，你不可有別的神」——<b>神在第一位</b>，這是一切誡命的根基。<br>二、一切的罪，追到底都是<b>離棄神</b>的結果。耶利米書把它說得最清楚：「我的百姓做了兩件惡事，就是<b>離棄我這活水的泉源</b>，為自己鑿出池子，是破裂不能存水的池子。」（耶二 13）<br>三、離棄神就是<b>切斷生命的源頭</b>；其他的罪，只是那個切斷之後長出來的結果。<br>四、羅馬書一章的次序也是這樣：先是「不當作神榮耀他」，然後才是那一長串的敗壞（羅一 21～32）。'
 		},
 		{
 		  num: '177',
 		  title: '為甚麼神不直接赦免人，而必須讓耶穌慘死在十字架上？',
-		  href: 'q177.html'
+		  desc: '因為神<b>又是慈愛的，又是公義的</b>，兩樣都不能放下。<br>一、公義的那一面：「罪的工價乃是死」（羅六 23）；「若不流血，罪就不得赦免」（來九 22）。神若不追究罪，就不再是公義的神。<br>二、慈愛的那一面：神「不願有一人沉淪」（彼後三 9）。若照公義追究到底，人就必滅亡。<br>三、十字架是<b>唯一能同時成全這兩面</b>的方法——罪照樣被追究了，而承擔的是祂自己的兒子。<br>所以保羅說：這是要顯明神的義，「使人知道他自己為義，也稱信耶穌的人為義」（羅三 26）。'
 		},
 		{
 		  num: '178',
 		  title: '有人說，各種宗教都是勸人為善的，殊途同歸，應當一視同仁，怎樣指出這種論調的錯誤？',
-		  href: 'q178.html'
+		  desc: '一、<b>問題的診斷不同。</b>人真正的難處不是「不知道該行善」，而是「立志為善由得我，只是行出來由不得我」（羅七 18）。勸善解決不了那個「行不出來」。<br>二、<b>路不同，終點就不同。</b>「殊途同歸」的前提是終點相同；而各教所信的對象、所走的路、所應許的結局，都不一樣。<br>三、<b>罪的問題沒有被處理。</b>行善不能抵銷已犯的罪，正如今天守法不能抵銷昨天的案。<br>四、<b>聖經明說只有一條路：</b>「除他以外，別無拯救；因為在天下人間，沒有賜下別的名，我們可以靠著得救。」（徒四 12）主自己說：「我就是道路、真理、生命；若不藉著我，沒有人能到父那裏去。」（約十四 6）'
 		},
 		{
 		  num: '179',
 		  title: '許多人不敢說自己已經得救了，是為甚麼？',
-		  href: 'q179.html'
+		  desc: '一、把「得救」和<b>自己的表現</b>綁在一起——覺得自己還不夠好，所以不敢說。<br>二、不清楚救恩的<b>根據在基督</b>，不在自己：「你們得救是本乎恩，也因著信；這並不是出於自己，乃是神所賜的。」（弗二 8）<br>三、把「<b>有沒有把握</b>」與「<b>會不會驕傲</b>」混在一起，以為說有把握就是自大。<br>四、沒有留意聖經明明的話：「我將這些話寫給你們信奉神兒子之名的人，要叫你們<b>知道自己有永生</b>。」（約壹五 13）<br>五、也有人是因為心裏有未處理的罪，所以不敢確定。那就當認罪悔改（約壹一 9）。'
 		},
 		{
 		  num: '180',
 		  title: '假如得救的人必須靠著自己的善行才能成全得救的事實，請問，我們將來的結局將如何？',
-		  href: 'q180.html'
+		  desc: '<b>結局必是滅亡——沒有一個人能得救。</b><br>一、因為「沒有義人，連一個也沒有」（羅三 10）；「我們都像不潔淨的人，所有的義都像污穢的衣服」（賽六四 6）。<br>二、律法的標準是全備的：「凡遵守全律法的，只在一條上跌倒，他就是<b>犯了眾條</b>。」（雅二 10）<br>三、若得救可以靠行為成全，那「基督就是<b>徒然死了</b>」（加二 21）。<br>所以救恩從頭到尾都是恩典；善行是<b>得救的果子</b>，不是得救的本錢（弗二 9～10）。'
 		},
 		{
 		  num: '181',
 		  title: '有人對於自己得救的日子，不精確清楚，但他有得救的證據，你說他得救了沒有？甚麼理由？',
-		  href: 'q181.html'
+		  desc: '<b>他得救了。</b><br>理由：得救的憑據不在「記不記得日期」，而在<b>有沒有那個生命的實據</b>——<br>一、信而受洗，歸入基督（可十六 16；羅六 3～4）；<br>二、有聖靈作憑據（弗一 13～14）；「聖靈與我們的心同證我們是神的兒女」（羅八 16）；<br>三、生命有了改變：「若有人在基督裏，他就是新造的人」（林後五 17）；<br>四、愛弟兄：「我們因為愛弟兄，就曉得是已經出死入生了。」（約壹三 14）<br>正如一個人不記得自己出生的那一刻，並不影響他確實活著。'
 		},
 		{
 		  num: '182',
 		  title: '已經得救的人，若一直犯罪，將有甚麼後果？',
-		  href: 'q182.html'
+		  desc: '一、<b>與神的相通受阻</b>——「你們的罪孽使你們與神隔絕」（賽五九 2），並且叫聖靈擔憂（弗四 30）。<br>二、<b>失去平安與喜樂</b>——大衛的描述是「骨頭枯乾」、「你的手在我身上沉重」（詩卅二 3～4）。<br>三、<b>受神的管教</b>——「主所愛的，他必管教」（來十二 6）；有時也顯在身體上（林前十一 30）。<br>四、<b>害了見證，絆倒人</b>。<br>五、若一直不肯悔改，就有<b>失去救恩的危險</b>：「我們得知真道以後，若故意犯罪，贖罪的祭就再沒有了。」（來十 26）<br>所以當及時認罪悔改——「我們若認自己的罪，神是信實的，是公義的，必要赦免我們的罪。」（約壹一 9）'
 		},
 		{
 		  num: '183',
 		  title: '「信主耶穌，永保平安無事」，這話合乎聖經嗎？',
-		  href: 'q183.html'
+		  desc: '<b>不合乎聖經。</b><br>一、主自己說：「在世上你們<b>有苦難</b>；但你們可以放心，我已經勝了世界。」（約十六 33）——應許的不是沒有苦難，是<b>在苦難中有平安</b>。<br>二、「凡立志在基督耶穌裏敬虔度日的，也都要<b>受逼迫</b>。」（提後三 12）<br>三、信主之後仍要儆醒：「自己以為站得穩的，須要謹慎，免得跌倒。」（林前十 12）<br>四、聖經從不應許信徒一生順遂；它應許的是<b>神與我們同在</b>：「我雖然行過死蔭的幽谷，也不怕遭害，因為你與我同在。」（詩廿三 4）<br>所以那句話若被當作「信了就萬事無憂」，是把福音說小了，也會使人在患難來到時跌倒。'
 		},
 		{
 		  num: '184',
 		  title: '信耶穌得救是靈魂體得救，或是只有靈魂得救？',
-		  href: 'q184.html'
+		  desc: '<b>是靈、魂、體全人的得救</b>，只是有先後。<br>一、聖經的祝福是全人的：「願你們的<b>靈與魂與身子</b>得蒙保守，在我主耶穌基督降臨的時候完全無可指摘。」（帖前五 23）<br>二、<b>今世</b>先得的是重生與稱義——「若有人在基督裏，他就是新造的人」（林後五 17）。<br>三、<b>身體的得贖還在將來</b>：「等候得著兒子的名分，乃是我們的<b>身體得贖</b>。」（羅八 23）主再來的時候，「這必朽壞的總要變成不朽壞的」（林前十五 53）。<br>所以救恩不是只救靈魂、丟下身體；身體是聖靈的殿（林前六 19），將來也要復活改變。'
 		},
 		{
 		  num: '185',
 		  title: '怎樣證明一切「人造神」不是真神？',
-		  href: 'q185.html'
+		  desc: '一、<b>次序上顛倒了。</b>真神是造物主，人造的「神」卻是<b>受造之物所造的</b>——「人手所做的，不是神」（徒十九 26）。<br>二、<b>它們沒有生命與能力。</b>「有口卻不能言，有眼卻不能看，有耳卻不能聽，有鼻卻不能聞……造他的要和他一樣。」（詩一一五 4～8）<br>三、<b>材料本身戳破了它。</b>以賽亞書四四 14～17 描寫得最傳神：同一塊木頭，一半燒火烤餅取暖，一半雕成神像下拜，還說「求你拯救我」。<br>四、<b>真神是無形無像的靈。</b>「神是個靈，所以拜他的必須用心靈和誠實拜他。」（約四 24）凡看得見、雕得出來的，都不是那位造天地的神。'
 		},
 		{
 		  num: '186',
 		  title: '有沒有甚麼比方，可以說明「三位一體」的理？這些比方有甚麼缺點？',
-		  href: 'q186.html'
+		  desc: '<b>常見的比方</b>：水的三態（冰、水、汽）、太陽（本體、光、熱）、一個人的靈魂體、樹的根幹枝。<br><b>它們的缺點：</b><br>一、<b>水的三態</b>是<b>先後</b>的變化，同一時間通常只有一種形態——這會滑向「形態論」的錯誤，彷彿父變成子、子又變成聖靈。<br>二、<b>太陽的光與熱</b>是本體的<b>一部分</b>——這會使三者成為神的三個部分，而不是各自完全的神。<br>三、<b>靈魂體</b>是一個人的三種成分，會使位格的區別消失。<br>四、根本的缺點是：<b>一切比方都取自受造之物</b>，而受造之物承載不了創造主的本體。<br>所以比方只能幫助說明某一面，不可拿來當定義；最穩妥的，仍是回到聖經的話。'
 		},
 		{
 		  num: '187',
 		  title: '聖經說：「耶和華是忌邪的神」，是甚麼意思？',
-		  href: 'q187.html'
+		  desc: '「忌邪」在原文帶著<b>「熱切、專一」</b>的意思，不是人間那種小氣的嫉妒。<br>一、它總是與<b>第二條誡命</b>連在一起出現：「不可跪拜那些像……因為我耶和華你的神是忌邪的神。」（出二十 5）<br>二、它形容的是<b>盟約中的專一之愛</b>——正如丈夫不能容忍妻子另有丈夫。聖經常用夫妻的關係比喻神與祂的百姓。<br>三、所以那句話真正在說的是：<b>神對屬祂的人有專一的愛，不容祂的百姓去事奉別神。</b><br>四、那份「忌」的背後是愛：一個不在乎的人，才不會忌。'
 		},
 		{
 		  num: '188',
 		  title: '為甚麼歷代教會的信條，對基督方面特別詳細？',
-		  href: 'q188.html'
+		  desc: '一、<b>歷代異端攻擊最多的，正是基督的位格</b>——或否認祂的神性，或否認祂的人性，或說祂是受造之物。信條「常是為了<b>止息爭論、分別邪正</b>」而有的，所以爭議在哪裏，信條就在哪裏說得詳細。<br>二、<b>基督是信仰的根基。</b>「你們說我是誰？」（太十六 15）是那條分界線；而約翰也以此為判準：「凡靈認耶穌基督是成了肉身來的，就是出於神的。」（約壹四 2）<br>三、<b>救恩全繫於祂的身分。</b>祂若不是真神，就沒有無限的贖價；祂若不是真人，就不能代替人受死。所以這一項一旦說錯，整個救恩就塌了。'
 		},
 		{
 		  num: '189',
 		  title: '在本節答案之外，再舉出聖經中說明「耶穌是神的兒子」的證據。',
-		  href: 'q189.html'
+		  desc: '一、<b>父親自兩次從天上宣告</b>：受洗時「這是我的愛子，我所喜悅的」（太三 17）；登山變像時再說一次（太十七 5）。<br>二、<b>祂自己在公會前承認</b>：大祭司問「你是那當稱頌者的兒子基督不是？」祂說「我是」（可十四 61～62）。<br>三、<b>彼得的認信</b>：「你是基督，是永生神的兒子。」（太十六 16）<br>四、<b>拿但業</b>：「拉比，你是神的兒子，你是以色列的王。」（約一 49）<br>五、<b>污鬼也認得</b>：「你是神的兒子。」（可三 11）<br>六、<b>十架下的百夫長</b>：「這人真是神的兒子。」（可十五 39）<br>七、<b>埃提阿伯的太監</b>：「我信耶穌基督是神的兒子。」（徒八 37）<br>八、<b>復活是最有力的證明</b>：「因從死裏復活，以大能顯明是神的兒子。」（羅一 4）'
 		},
 		{
 		  num: '190',
 		  title: '在使徒行傳中，找出當代教會如何見證「耶穌是基督，是永生神的兒子」。',
-		  href: 'q190.html'
+		  desc: '一、<b>彼得五旬節講道</b>：「故此，以色列全家當確實地知道，你們釘在十字架上的這位耶穌，神已經立他為<b>主，為基督</b>了。」（徒二 36）<br>二、<b>彼得在美門口</b>：指明那位「生命的主」被殺，神卻叫他從死裏復活（徒三 15）。<br>三、<b>司提反殉道時</b>：「我看見天開了，<b>人子站在神的右邊</b>。」（徒七 56）<br>四、<b>掃羅剛信主</b>：「就在各會堂裏宣傳耶穌，說<b>他是神的兒子</b>。」（徒九 20）<br>五、<b>保羅在帖撒羅尼迦</b>：「本著聖經與他們辯論，講解陳明基督必須受害，從死裏復活；又說：我所傳與你們的這位耶穌就是基督。」（徒十七 2～3）<br>六、<b>亞波羅在亞該亞</b>：「引聖經證明耶穌是基督。」（徒十八 28）'
 		},
 		{
 		  num: '191',
 		  title: '基督一人的寶血，為甚麼可以救贖一切信祂的人？',
-		  href: 'q191.html'
+		  desc: '因為<b>祂的身分不同</b>——<br>一、<b>祂是無罪的</b>：「無瑕疵、無玷污的羔羊」（彼前一 19），「他也曾凡事受過試探，與我們一樣，只是他沒有犯罪」（來四 15）。所以祂不必為自己贖罪，才能為別人贖。<br>二、<b>祂是神的兒子</b>：那個位格是無限的，所獻上的價值也是無限的，足以贖一切人。<br>三、<b>祂是神也是人</b>：所以能作神人之間的中保（提前二 5），一面代表人，一面滿足神的公義。<br>四、<b>祂一次獻上，永遠有效</b>：「只一次進入聖所，成了永遠贖罪的事」（來九 12）；「因為他一次獻祭，便叫那得以成聖的人永遠完全」（來十 14）。'
 		},
 		{
 		  num: '192',
 		  title: '基督的寶血，不是早已乾了嗎？怎可洗淨我們的罪？',
-		  href: 'q192.html'
+		  desc: '一、聖經所說的「寶血」，指的<b>不是那些血的物質</b>，而是主<b>那一次流血捨命所成就的贖罪功效</b>。<br>二、那功效是<b>永遠的</b>，不受時間限制：「只一次進入聖所，成了<b>永遠贖罪</b>的事。」（來九 12）<br>三、十字架上那句「<b>成了</b>」（約十九 30）在原文是完成式——<b>已經完成，而效力持續</b>。當時的商業文書把這個字寫在還清了的欠據上，意思是「全數付清」。<br>四、而且祂如今活著：「他是長遠活著，替他們祈求。」（來七 25）<br>所以問題不在血乾不乾，在<b>那件事已經成了</b>。'
 		},
 		{
 		  num: '193',
 		  title: '聖靈能夠離信主的人嗎？',
-		  href: 'q193.html'
+		  desc: '<b>能。</b>所以聖經一再囑咐我們要保守。<br>一、舊約有明例：「耶和華的靈離開掃羅」（撒上十六 14）；大衛犯罪之後懇求：「<b>不要從我收回你的聖靈</b>。」（詩五一 11）<br>二、新約有兩處警告：「<b>不要銷滅聖靈的感動</b>」（帖前五 19）；「<b>不要叫神的聖靈擔憂</b>」（弗四 30）。若聖靈斷不會離開，這兩句警告就成了空話。<br>三、主的比喻也說到有枝子不結果子，「就剪去」（約十五 2）。<br>所以聖靈住在人裏面，是要人以敬畏的心保守的；當常常省察認罪，順從聖靈的引導。'
 		},
 		{
 		  num: '194',
 		  title: '解釋下列詞語：充滿聖靈、銷滅聖靈的感動、使聖靈擔憂。',
-		  href: 'q194.html'
+		  desc: '<b>一、充滿聖靈</b>——被聖靈完全佔有、支配，以致言語行為都在祂的引導之下（徒四 31；弗五 18）。以弗所書那個動詞是<b>持續進行</b>的：不是一次充滿就一勞永逸，而是要不斷被充滿。<br><b>二、銷滅聖靈的感動</b>（帖前五 19）——原文「銷滅」是<b>把火澆熄</b>。聖靈的感動像火：人若忽略、推託、不順從，那火就會漸漸暗下去。<br><b>三、使聖靈擔憂</b>（弗四 30）——「擔憂」是<b>關係裏</b>的用字：只有愛你的人，才會為你憂傷。那一段的上下文列的是苦毒、惱恨、忿怒、嚷鬧、毀謗、惡毒。所以那是聖靈因我們的罪而憂傷，也正說明<b>聖靈是有位格的</b>。'
 		},
 		{
 		  num: '195',
 		  title: '五旬節門徒被聖靈充滿是全體被充滿還是一部分的門徒被充滿？',
-		  href: 'q195.html'
+		  desc: '<b>是全體被充滿。</b><br>一、經文說得很清楚：「他們就<b>都</b>被聖靈充滿，按著聖靈所賜的口才說起別國的話來。」（徒二 4）<br>二、那時聚集的「約有一百二十名」（徒一 15），前一節說「這些人同著幾個婦人……都同心合意地恆切禱告」（徒一 14）——所指的是同一群人。<br>三、彼得引約珥的預言解釋這件事：「我要將我的靈澆灌<b>凡有血氣的</b>。你們的<b>兒女</b>要說預言，你們的<b>少年人</b>要見異象，<b>老年人</b>要做異夢。」（徒二 17）可見不是限於少數人。<br>四、彼得接著應許：「這應許是給你們和你們的兒女，並一切在遠方的人。」（徒二 39）'
 		},
 		{
 		  num: '196',
 		  title: '試默寫全部聖經目錄的簡稱。',
-		  href: 'q196.html'
+		  desc: '（這一題是要練習默寫的，答案供對照。）<br><b>舊約三十九卷</b>：創、出、利、民、申｜書、士、得、撒上、撒下、王上、王下、代上、代下、拉、尼、斯｜伯、詩、箴、傳、歌｜賽、耶、哀、結、但｜何、珥、摩、俄、拿、彌、鴻、哈、番、該、亞、瑪。<br><b>新約二十七卷</b>：太、可、路、約｜徒｜羅、林前、林後、加、弗、腓、西、帖前、帖後、提前、提後、多、門｜來、雅、彼前、彼後、約壹、約貳、約參、猶｜啟。<br>共 <b>六十六卷</b>。（分隔線依次為：摩西五經／歷史書／詩歌智慧書／大先知書／小先知書；福音書／教會歷史／保羅書信／普通書信／預言書。）'
 		},
 		{
 		  num: '197',
 		  title: '天天讀聖經所發生的難處是甚麼？',
-		  href: 'q197.html'
+		  desc: '一、<b>沒有時間</b>——多半不是真的沒有，是沒有把時間<b>先排進去</b>；一忙就先犧牲這一項。<br>二、<b>讀不懂</b>——遇到難解的地方就卡住，於是停下來。<br>三、<b>讀不下去</b>——覺得枯燥、沒有感覺，像在交功課。<br>四、<b>斷了就難再接</b>——漏了幾天，進度落後，索性就不讀了。<br>五、<b>只讀不行</b>——讀了沒有去行，久了就覺得沒有味道。<br>六、<b>環境與心情</b>——疲倦、雜事纏身、心裏有未處理的罪，都會讀不進去。'
 		},
 		{
 		  num: '198',
 		  title: '對於聖經中一時難解之處，該有甚麼態度？',
-		  href: 'q198.html'
+		  desc: '一、<b>存謙卑的心</b>，承認自己有限，不強解。彼得論到保羅的書信說：「其中有些難明白的，那無學問、不堅固的人強解，如強解別的經書一樣，就自取沉淪。」（彼後三 16）<br>二、<b>先放下，繼續往前讀</b>——許多難處，讀多了以後自然會明白。<br>三、<b>以經解經</b>：用清楚的地方解釋不清楚的地方，不可只憑一節斷章取義。<br>四、<b>求聖靈開啟</b>：「於是耶穌開他們的心竅，使他們能明白聖經。」（路廿四 45）<br>五、<b>請教</b>有經驗的傳道人或長者（參徒八 31）。<br>六、<b>不可因一處不懂，就懷疑全本聖經</b>——不懂是我的有限，不是聖經的缺欠。'
 		},
 		{
 		  num: '199',
 		  title: '怎樣在讀經生活上進步？',
-		  href: 'q199.html'
+		  desc: '一、<b>定時、定量、定地方</b>，養成習慣——習慣比決心可靠。<br>二、<b>讀前先禱告</b>，求主開啟；讀後<b>安靜思想</b>，並把心得記下來。<br>三、<b>按次序通讀全本</b>，也做專題查考——通讀得廣，專題得深。<br>四、<b>背誦重要的經節</b>：「我將你的話藏在心裏，免得我得罪你。」（詩一一九 11）<br>五、<b>讀了就去行</b>——「你們既知道這事，若是去行就有福了。」（約十三 17）行出來的，才真的成為自己的。<br>六、<b>與人一同讀</b>：參加教會的查經聚會，像庇哩亞人那樣「天天考查聖經」（徒十七 11）。<br>七、<b>不怕中斷</b>——斷了就從今天接上，不必從頭補。'
 		},
 		{
 		  num: '200',
 		  title: '除了長老、執事以外，教會還可以有別的職分嗎？',
-		  href: 'q200.html'
+		  desc: '<b>可以。</b><br>一、聖經把聖職人員大體分為兩類：<b>屬於職事的</b>——使徒、先知、傳福音的、牧師和教師（弗四 11；林前十二 28）；<b>屬於職份的</b>——長老、執事（腓一 1）。所以除了長老、執事以外，本來就還有別的。<br>二、<b>使徒行傳第六章</b>那七個人，正是<b>按著當時的需要</b>設立的——教會可以照實際需要，設立各樣事務上的職分。<br>三、原則是：所設的職分要合乎聖經，並且都是為著「<b>成全聖徒，各盡其職，建立基督的身體</b>」（弗四 12）；資格的標準，仍以提摩太前書三章為準。'
 		},
 		{
 		  num: '201',
 		  title: '多少時候舉行一次聖餐禮是最合適的？',
-		  href: 'q201.html'
+		  desc: '<b>聖經沒有明定次數</b>，由教會按實際情形安排。<br>一、主的吩咐是「你們也應當如此行，為的是記念我」（路廿二 19）；保羅說「你們<b>每逢</b>吃這餅，喝這杯」（林前十一 26）——可見是<b>常常</b>舉行的。<br>二、初代教會有「<b>天天</b>……在家中擘餅」（徒二 46），也有「<b>七日的第一日</b>……聚會擘餅」（徒二十 7）。<br>三、要緊的不是次數，是<b>誠心實意</b>地領受，並且能達到記念主死、展望主來、省察認罪、增進聖徒相通的果效。<br>四、若間隔太久，容易失去記念的果效；若太過頻繁而流於形式，反倒失了誠心。所以當以「<b>能否誠心實意</b>」為衡量。'
 		},
 		{
 		  num: '202',
 		  title: '祈禱會人數稀少的原因在那裏？',
-		  href: 'q202.html'
+		  desc: '一、<b>不認識禱告的重要</b>——以為聽道才是主要的，禱告只是附帶。<br>二、<b>看不見立即的果效</b>——覺得「沒有什麼收穫」，不像聽道有內容可帶回家。<br>三、<b>時間排在最後</b>——有事就先犧牲這一場。<br>四、<b>自己的靈性冷淡</b>——不覺得自己需要，也就不覺得該來。<br>五、<b>不會禱告、不敢開口</b>——怕在人前禱告講不好。<br>六、<b>缺少同心的負擔</b>——沒有共同要迫切代求的事，就聚不起來。<br>解決之道，仍在第一項：先看見禱告是什麼。主曾說：「我的殿必稱為<b>禱告的殿</b>。」（太廿一 13）'
 		},
 		{
 		  num: '203',
 		  title: '奉獻錢財是信徒對神的本分或對教會的本分？試述其理由。',
-		  href: 'q203.html'
+		  desc: '<b>是對神的本分。</b><br>理由：<br>一、<b>一切都是從神來的。</b>大衛說：「萬物都從你而來，我們把<b>從你而得的</b>獻給你。」（代上廿九 14）<br>二、<b>那本來就是神的。</b>「地上所有的……都是耶和華的，是<b>歸給耶和華為聖</b>的。」（利廿七 30）——所以那是<b>歸還</b>，不是給。<br>三、<b>神親自這樣說。</b>「你們要將當納的十分之一全然送入倉庫，<b>使我家有糧</b>，以此試試我。」（瑪三 10）<br>四、<b>新約稱那筆奉獻為獻給神的祭物</b>：「如同馨香之氣，是<b>神所收納、所喜悅的祭物</b>。」（腓四 18）<br>教會只是那筆奉獻的<b>經手與使用者</b>；獻的對象，是神。'
 		},
 		{
 		  num: '204',
 		  title: '根據聖經所說基督與我們的關係，說明憑信心為病人（或為自己的病）禱告，是合宜而且是有效的。',
-		  href: 'q204.html'
+		  desc: '一、<b>祂是頭，我們是祂的身體</b>：「教會是他的身體」（弗一 23）；「你們就是基督的身子，並且各自作肢體」（林前十二 27）。身上一處受苦，頭是知道的——主曾問掃羅：「你為甚麼<b>逼迫我</b>？」（徒九 4）<br>二、<b>祂是體恤我們的大祭司</b>：「因我們的大祭司並非不能體恤我們的軟弱」，所以我們可以「<b>坦然無懼</b>地來到施恩的寶座前」（來四 15～16）。<br>三、<b>祂已經擔當了我們的疾病</b>：「他誠然擔當我們的憂患，背負我們的痛苦」（賽五三 4；太八 17）。<br>四、<b>祂如今活著替我們祈求</b>（來七 25）。<br>五、<b>聖經明有應許</b>：「出於信心的祈禱要救那病人，主必叫他起來。」（雅五 15）<br>所以憑信心為病人禱告，既合宜，也是有效的。'
 		},
 		{
 		  num: '205',
 		  title: '怎樣證明醫生不是魔鬼，服藥不是犯罪？',
-		  href: 'q205.html'
+		  desc: '一、<b>路加是醫生。</b>保羅稱他「<b>所親愛的醫生路加</b>」（西四 14），他也是路加福音與使徒行傳的作者，一路同行陪伴保羅。<br>二、<b>主自己用醫生作比方</b>：「康健的人用不著醫生，有病的人才用得著。」（可二 17）若醫生是惡的，主不會這樣比方。<br>三、<b>先知傳了應許，仍吩咐敷藥。</b>希西家已經得了加增十五年壽數的應許，以賽亞還是說：「當取一塊<b>無花果餅</b>來，貼在瘡上。」（賽卅八 21）<br>四、<b>保羅勸提摩太用藥</b>：「因你胃口不清，屢次患病，……可以<b>稍微用點酒</b>。」（提前五 23）<br>五、<b>好撒瑪利亞人</b>「用<b>油和酒</b>倒在他的傷處，包裹好了」，而主稱許他（路十 34）。<br>要緊的是：<b>最好先禱告，求主指示引導，免得失去倚靠神的心</b>；無論何事，不可有「不信」的心。'
 		},
 		{
 		  num: '206',
 		  title: '異端、旁門、左道，應根據其甚麼標準去鑒別？',
-		  href: 'q206.html'
+		  desc: '<b>一律根據聖經。</b>而重點落在幾根主樑上——<br>一、<b>聖經的權威</b>：是否否認一部分聖經的話，或高舉別的書與聖經同等。<br>二、<b>基督的位格</b>：這是新約給的首要判準——「凡靈認耶穌基督是成了肉身來的，就是出於神的。」（約壹四 2）「不認父與子的，這就是敵基督的。」（約壹二 22）<br>三、<b>救恩的道路</b>：是否在「因信稱義」之外加上別的條件——「若傳福音給你們，與我們所傳給你們的不同，他就應當被咒詛。」（加一 8）<br>四、<b>敬拜的對象</b>：是否違犯第一、第二條誡命。<br>五、<b>果子</b>：「憑著他們的果子，就可以認出他們來。」（太七 16）<br>而分辨的根本工夫，是<b>熟悉真理</b>——「心竅習練得通達，就能分辨好歹了。」（來五 14）'
 		},
 	  ],
 	  att2: [
@@ -1753,27 +1861,127 @@
         loadPosts(key, label, range);
     }
 
+    // ── 附錄：把 desc 整理成好讀的排版 ──
+    function beautify(html) {
+        var lines = html.split('<br>').map(function (x) { return x.trim(); })
+                        .filter(function (x) { return x.length > 0; });
+        var out = '';
+        lines.forEach(function (line) {
+            var m = line.match(/^(\([一二三四五六七八九十]+\)|[0-9]+\.|[一二三四五六七八九十]+、)\s*/);
+            if (m) {
+                var mark = m[1];
+                var rest = line.slice(m[0].length).trim();
+                var dm = rest.split('——');
+                if (dm.length > 1) {
+                    out += '<div class="acc-item"><span class="acc-mark">' + mark +
+                           '</span><div><b class="acc-sub">' + dm[0].trim() + '</b>' +
+                           dm.slice(1).join('——').trim() + '</div></div>';
+                } else if (rest.replace(/<[^>]+>/g, '').length <= 14) {
+                    out += '<div class="acc-head"><span class="acc-mark">' + mark + '</span>' + rest + '</div>';
+                } else {
+                    out += '<div class="acc-item"><span class="acc-mark">' + mark +
+                           '</span><div>' + rest + '</div></div>';
+                }
+            } else {
+                out += '<p class="acc-p">' + line + '</p>';
+            }
+        });
+        return out;
+    }
+
+    function renderAccordion(arr) {
+        return arr.map(function (p) {
+            return '<div class="acc-card">' +
+                     '<div class="acc-q">' +
+                       '<span class="acc-num">' + p.num + '</span>' +
+                       '<span class="acc-qt">' + p.title + '</span>' +
+                       '<span class="acc-toggle">+</span>' +
+                     '</div>' +
+                     '<div class="acc-a"><div class="acc-sep"></div>' + beautify(p.desc || '') + '</div>' +
+                   '</div>';
+        }).join('');
+    }
+
+    // ── 附錄：使徒信經 ──
+    function renderCreed(p) {
+        var k = p.desc.indexOf('〔註');
+        var bodyHtml = k >= 0 ? p.desc.slice(0, k) : p.desc;
+        var noteHtml = k >= 0 ? p.desc.slice(k) : '';
+
+        var lines = bodyHtml.split('<br>').map(function (x) { return x.trim(); })
+                            .filter(function (x) { return x.length > 0; });
+        var hasAmen = false;
+        lines = lines.map(function (l) {
+            if (l.indexOf('阿們') >= 0) { hasAmen = true; return l.replace(/阿們。?/, '').trim(); }
+            return l;
+        }).filter(function (x) { return x.length > 0; });
+
+        function stanza(txt) {
+            var parts = txt.split('；').map(function (x) { return x.trim(); })
+                           .filter(function (x) { return x.length > 0; });
+            return parts.map(function (x, idx) {
+                var t = (idx === 0) ? x.replace(/^我信/, '<span class="cw">我信</span>') : x;
+                if (idx < parts.length - 1) { t += '；'; }
+                return '<p class="creed-line">' + t + '</p>';
+            }).join('');
+        }
+
+        var secs = [
+            { label: 'I &middot; 論 父', body: lines.slice(0, 1) },
+            { label: 'II &middot; 論 子', body: lines.slice(1, 2) },
+            { label: 'III &middot; 論聖靈 &middot; 教會 &middot; 永生', body: lines.slice(2) }
+        ];
+
+        var html = '<div class="creed">' +
+                   '<div class="creed-eyebrow">The Apostles&rsquo; Creed</div>' +
+                   '<h2 class="creed-title">使徒信經</h2>' +
+                   '<div class="creed-rule"></div>';
+        secs.forEach(function (sec) {
+            if (!sec.body.length) return;
+            html += '<div class="creed-sec"><div class="creed-sec-label">' + sec.label + '</div>' +
+                    sec.body.map(stanza).join('') + '</div>';
+        });
+        if (hasAmen) { html += '<div class="creed-amen">阿　們</div>'; }
+        if (noteHtml) { html += '<div class="creed-note">' + noteHtml + '</div>'; }
+        return html + '</div>';
+    }
+
     function loadPosts(key, title, range) {
         document.getElementById('current-title').textContent = title;
         document.getElementById('current-subtitle').textContent = range || '';
 
-        const list = document.getElementById('post-list');
-        if (!posts[key] || posts[key].length === 0) {
+        var list = document.getElementById('post-list');
+        var arr = posts[key];
+
+        if (!arr || arr.length === 0) {
             list.innerHTML = '<p style="color:var(--smoke); padding:20px 0;">（此主題內容尚未建立）</p>';
+        } else if (key === 'att2') {
+            list.innerHTML = arr.map(renderCreed).join('');
+        } else if (key.indexOf('att') === 0) {
+            list.innerHTML = renderAccordion(arr);
         } else {
-			list.innerHTML = posts[key].map(p => `
-				<div class="post-card">
-					<span class="post-num">${p.num}</span>
-					<div class="post-body">
-						<div class="post-title">${p.title}</div>
-						${p.desc ? `<div class="post-desc">${p.desc}</div>` : ''}
-						<a href="${p.href}" class="post-more">閱讀全文 →</a>
-					</div>
-				</div>
-			`).join('');
+            list.innerHTML = arr.map(function (p) {
+                return '<div class="post-card">' +
+                         '<span class="post-num">' + p.num + '</span>' +
+                         '<div class="post-body">' +
+                           '<div class="post-title">' + p.title + '</div>' +
+                           (p.desc ? '<div class="post-desc">' + p.desc + '</div>' : '') +
+                           '<a href="' + p.href + '" class="post-more">閱讀全文 →</a>' +
+                         '</div>' +
+                       '</div>';
+            }).join('');
         }
         document.getElementById('content-area').scrollTop = 0;
     }
+
+    // ── 展開／收合（預設全部收合） ──
+    document.getElementById('post-list').addEventListener('click', function (e) {
+        var q = e.target.closest('.acc-q');
+        if (!q) return;
+        var card = q.parentElement;
+        var open = card.classList.toggle('open');
+        card.querySelector('.acc-toggle').textContent = open ? '−' : '+';
+    });
     </script>
 </body>
 </html>
