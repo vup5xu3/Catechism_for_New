@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>參加聚會前的準備 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>到場之前的<span>那件事</span></h1>
+  <p class="subtitle">參加聚會之前應有甚麼準備？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">趕著到的那一種到</h2>
+      <p class="card-hook">人到了，而心還在路上</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種到場，是趕著到的。</p>
+
+      <div class="highlight">
+        <strong>那個狀態大概是這樣</strong>
+        出門前才發現快遲到了。<br><br>路上一直看時間。<br><br>停好車，快步走進去，剛好趕上。<br><br>坐下，喘了幾口氣。<br><br>——而詩歌已經唱到第二首了，而我的腦子裡還在想剛剛那個路口。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏃</span>
+        而那種聚會，結束之後我常常說不出剛剛講了什麼。<br><br>——人是到了。<br><br>而<strong>心還在路上</strong>。<br><br>然後我發現一件事：<strong>問題不在聚會的那一個小時，在前面那半小時。</strong>
+      </div>
+
+      <p>而這一題，講的正是那前面的一段。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">馬大與馬利亞，其實是兩種「在場」</h2>
+      <p class="card-hook">而主的回答，比一般人想的溫柔</p>
+    </div>
+    <div class="card-body">
+
+      <p>路加福音第十章，記了那個大家熟悉的場景。</p>
+
+      <div class="highlight">
+        <strong>兩個人，兩種狀態</strong>
+        馬利亞「在耶穌腳前<strong>坐著聽他的道</strong>」。<br><br>馬大「<strong>伺候的事多，心裡忙亂</strong>」。<br><br>——注意那四個字：<strong>心裡忙亂</strong>。<br><br>而她說的話是：「主啊，我的妹子留下我一個人伺候，你不在意嗎？」
+      </div>
+
+      <p>而主的回答，值得逐字看：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">馬大！馬大！你為許多的事思慮煩擾，但是不可少的只有一件；馬利亞已經選擇那上好的福分，是不能奪去的
+        </p>
+        <p class="scripture-ref">路加福音 十章四十一至四十二節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫖</span>
+        而主並沒有說「伺候是不對的」。<br><br>祂說的是：「你為<strong>許多的事</strong>思慮煩擾。」<br><br>——問題不在她做事。<br><br>問題在那個「<strong>煩擾</strong>」。<br><br>而那個字的意思，接近「被拉來拉去、心分成好幾塊」。<br><br>——所以那是一個很體貼的診斷：<br><br><strong>她人在那個屋子裡，而她的心不在。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而主先叫了她的名字，叫了兩次</strong>
+        「<strong>馬大！馬大！</strong>」<br><br>——聖經裡，這種重複叫名字的說法，通常帶著很深的疼惜。<br><br>亞伯拉罕、亞伯拉罕。<br>摩西、摩西。<br>撒母耳、撒母耳。<br>掃羅、掃羅。<br><br>——所以那句話不是責備。<br><br>那是<strong>把一個忙亂的人叫回來</strong>。
+      </div>
+
+      <p>下一篇，我們把準備列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩件事</h2>
+      <p class="card-hook">一件關乎心，一件關乎時間</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、為將要舉行的聚會祈禱</span>
+          在去之前，<strong>先為那場聚會禱告</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、安排充分的時間去參加</span>
+          最好聚會<strong>前後不要有重要的約會</strong>；<br><br>如有約會，<strong>不可太緊迫聚會的時間</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這兩件事，看起來一件屬靈、一件實際。</p>
+
+      <p>其實它們處理的是<strong>同一個問題</strong>：</p>
+
+      <div class="highlight">
+        <strong>那個問題是：人到了，心沒到</strong>
+        <strong>第一件（禱告）</strong>——把心先帶過去。<br><br><strong>第二件（時間）</strong>——把心可以留下來的空間空出來。<br><br>——因為一個一直在看時間的人，心是沒有辦法安定的。<br><br>而那不是屬靈程度的問題。<strong>那是行事曆的問題。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二件事裡，有一個很細的分別，值得看清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>聚會「之前」有約</th>
+            <th>聚會「之後」有約</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">會發生什麼</td>
+            <td>趕著到，<strong>坐下時心還在跑</strong></td>
+            <td>整場一直在<strong>看時間</strong>，結束就衝出去</td>
+          </tr>
+          <tr>
+            <td class="src">損失的是</td>
+            <td>聚會的<strong>前半段</strong></td>
+            <td>聚會的<strong>後半段</strong>，以及聚會後的交通</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「聚會之後」那一項，最容易被忽略</strong>
+        因為很多真正發生的事，是在散會之後：<br><br>有人走過來說一句話。<br>有人終於開口講他的難處。<br>有人替你禱告。<br><br>——而如果你必須馬上走，那些全部不會發生。<br><br>而那正好是上一題說的「<strong>與眾聖徒有交通的機會</strong>」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⏳</span>
+        我想到燒開水。<br><br>水要到一百度才會滾。<br><br>而如果每次都燒到八十度就關火，那你永遠不會知道滾起來是什麼樣子。<br><br>——而那不是火不夠大。<br><br><strong>是時間不夠長。</strong>
+      </div>
+
+      <p>下一篇，我們看聖經裡那些「到場之前」的例子。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「你到神的殿要謹慎腳步」</h2>
+      <p class="card-hook">傳道書那一節，講的正是這件事</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">你到神的殿要謹慎腳步；因為近前聽，勝過愚昧人獻祭
+        </p>
+        <p class="scripture-ref">傳道書 五章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「謹慎腳步」——那是一個關於「走進去」的吩咐</strong>
+        它管的不是聚會裡面，是<strong>走進去的那一段路</strong>。<br><br>而那節接下去說：「<strong>近前聽</strong>，勝過愚昧人獻祭。」<br><br>——「近前聽」。<br><br>那是一個<strong>要靠近、要聽</strong>的姿態。<br><br>而下一節的吩咐更直接：<br><br>「你在神面前不可冒失開口，也不可心急發言；<strong>因為神在天上，你在地下，所以你的言語要寡少。</strong>」（傳五 2）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👣</span>
+        而「謹慎腳步」讓我想到摩西在何烈山。<br><br>他看見荊棘被火燒著卻沒有燒毀，就轉過去看。<br><br>而神說的第一句話是：<br><br>「<strong>當把你腳上的鞋脫下來，因為你所站之地是聖地。</strong>」（出三 5）<br><br>——脫鞋，是一個<strong>慢下來的動作</strong>。<br><br>而它做的事是：<strong>提醒你，這裡不一樣。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而聖經裡，凡是要見神的場合，前面幾乎都有一段預備：<br><br>西奈山下——「<strong>要吩咐他們今天明天自潔</strong>，又叫他們洗衣服。」（出十九 10）<br><br>大祭司進至聖所——先要<strong>沐浴、穿聖衣、獻祭</strong>。（利十六）<br><br>——而那些預備的用意，不是為了「換取資格」。<br><br>是為了<strong>讓人知道自己要去見誰</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第一件事——為聚會禱告——聖經裡有一個很具體的畫面：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">現在我們都在神面前，要聽主所吩咐你的一切話
+        </p>
+        <p class="scripture-ref">使徒行傳 十章三十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那句話，是哥尼流說的</strong>
+        彼得走進他家，看見<strong>一屋子的人</strong>。<br><br>而哥尼流說的第一句話是：「現在我們都在神面前，<strong>要聽主所吩咐你的一切話</strong>。」<br><br>——而那句話，是<strong>在聽道之前</strong>說的。<br><br>他不知道彼得要講什麼。<br><br>而他已經把姿態擺好了：<strong>我們是來聽的。</strong><br><br>結果那一場，聖靈降在一切聽道的人身上。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而哥尼流那一屋子的人，是<strong>被他請來的</strong>——「已經請了他的親屬密友等候」。<br><br>所以那場聚會，前面是有預備的：<br><br>他禱告（徒十 2、30）。<br>他請人來。<br>他把心的姿態說出來。<br><br>——而聖經對那場聚會的記載是：<br><br>「彼得還說這話的時候，<strong>聖靈降在一切聽道的人身上</strong>。」（徒十 44）
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為聚會禱告，要禱告什麼</h2>
+      <p class="card-hook">而那個內容，比想像的廣</p>
+    </div>
+    <div class="card-body">
+
+      <p>「為將要舉行的聚會祈禱」——具體要禱告什麼？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">為自己</span>
+          求主把心收回來，開我的耳朵、我的心。<br><br>——「講吧，僕人敬聽。」（撒上三 10）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">為主領、講道的人</span>
+          「也要為我祈求，使我得著口才，能以放膽開口講明福音的奧祕。」（弗六 19）<br><br>——保羅自己求過這件事。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">為一同聚會的人</span>
+          為那些今天特別需要的人——<br>那些在難處裡的、那些第一次來的、那些好久沒來的。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">為神的同在</span>
+          「因為無論在哪裡，有兩三個人奉我的名聚會，那裡就有我在他們中間。」（太十八 20）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第二項，值得特別提一句</strong>
+        保羅寫過好幾次同樣的請求：<br><br>「請你們為我們禱告，<strong>好叫主的道理快快行開</strong>。」（帖後三 1）<br><br>「也要為我祈求……<strong>叫我照著當盡的本分放膽講論</strong>。」（弗六 19～20）<br><br>——而寫這些話的，是保羅。<br><br>如果連他都需要別人為他的講道禱告，那麼今天站在台上的人，需要的只會更多。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聚會的果效，聖經指出有一個很關鍵的因素，是在<strong>聽的人</strong>身上。</p>
+
+      <div class="highlight">
+        <strong>庇哩亞人的例子</strong>
+        「這地方的人賢於帖撒羅尼迦的人，<strong>甘心領受這道</strong>，天天考查聖經，要曉得這道是與不是。」（徒十七 11）<br><br>——「<strong>甘心</strong>」。<br><br>那個字的意思是「心裡準備好了、樂意的、預先傾向的」。<br><br>而結果是：「所以他們中間<strong>多有相信的</strong>。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而撒種的比喻，講的正是這件事。<br><br>同一位撒種的，同一把種子。<br><br>而結果差那麼多——差別在<strong>土</strong>。<br><br>路旁的、石頭地的、荊棘裡的、好土。<br><br>——所以聚會前的準備，其實就是<strong>翻土</strong>。<br><br>而荊棘那一種，主的解釋是：「後來有<strong>世上的思慮、錢財的迷惑</strong>，把道擠住了。」<br><br>——「<strong>擠住</strong>」。<br><br>而那正好對上「聚會前後不要有重要的約會」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這一題有一個很實際的價值：<strong>它把責任放回自己身上。</strong></p>
+
+      <div class="highlight">
+        <strong>因為聚會沒有得著，最容易怪的是外面</strong>
+        今天講得不好。<br>詩歌不合。<br>旁邊的人一直講話。<br><br>——那些有時候是真的。<br><br>而這一題問的是另一個問題：<br><br><strong>我來之前，做了什麼？</strong><br><br>而那是唯一我完全能決定的一項。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎣</span>
+        我想到帶著空桶去釣魚的人。<br><br>——他不一定釣得到。<br><br>而<strong>沒有帶桶的人，就算釣到了也帶不回家。</strong><br><br>而禱告與時間，做的就是<strong>把桶帶去</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「不可少的只有一件」</h2>
+      <p class="card-hook">寫給那個一直很忙的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收回到馬大身上。</p>
+
+      <div class="highlight">
+        <strong>因為馬大並沒有做錯什麼</strong>
+        她在招待主。她在忙一頓飯。<br><br>——那是<strong>好事</strong>。<br><br>而主的診斷是：「你為<strong>許多的事</strong>思慮煩擾。」<br><br>——問題不在那件事本身。<br><br>問題在<strong>太多件</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而主說的那句話，我覺得是給現代人的：<br><br>「<strong>不可少的只有一件。</strong>」<br><br>——在一個什麼都很多的生活裡，那句話像一個很深的呼吸。<br><br>而馬利亞做的事，只是<strong>坐下來，聽</strong>。<br><br>而主給的評語是：「這是<strong>不能奪去</strong>的。」
+      </div>
+
+      <div class="big-quote">
+        你到神的殿<br>要謹慎腳步
+        <cite>— 傳道書 五章一節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個趕著到的早上。</p>
+
+      <p>我後來做了一件很小的調整：<strong>提早二十分鐘出門。</strong></p>
+
+      <p>就這樣。沒有更屬靈的方法。</p>
+
+      <p>而那二十分鐘做的事，是——</p>
+
+      <p>我可以慢慢走進去。</p>
+
+      <p>可以先坐一下，禱告一段。</p>
+
+      <p>可以跟人打個招呼，而不是急著找位子。</p>
+
+      <p>——而那一整場，就不一樣了。</p>
+
+      <p>不是因為聚會變好了。</p>
+
+      <p>是因為<strong>我終於整個人都在那裡</strong>。</p>
+
+      <p>願你這個禮拜，早二十分鐘出門。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  參加聚會前的準備 · Threads Series
+</footer>
+
+</body>
+</html>

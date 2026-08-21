@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在不信的人中間為主發光 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>一家人<span>怎樣發光</span></h1>
+  <p class="subtitle">住在不信的人中間，應當如何為主發光？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">鄰居記得的，通常是最小的事</h2>
+      <p class="card-hook">而那些事，我們自己往往不記得</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>一個家在鄰居眼中是什麼樣子，往往不是靠大事決定的。</p>
+
+      <div class="highlight">
+        <strong>是那些很小的事</strong>
+        誰家半夜吵架，整層樓都聽得見。<br><br>誰家的垃圾常常堆在門口。<br><br>誰家的孩子見到人會叫。<br><br>誰家的人，在停車位那件事上讓了一步。<br><br>——而那些事，我們自己往往不會記得。<br><br>而別人記得。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪟</span>
+        我想到夜裡的窗戶。<br><br>屋裡的人不覺得自己在發光。<br><br>——而從外面經過的人，會看見那扇窗是亮的。<br><br>而那個亮，不是刻意打出來的。<br><br><strong>那只是裡面本來就開著燈。</strong>
+      </div>
+
+      <p>而這一題那四項，講的正是「裡面那盞燈」怎麼一直亮著。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">亞伯拉罕在爭執裡，先讓了一步</h2>
+      <p class="card-hook">而他讓的，是他有權先選的那一份</p>
+    </div>
+    <div class="card-body">
+
+      <p>創世記十三章，記了亞伯蘭與羅得的一場糾紛。</p>
+
+      <div class="highlight">
+        <strong>那個處境</strong>
+        兩家的牲畜太多，「<strong>那地容不下他們</strong>」。<br><br>於是「亞伯蘭的牧人和羅得的牧人<strong>相爭</strong>」。<br><br>——而經文特意加了一句：<br><br>「<strong>當時，迦南人與比利洗人在那地居住。</strong>」（創十三 7）<br><br>那句話，是這一段的關鍵：<strong>旁邊有人在看。</strong>
+      </div>
+
+      <p>而亞伯蘭說的話，是這樣的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你我不可相爭，你的牧人和我的牧人也不可相爭，因為我們是骨肉。遍地不都在你眼前嗎？請你離開我：你向左，我就向右；你向右，我就向左
+        </p>
+        <p class="scripture-ref">創世記 十三章八至九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        而那個提議，值得注意。<br><br>因為<strong>亞伯蘭是長輩，是蒙應許的那一位</strong>——他有權先選。<br><br>而他把選擇權讓給了羅得。<br><br>——而羅得選了約旦河的全平原，「那地方好像耶和華的園子」。<br><br>他挑了看起來最好的。<br><br>而羅得走了以後，神對亞伯蘭說：<br><br>「<strong>從你所在的地方，你舉目向東西南北觀看；凡你所看見的一切地，我都要賜給你和你的後裔。</strong>」（創十三 14～15）
+      </div>
+
+      <p>下一篇，我們把四項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四項</h2>
+      <p class="card-hook">而第三項的那半句，寫得很有分寸</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、家庭禮拜</span>
+          應當有<strong>家庭禮拜</strong>，<br>先從<strong>簡單隆重</strong>的方式開始。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、言行與靈修</span>
+          應當注意<strong>家中大小的言行舉止</strong>，<br>又須<strong>人人學習靈修生活，天天讀經祈禱</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、與鄰居的摩擦</span>
+          若不幸與鄰居發生不安事件時，<br>應當<strong>盡量退讓</strong>，<br><br><strong>不是完全退讓</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、傳福音</span>
+          <strong>找機會向鄰居傳福音。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四項，是<strong>由內往外</strong>的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>圈</th>
+            <th>那一項</th>
+            <th>範圍</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">最裡面</td>
+            <td>一、家庭禮拜</td>
+            <td>一家人一起面向神</td>
+          </tr>
+          <tr>
+            <td class="src">第二圈</td>
+            <td>二、言行與靈修</td>
+            <td>家裡每一個人自己的生活</td>
+          </tr>
+          <tr>
+            <td class="src">第三圈</td>
+            <td>三、與鄰居的摩擦</td>
+            <td>牆外面的關係</td>
+          </tr>
+          <tr>
+            <td class="src">最外面</td>
+            <td>四、傳福音</td>
+            <td>把那個好消息送出去</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那個順序，是有道理的</strong>
+        因為第四項如果沒有前面三項，就會很奇怪：<br><br>——一個天天吵架、跟鄰居關係緊張的家，<br><br>去敲鄰居的門講福音，那個訊息傳不出去。<br><br>而反過來說：<strong>前面三項做好了，第四項常常會自己發生。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三項那個「<strong>不是完全退讓</strong>」，是這一題最有分寸的一句。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        因為只說「盡量退讓」，會滑向另一個極端：<br><br>——變成什麼都忍，什麼都不說。<br><br>而那不是謙讓，那是<strong>沒有界線</strong>。<br><br>而長期沒有界線的關係，最後往往會壞得更難看。<br><br>所以那半句加得很好：<br><br><strong>盡量退讓，而不是完全退讓。</strong>
+      </div>
+
+      <p>下一篇，我們看那幾項的經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「若是能行，總要盡力與眾人和睦」</h2>
+      <p class="card-hook">而那句話裡，有兩個很誠實的前提</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">若是能行，總要盡力與眾人和睦
+        </p>
+        <p class="scripture-ref">羅馬書 十二章十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節裡有兩個限定詞，很少被注意</strong>
+        <strong>「若是能行」</strong>——那承認了：<strong>有時候不能行。</strong><br><br>因為和睦需要兩邊，而你只能決定自己那一邊。<br><br><strong>「盡力」</strong>——那要求了：<strong>你那一邊要做到底。</strong><br><br>——兩個合起來，正好就是這一題第三項：<br><br><strong>盡量退讓，而不是完全退讓。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那一章接下去的話，說明了退讓的根據：<br><br>「親愛的弟兄，<strong>不要自己伸冤</strong>，寧可讓步，聽憑主怒；因為經上記著：<strong>主說：伸冤在我，我必報應。</strong>」（羅十二 19）<br><br>——所以退讓不是<strong>算了</strong>。<br><br>是<strong>交出去</strong>。<br><br>而那一章的結尾是：「<strong>你不可為惡所勝，反要以善勝惡。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二項——注意言行——彼得前書講得最完整：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們在外邦人中，應當品行端正，叫那些毀謗你們是作惡的，因看見你們的好行為，便在鑒察的日子歸榮耀給神
+        </p>
+        <p class="scripture-ref">彼得前書 二章十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的處境，是很難的</strong>
+        因為前提是：<strong>已經有人在毀謗你們了。</strong><br><br>「那些<strong>毀謗你們是作惡的</strong>」。<br><br>——而彼得給的辦法，不是去澄清、去辯白。<br><br>是：<strong>「因看見你們的好行為。」</strong><br><br>——用<strong>看得見的東西</strong>，去回答看不見的指控。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而彼得在後面又說了一次，用的說法更直接：<br><br>「因為神的旨意原是要你們<strong>行善，可以堵住那糊塗無知人的口</strong>。」（彼前二 15）<br><br>——「<strong>堵住</strong>」。<br><br>那個字很有畫面。<br><br>而堵住的方式，不是講贏。<br><br><strong>是讓那些話變得說不出口。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第一項——家庭禮拜——那句「<strong>先從簡單隆重的方式開始</strong>」，值得停一下。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        「<strong>簡單</strong>」——所以不必一開始就很長、很完整。<br><br>唱一首詩，讀幾節，一起禱告——那就成立了。<br><br>「<strong>隆重</strong>」——而它不是隨便。<br><br>時間到了就開始，大家都到齊，手邊的事先放下。<br><br>——兩個字合起來，是一個很實際的建議：<br><br><strong>短，而且認真。</strong><br><br>因為一開始就設計得太複雜的，通常撐不過一個月。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「發光」——那個動作，其實是被動的</h2>
+      <p class="card-hook">主用的比喻，是燈與城</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">你們是世上的光。城造在山上是不能隱藏的。人點燈，不放在斗底下，是放在燈臺上，就照亮一家的人
+        </p>
+        <p class="scripture-ref">馬太福音 五章十四至十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那兩個比喻，都有同一個特點</strong>
+        <strong>城造在山上</strong>——它不需要努力被看見。<strong>它就是被看見。</strong><br><br><strong>燈放在燈臺上</strong>——燈不需要用力發光。<strong>它只要不被蓋住。</strong><br><br>——所以主的吩咐不是「你們要更亮一點」。<br><br>是<strong>「不要放在斗底下」</strong>。<br><br>——那個動作是：<strong>不要遮住。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏔️</span>
+        而「城造在山上」那個比喻，特別適合用在<strong>一個家</strong>上。<br><br>因為一個家，本來就是<strong>持續在那裡</strong>的。<br><br>——鄰居看的不是某一天。<br><br>是<strong>好幾年</strong>。<br><br>而那正是家庭見證最有力的地方：<strong>它是長時間的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那段話的結尾，說明了發光的目的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們的光也當這樣照在人前，叫他們看見你們的好行為，便將榮耀歸給你們在天上的父
+        </p>
+        <p class="scripture-ref">馬太福音 五章十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的結尾，把方向擺正了</strong>
+        「<strong>便將榮耀歸給你們在天上的父</strong>。」<br><br>——所以發光的目的，不是讓人稱讚這一家。<br><br>而那也解釋了一件事：<br><br>為什麼同一位主，在第六章又說「你施捨的時候，不要叫左手知道右手所做的」。<br><br>——兩處並不矛盾。<br><br>因為<strong>差別在於那道光最後落在誰身上</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔦</span>
+        我想到舞台上的燈。<br><br>燈自己不是主角。<br><br>——而它照的方向，決定了觀眾看哪裡。<br><br>所以「為主發光」那件事，測試的方法很簡單：<br><br><strong>別人看完之後，稱讚的是這一家，還是問起那一位？</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第四項——找機會向鄰居傳福音——最自然的形式，其實是<strong>一頓飯</strong>。</p>
+
+      <div class="highlight">
+        <strong>因為聖經裡很多事，是在飯桌上發生的</strong>
+        撒該——「今天我必<strong>住在你家裡</strong>。」<br><br>馬太——「耶穌在屋裡坐席的時候，有好些<strong>稅吏和罪人來，與耶穌並他的門徒一同坐席</strong>。」<br><br>那個禁卒——「領他們上自己家裡去，<strong>給他們擺上飯</strong>。」<br><br>以馬忤斯的兩個門徒——「到了坐席的時候……<strong>他們的眼睛明亮了。</strong>」<br><br>——而初代教會的樣子，也是這樣：<br><br>「他們天天……在家中擘餅，<strong>存著歡喜、誠實的心用飯</strong>。」（徒二 46）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍚</span>
+        而一個家最大的優勢，正是這個：<br><br><strong>它可以請人吃飯。</strong><br><br>——那是一間教會做不到、而一個家做得到的事。<br><br>而羅馬書那句話說得剛好：<br><br>「<strong>客要一味地款待。</strong>」（羅十二 13）<br><br>——「一味地」，意思是<strong>持續地、認真地追求</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">寫給那個覺得自己家不夠好的你</h2>
+      <p class="card-hook">而發光的條件，不是完美</p>
+    </div>
+    <div class="card-body">
+
+      <p>談到「為主發光」，很多人心裡第一個反應是：<strong>我家哪裡發得了光。</strong></p>
+
+      <div class="highlight">
+        <strong>因為家裡的問題，自己最清楚</strong>
+        會吵架。<br>孩子不聽話。<br>有人還沒信。<br>那些禮拜，斷斷續續。<br><br>——而如果發光的條件是「完美」，那沒有一個家合格。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而回到那個比喻：<strong>燈不需要很亮。</strong><br><br>主說的是：「人點燈，不放在斗底下，是放在燈臺上，<strong>就照亮一家的人</strong>。」<br><br>——「照亮一家的人」。<br><br>那個範圍，本來就是<strong>一個屋子</strong>。<br><br>而一根蠟燭，在一個房間裡，就夠了。
+      </div>
+
+      <div class="highlight">
+        <strong>而更值得記住的是：那光不是你發的</strong>
+        「<strong>你們是世上的光</strong>」——而主在別的地方說：<br><br>「<strong>我是世界的光。</strong>」（約八 12）<br><br>——所以那是同一道光。<br><br>就像月亮：它是亮的，而它自己不發光。<br><br><strong>它只要面向那個光源。</strong>
+      </div>
+
+      <div class="big-quote">
+        你們的光也當這樣照在人前，<br>叫他們看見你們的好行為，<br>便將榮耀歸給你們在天上的父
+        <cite>— 馬太福音 五章十六節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那扇窗。</p>
+
+      <p>屋裡的人不覺得自己在發光。</p>
+
+      <p>而從外面經過的人，會看見那扇窗是亮的。</p>
+
+      <p>——所以這四項裡，最要緊的其實是第一項與第二項。</p>
+
+      <p>那兩項做的事，是<strong>把屋裡的燈點著</strong>。</p>
+
+      <p>而第三項與第四項，是那道光自然走出去的路。</p>
+
+      <p>而如果今天你家裡那盞燈很小——</p>
+
+      <p>那也沒有關係。</p>
+
+      <p>「先從<strong>簡單隆重</strong>的方式開始。」</p>
+
+      <p>——這一題自己就這樣說了。</p>
+
+      <p>願你今晚，開始那五分鐘。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  在不信的人中間為主發光 · Threads Series
+</footer>
+
+</body>
+</html>

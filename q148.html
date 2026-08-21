@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>為什麼必須傳福音 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>命令，<span>與本性</span></h1>
+  <p class="subtitle">為什麼基督徒必須傳福音？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「傳福音」這三個字，讓很多人緊張</h2>
+      <p class="card-hook">包括我</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>老實說，我對這三個字，有過很長一段時間的抗拒。</p>
+
+      <div class="highlight">
+        <strong>而那個抗拒，來自幾個具體的畫面</strong>
+        怕變成路上拉著人講話的那種。<br><br>怕朋友以後見到我就閃。<br><br>怕自己講不好，反而害了那件事。<br><br>怕被問到答不出來的問題。<br><br>——而最深的一層是：<strong>怕別人覺得我在推銷什麼。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而我後來發現，我心裡把「傳福音」預設成了<strong>推銷</strong>。<br><br>——推銷的特徵是：我有一個東西要賣給你，而我從中得到好處。<br><br>所以推銷的人會不好意思。<br><br>而如果那不是推銷呢？<br><br>如果那是——<strong>你發現了一件跟對方切身相關的事，而他還不知道</strong>？
+      </div>
+
+      <p>而這一題給的兩個理由，正好處理了這件事。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">四個長大痲瘋的人，說了一句話</h2>
+      <p class="card-hook">「我們所做的不好」</p>
+    </div>
+    <div class="card-body">
+
+      <p>列王紀下第七章，記了一個我很喜歡的場景。</p>
+
+      <div class="highlight">
+        <strong>那個處境</strong>
+        撒瑪利亞城被圍困，城裡飢荒到了<strong>吃人</strong>的地步。<br><br>而城門口有四個長大痲瘋的人——他們是不能進城的。<br><br>他們商量：進城，會餓死；坐在這裡，也會餓死。<br><br>「不如我們投降亞蘭人的軍隊……<strong>若殺我們，我們也不過死了。</strong>」<br><br>——那是一個沒有希望的決定。
+      </div>
+
+      <p>而他們走過去，發現營裡<strong>一個人也沒有</strong>——神使亞蘭人聽見車馬的聲音，全都逃走了。</p>
+
+      <div class="highlight">
+        <strong>而他們做的第一件事，很誠實</strong>
+        「他們進了一個帳棚，<strong>吃了喝了</strong>，且從其中拿出金銀和衣服來，<strong>去收藏了</strong>；回來又進了一個帳棚，從其中拿出財物來去收藏了。」<br><br>——他們先吃飽，先藏錢。<br><br>那太真實了。
+      </div>
+
+      <p>而接下來那一句，是這一題的核心：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">那時，他們彼此說：我們所做的不好！今日是有好信息的日子，我們竟不作聲！
+        </p>
+        <p class="scripture-ref">列王紀下 七章九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        「<strong>今日是有好信息的日子，我們竟不作聲。</strong>」<br><br>——注意他們的理由。<br><br>不是「我們應該做好事」。<br><br>是：<strong>城裡的人正在餓死，而我們知道糧食在哪裡。</strong><br><br>而那句「我們所做的不好」，是他們自己說的。<br><br>沒有人來責備他們。<br><br><strong>那個不安，是從裡面長出來的。</strong>
+      </div>
+
+      <p>下一篇，我們把兩個理由列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩個理由</h2>
+      <p class="card-hook">一個從外面來，一個從裡面來</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、因為那是主耶穌的命令</span>
+          「你們往普天下去，傳福音給萬民聽。」<br>（可十六 15）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、因為拯救靈魂是新生命的本性</span>
+          （參羅一 14；林前九 22～23）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這兩個理由的性質，完全不同——而它們正好互補：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>命令</th>
+            <th>本性</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">從哪裡來</td>
+            <td><strong>外面</strong>——主吩咐的</td>
+            <td><strong>裡面</strong>——新生命自己會這樣</td>
+          </tr>
+          <tr>
+            <td class="src">動力</td>
+            <td>順服</td>
+            <td>忍不住</td>
+          </tr>
+          <tr>
+            <td class="src">它撐住的時候</td>
+            <td>當我<strong>沒有感覺</strong>的時候</td>
+            <td>當我<strong>沒有力氣勉強自己</strong>的時候</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而兩個一起，才完整</strong>
+        <strong>只有命令</strong>——那會變成任務，會累，會做成業績。<br><br><strong>只有本性</strong>——而本性有高有低，冷淡的時候就停了。<br><br>——所以聖經同時給了兩個。<br><br>感動來的時候，讓本性帶。<br>感動退的時候，讓命令撐。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「本性」那個說法，值得停一下。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        因為「本性」的意思是：<strong>不需要被要求，它自己會這樣。</strong><br><br>——一棵活的蘋果樹，不需要有人叫它結蘋果。<br><br>而如果它不結，那不是<strong>紀律</strong>的問題。<br><br><strong>那是生命的問題。</strong><br><br>——所以這一題的第二個理由，其實是在說：<br><br>拯救靈魂這件事，是<strong>新生命自然會有的傾向</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而那個說法，也帶來一個安慰</strong>
+        因為它意味著：<strong>你不必先變成一個很會講的人。</strong><br><br>——本性不是技巧。<br><br>那個撒瑪利亞婦人，剛信不到一小時，就跑回城裡對眾人說：<br><br>「你們來看！有一個人將我素來所行的一切事都給我說出來了，<strong>莫非這就是基督嗎？</strong>」（約四 29）<br><br>——她連神學都還沒學。<br><br>而那一城的人，「因為那婦人作見證的話，就信了耶穌」。
+      </div>
+
+      <p>下一篇，我們看那兩節經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「我都欠他們的債」</h2>
+      <p class="card-hook">保羅用了一個很奇怪的說法</p>
+    </div>
+    <div class="card-body">
+
+      <p>羅馬書第一章，保羅在講他為什麼想去羅馬。而他用的字很特別。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">無論是希臘人、化外人、聰明人、愚拙人，我都欠他們的債
+        </p>
+        <p class="scripture-ref">羅馬書 一章十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「欠債」那個說法，方向是反的</strong>
+        一般會這樣想：<strong>他們欠神的。</strong><br><br>而保羅說的是：<strong>我欠他們的。</strong><br><br>——為什麼？<br><br>因為他領受了一個要交給別人的東西。<br><br>就像一個人受託送一封信：<strong>信不是他的，而在他送到之前，他一直欠著。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而下一句，接的是很有名的那節：<br><br>「我<strong>不以福音為恥</strong>；這福音本是神的大能，要救一切相信的。」（羅一 16）<br><br>——「不以為恥」那句話，正好對上我開頭那個抗拒。<br><br>而他給的理由不是「我很勇敢」。<br><br>是：<strong>「這福音本是神的大能。」</strong><br><br>——所以那件事的力量，不在傳的人身上。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而哥林多前書第九章，保羅描述了自己怎麼傳：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">向甚麼樣的人，我就作甚麼樣的人。無論如何，總要救些人
+        </p>
+        <p class="scripture-ref">哥林多前書 九章二十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那一段的完整清單，很有意思</strong>
+        「向猶太人，我就作猶太人。」<br>「向律法以下的人，我就作律法以下的人。」<br>「向沒有律法的人，我就作沒有律法的人。」<br>「向軟弱的人，我就作軟弱的人。」<br><br>——四種人，四種調整。<br><br>而那不是沒有立場。<br><br>那是<strong>為了對方，把不必要的障礙拿掉</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那節的最後一句，語氣很低：<br><br>「無論如何，<strong>總要救些人</strong>。」<br><br>——「<strong>些</strong>」。<br><br>不是「救所有人」。<br><br>而保羅是那個時代最大的傳道人，他說的是「總要救些」。<br><br>——所以那個標準，其實比我們想的低很多。<br><br>而下一節說明了他的動機：<br><br>「凡我所行的，都是<strong>為福音的緣故</strong>，為要與人同得這福音的好處。」（林前九 23）<br><br>——「<strong>同得</strong>」。<br><br>不是我給你，是<strong>我們一起得</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那個命令本身，四福音和使徒行傳各記了一次，措辭都不同：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>重點</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">太廿八 19～20</td>
+            <td>「使萬民<strong>作我的門徒</strong>……凡我所吩咐你們的，都教訓他們遵守。」</td>
+          </tr>
+          <tr>
+            <td class="src">可十六 15</td>
+            <td>「你們<strong>往普天下去</strong>，傳福音給萬民聽。」</td>
+          </tr>
+          <tr>
+            <td class="src">路廿四 47</td>
+            <td>「人要奉他的名傳<strong>悔改、赦罪</strong>的道，<strong>從耶路撒冷起</strong>直傳到萬邦。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒一 8</td>
+            <td>「你們就必得著<strong>能力</strong>……作我的<strong>見證</strong>。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而使徒行傳那一節，加了一樣別的地方沒有的東西</strong>
+        「但聖靈降臨在你們身上，你們就必得著<strong>能力</strong>。」<br><br>——所以那個命令，是<strong>配著能力一起給的</strong>。<br><br>而路加福音那節說「<strong>從耶路撒冷起</strong>」——也就是<strong>從腳邊開始</strong>。<br><br>不是先去很遠的地方。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">如果本性沒有出現呢</h2>
+      <p class="card-hook">這一題不能繞過的問題</p>
+    </div>
+    <div class="card-body">
+
+      <p>「拯救靈魂是新生命的本性」——而事實是，很多信徒沒有那個衝動。</p>
+
+      <div class="highlight">
+        <strong>而那不一定代表沒有生命</strong>
+        因為本性是會<strong>被壓住</strong>的。<br><br>——被害怕壓住：怕被拒絕、怕尷尬。<br><br>被忙碌壓住：日子太滿，沒有想過這件事。<br><br>被習慣壓住：從來沒有做過，所以不會做。<br><br>而還有一種最常見的：<strong>被冷淡壓住。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌡️</span>
+        而最後那一種，最值得注意。<br><br>因為一個人對別人的靈魂沒有感覺，通常不是<strong>他變壞了</strong>。<br><br>是<strong>他自己那一頭，也淡掉了</strong>。<br><br>——而那正好指出一件事：<br><br><strong>傳福音的熱度，是跟著自己與主的關係走的。</strong><br><br>那不是一個獨立的項目。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經裡，有兩個人描述過那種「壓不住」的狀態。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">耶利米</span>
+          他因為傳神的話，「終日成為笑話，人人都戲弄我」。<br><br>於是他決定不講了：「我不再提耶和華，也不再奉他的名講論。」<br><br>而下一句是：<br><br>「<strong>我便心裡覺得似乎有燒著的火閉塞在我骨中，我就含忍不住，不能自禁。</strong>」（耶二十 9）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">彼得和約翰</span>
+          公會禁止他們奉耶穌的名講論。<br><br>而他們的回答是：<br><br>「<strong>我們所看見所聽見的，不能不說。</strong>」（徒四 20）<br><br>——「不能不說」。<br><br>那正是「本性」的樣子。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那兩處的共同點，是「壓不住」</strong>
+        耶利米——<strong>含忍不住，不能自禁</strong>。<br><br>彼得約翰——<strong>不能不說</strong>。<br><br>——注意那都不是「我很努力地去說」。<br><br>那是<strong>「我停不下來」</strong>。<br><br>而那種狀態，不是靠意志達到的。<br><br><strong>那是裡面有東西滿出來了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而如果本性還沒出現，那怎麼辦？</p>
+
+      <div class="highlight">
+        <strong>我想這一題的兩個理由，順序是有智慧的</strong>
+        <strong>命令</strong>放在前面。<br><br>——因為命令是<strong>可以先做的</strong>，不必等感覺到位。<br><br>而許多時候，<strong>做了之後，感覺才來</strong>。<br><br>就像那四個長大痲瘋的人：<br><br>他們一開始是先吃、先藏錢。<br><br>而<strong>走回去報信之後</strong>，那件事才變成他們的故事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而還有一個很實際的辦法，是本題後面幾道題會講到的：<br><br><strong>為那個人禱告。</strong><br><br>——因為你很難一直為一個人禱告，同時對他毫無感覺。<br><br>而保羅為同胞禱告的那句話，是這樣的：<br><br>「我心裡所願的，向神所求的，<strong>是要以色列人得救</strong>。」（羅十 1）<br><br>——先在禱告裡，那份心才長出來。
+      </div>
+
+      <div class="highlight">
+        <strong>而還有一個最容易被忽略的方式：生活</strong>
+        「你們的光也當這樣照在人前，叫他們<strong>看見你們的好行為</strong>，便將榮耀歸給你們在天上的父。」（太五 16）<br><br>——「看見」。<br><br>而那是一件不需要開口的事。<br><br>而彼得說得更具體：「有人問你們心中盼望的緣由，就要<strong>常作準備</strong>，以溫柔、敬畏的心回答各人。」（彼前三 15）<br><br>——「<strong>有人問你們</strong>」。<br><br>那意味著：先活出一個<strong>會讓人想問</strong>的樣子。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「今日是有好信息的日子」</h2>
+      <p class="card-hook">寫給那個一直開不了口的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收回到那四個長大痲瘋的人身上。</p>
+
+      <div class="highlight">
+        <strong>因為他們的身分，很值得注意</strong>
+        他們是<strong>大痲瘋</strong>——在當時，那是被隔離的、不潔淨的、不能進城的人。<br><br>——所以那個好消息，是由<strong>城裡最沒有地位的那幾個人</strong>帶進去的。<br><br>而他們沒有講道，沒有神學。<br><br>他們說的話很簡單：<strong>「我們去了那裡，那邊有吃的。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而那正好說明了一件事：<br><br><strong>傳福音的資格，不是「我已經很好了」。</strong><br><br>是<strong>「我知道糧食在哪裡」</strong>。<br><br>——而那個瞎子被醫好之後，法利賽人來盤問他。<br><br>他答不出神學問題，他說的是：<br><br>「他是個罪人不是，我不知道；<strong>有一件事我知道，從前我是眼瞎的，如今能看見了。</strong>」（約九 25）
+      </div>
+
+      <div class="big-quote">
+        今日是有好信息的日子，<br>我們竟不作聲
+        <cite>— 列王紀下 七章九節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個「怕像推銷」的抗拒。</p>
+
+      <p>而我後來明白，那兩件事有一個根本的分別。</p>
+
+      <p>推銷的人，是<strong>從對方身上得到東西</strong>。</p>
+
+      <p>而那四個人跑回城裡，什麼也沒有得到。</p>
+
+      <p>——他們甚至是<strong>放下自己剛藏好的金銀</strong>，跑回去的。</p>
+
+      <p>而保羅那句話說得最清楚：</p>
+
+      <p><strong>「為要與人同得這福音的好處。」</strong></p>
+
+      <p>——「<strong>同得</strong>」。</p>
+
+      <p>不是我有而你沒有。</p>
+
+      <p>是<strong>我剛剛找到，而那裡還有很多</strong>。</p>
+
+      <p>願你今天，想起一個名字，然後為他禱告。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  為什麼必須傳福音 · Threads Series
+</footer>
+
+</body>
+</html>

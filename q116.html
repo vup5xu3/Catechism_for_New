@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖經將教會比作什麼 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>家、殿、<span>身體</span></h1>
+  <p class="subtitle">聖經用來比喻教會的幾個意象</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">用什麼比喻，會決定你怎麼待它</h2>
+      <p class="card-hook">因為比喻會決定期待</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我後來發現一件事：<strong>一個人心裡拿什麼比喻教會，會直接決定他怎麼參與。</strong></p>
+
+      <div class="highlight">
+        <strong>幾種常見的、沒有說出口的比喻</strong>
+        <strong>教會像加油站</strong>——我來充電，充飽了就走。<br>而如果這週沒有加到油，我會失望。<br><br><strong>教會像劇院</strong>——台上有人表演，我在台下。<br>而如果講得不好、詩歌不對味，這一場就白來了。<br><br><strong>教會像社團</strong>——大家興趣相同，聚在一起。<br>而如果我跟這裡的人合不來，那我換一個。<br><br>——這三種，都不是聖經用的比喻。<br><br>而它們共同的問題是：<strong>我是消費者。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        而聖經用的比喻，性質完全不同。<br><br>它用的是<strong>家</strong>、<strong>殿</strong>、<strong>身體</strong>、<strong>新婦</strong>。<br><br>——而這四樣，沒有一樣是可以「消費」的。<br><br>你不會去消費你的家。<br>你不會在自己的身體外面當觀眾。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那些比喻。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「你為甚麼逼迫我？」</h2>
+      <p class="card-hook">而掃羅逼迫的，明明是別人</p>
+    </div>
+    <div class="card-body">
+
+      <p>掃羅在往大馬士革的路上，被一道光照倒在地。</p>
+
+      <p>而那個聲音問他的話，值得逐字看：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">掃羅！掃羅！你為甚麼逼迫我？</p>
+        <p class="scripture-ref">使徒行傳 九章四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而掃羅逼迫的是誰？</strong>
+        經文前一節說得很清楚：他「向主的門徒口吐威嚇兇殺的話」，要把在大馬士革的信徒「捆綁帶到耶路撒冷」。<br><br>——他逼迫的是<strong>那些人</strong>。<br><br>而那個聲音說的是：<strong>「你為甚麼逼迫『我』？」</strong><br><br>而掃羅問：「主啊，你是誰？」<br><br>回答是：「<strong>我就是你所逼迫的耶穌。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩹</span>
+        而這一段，正是「身體」這個比喻最有力的說明。<br><br>因為身體的特性是：<strong>某一處受傷，頭是知道的。</strong><br><br>你踩到一根釘子，痛的訊號會傳到腦子——<strong>你不需要通報它。</strong><br><br>所以那個問句不是修辭。<br><br><strong>那是頭在說：那些傷，在我身上。</strong>
+      </div>
+
+      <p>而那個被逼迫的人，後來成了寫下「教會是他的身體」那句話的人。</p>
+
+      <p>下一篇，我們把聖經用的比喻排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩組比喻，四個意象</h2>
+      <p class="card-hook">而每一個，說明一種關係</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經將教會比作什麼？主要有兩組：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、教會是神的家，神的殿</span>
+          「這家就是永生神的教會，真理的柱石和根基。」（提前三 15）<br>「被建造成為神藉著聖靈居住的所在。」（參弗二 19～22）<br><br>意思是：<strong>「神施愛的範圍」</strong>、<strong>「神居住的所在」</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、教會是基督的身體，基督的新婦</span>
+          「教會是他的<strong>身體</strong>，是那充滿萬有者所充滿的。」（弗一 23）<br>「基督愛<strong>教會</strong>，為教會捨己。」（弗五 25）<br><br>表明：<strong>教會以基督為首，與基督最親密。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這四個意象，各自說明了一種不同的關係：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>意象</th>
+            <th>說明的關係</th>
+            <th>那意味著</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>家</strong></td>
+            <td>父與兒女</td>
+            <td>神施愛的範圍——<strong>你屬於這裡</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>殿</strong></td>
+            <td>神與祂的居所</td>
+            <td>神居住的所在——<strong>祂在這裡</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>身體</strong></td>
+            <td>頭與肢體</td>
+            <td>以基督為首——<strong>你不是可有可無的</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>新婦</strong></td>
+            <td>新郎與新婦</td>
+            <td>與基督最親密——<strong>你是被愛的</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這四個比喻，全部是「關係性」的</strong>
+        沒有一個是<strong>功能性</strong>的。<br><br>家、殿、身體、新婦——<strong>每一個都預設了一段不可分割的關係。</strong><br><br>而這正是我開頭那三種比喻（加油站、劇院、社團）缺的：<br><br>那三種，全部可以<strong>換一個</strong>。<br><br>而這四種，不行。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「家」與「殿」在原文裡，其實是<strong>同一個字</strong>——這一點很有意思。</p>
+
+      <div class="highlight">
+        <strong>Oikos——房子、家、家人</strong>
+        提摩太前書三章十五節：「你也可以知道在<strong>神的家</strong>中當怎樣行。這家就是永生神的教會。」<br><br>而同一個字根，也用在「殿」上。<br><br>——所以中文的「家」與「殿」，在原文裡是同一個意象的兩面：<br><br><strong>它既是家人住的地方，也是神住的地方。</strong><br><br>而那正是「神施愛的範圍」與「神居住的所在」這兩個說法的來源。
+      </div>
+
+      <p>下一篇，我們細看那幾個意象。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「活石」——一個很不尋常的說法</h2>
+      <p class="card-hook">石頭不會活，而彼得偏要這樣說</p>
+    </div>
+    <div class="card-body">
+
+      <p>以弗所書第二章，把「殿」這個意象講得最完整：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">並且被建造在使徒和先知的根基上，有基督耶穌自己為房角石，各房靠他聯絡得合式，漸漸成為主的聖殿。你們也靠他同被建造，成為神藉著聖靈居住的所在
+        </p>
+        <p class="scripture-ref">以弗所書 二章二十至二十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「房角石」那個位置，值得說明</strong>
+        古代建築的房角石，是<strong>第一塊放下去的石頭</strong>，而且它決定了整棟建築的<strong>方位與水平</strong>。<br><br>後面每一塊石頭，都是照著它對齊的。<br><br>——所以「基督為房角石」的意思，不是「祂很重要」。<br><br><strong>是整棟建築的每一處，都照祂對齊。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而彼得用同一個意象時，加了一個很奇怪的形容詞：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們來到主面前，也就像活石，被建造成為靈宮，作聖潔的祭司
+        </p>
+        <p class="scripture-ref">彼得前書 二章五節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧱</span>
+        「<strong>活石</strong>」——這是一個矛盾修辭。<br><br>石頭不會活。而彼得偏要這樣說。<br><br>而它要說明的是：<strong>這棟建築是會長的。</strong><br><br>以弗所書那節用的動詞也是這個意思：「<strong>漸漸</strong>成為主的聖殿」——那是持續進行的。<br><br>——所以那不是一棟蓋好就固定的建築。<br><br><strong>它一直在長。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而彼得前書那節還有一個細節：那些活石，同時是<strong>「聖潔的祭司」</strong>。<br><br>——所以在這棟建築裡，<strong>你既是材料，也是事奉的人。</strong><br><br>而這一點，直接否定了「觀眾」這個位置。<br><br>沒有一塊石頭，可以站在牆外面看牆蓋起來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「身體」那個比喻，哥林多前書十二章講得最細。而其中幾句，特別值得注意：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>處理的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">「設若腳說：我不是手，所以不屬乎身子，<strong>它不能因此就不屬乎身子</strong>。」（15 節）</td>
+            <td>那些<strong>覺得自己不重要</strong>的人</td>
+          </tr>
+          <tr>
+            <td class="src">「眼不能對手說：我用不著你。」（21 節）</td>
+            <td>那些<strong>覺得別人不重要</strong>的人</td>
+          </tr>
+          <tr>
+            <td class="src">「身上肢體人以為軟弱的，<strong>更是不可少的</strong>。」（22 節）</td>
+            <td>價值的重新評估</td>
+          </tr>
+          <tr>
+            <td class="src">「免得身上分門別類，總要肢體<strong>彼此相顧</strong>。」（25 節）</td>
+            <td>分裂</td>
+          </tr>
+          <tr>
+            <td class="src">「若一個肢體受苦，所有的肢體就<strong>一同受苦</strong>；若一個肢體得榮耀，所有的肢體就<strong>一同快樂</strong>。」（26 節）</td>
+            <td>彼此的連結</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而第一句「<strong>它不能因此就不屬乎身子</strong>」，語氣很有意思。<br><br>那個腳說：我不是手，所以我不屬於這個身體。<br><br>而保羅的回答不是安慰，是<strong>陳述事實</strong>：<br><br>——<strong>你這樣說，也改變不了你是的這件事。</strong><br><br>所以那是一個很堅定的保證：<br><br>你的歸屬，不取決於你今天覺得自己有沒有用。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「新婦」——那個比喻的重量</h2>
+      <p class="card-hook">而以弗所書那一段，其實是在講婚姻</p>
+    </div>
+    <div class="card-body">
+
+      <p>以弗所書第五章，是一段大家熟悉的經文——通常在婚禮上被讀。</p>
+
+      <p>而保羅寫那一段的時候，重心其實在另一邊。</p>
+
+      <div class="highlight">
+        <strong>他講完夫妻之後，說了一句話</strong>
+        「為這個緣故，人要離開父母，與妻子連合，二人成為一體。<br><br><strong>這是極大的奧祕，但我是指著基督和教會說的。</strong>」（弗五 31～32）<br><br>——所以那一整段的最終指向，是<strong>基督與教會</strong>。<br><br>而婚姻，是那件事的<strong>圖畫</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💍</span>
+        而那一段對丈夫的吩咐，用的標準是：<br><br>「你們作丈夫的，要愛你們的妻子，<strong>正如基督愛教會，為教會捨己</strong>。」<br><br>——注意那個標準的高度。<br><br>而反過來看，那句話也在描述<strong>基督對教會的態度</strong>：<br><br><strong>祂為教會捨己。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那一段接下來的話，描述了那份愛要做的事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">要用水藉著道把教會洗淨，成為聖潔，可以獻給自己，作個榮耀的教會，毫無玷污、皺紋等類的病，乃是聖潔沒有瑕疵的
+        </p>
+        <p class="scripture-ref">以弗所書 五章二十六至二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意那個時態</strong>
+        「<strong>要</strong>用水藉著道把教會洗淨」——那是<strong>還在進行</strong>的。<br><br>而「毫無玷污、皺紋」——那是<strong>將來的狀態</strong>。<br><br>——所以那一段承認了一件事：<strong>教會現在有玷污，有皺紋。</strong><br><br>否則不需要洗。<br><br>而那份愛，正是在<strong>還有玷污的時候</strong>付出的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤍</span>
+        我覺得這一點很重要。<br><br>因為很多人對教會失望，是因為看見了那些玷污與皺紋。<br><br>——而經文從來沒有說教會現在是完美的。<br><br>它說的是：<strong>有一位在洗，而且那個過程還沒完。</strong><br><br>而祂是<strong>在洗之前，就已經捨己了</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而把四個比喻放在一起，會發現它們共同排除了幾種心態：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">排除「觀眾」</span>
+          <strong>身體</strong>裡沒有觀眾——每一個肢體都在運作。<br><strong>活石</strong>不能站在牆外面看。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">排除「可有可無」</span>
+          「它不能因此就不屬乎身子。」<br>「身上肢體人以為軟弱的，<strong>更是不可少的</strong>。」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">排除「換一個就好」</span>
+          你不會換一個身體，也不會換一個家。<br>——而「新婦」這個比喻，更是把「可替換」徹底排除了。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">排除「與我無關」</span>
+          「若一個肢體受苦，<strong>所有的肢體就一同受苦</strong>。」<br>——那不是道德要求。<strong>那是身體的實情。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這四項，全部是同一件事的不同說法</strong>
+        <strong>你在裡面。</strong><br><br>而那不是你加入的結果——是被呼召、被救贖、被重生的結果。<br><br>——這正好接回上一題：<strong>ekklēsia，被呼召出來的那一群。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「不再作外人和客旅」</h2>
+      <p class="card-hook">寫給那個在教會裡覺得自己是外人的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在以弗所書第二章那一節上。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這樣，你們不再作外人和客旅，是與聖徒同國，是神家裡的人了
+        </p>
+        <p class="scripture-ref">以弗所書 二章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節經文，是說給誰的？</strong>
+        上下文很清楚：說給<strong>外邦人</strong>的。<br><br>保羅前面說：「那時，你們與基督無關，在以色列國民以外，在所應許的諸約上是<strong>局外人</strong>，並且活在世上<strong>沒有指望，沒有神</strong>。」<br><br>——局外人、沒有指望、沒有神。<br><br>而下一節是：「<strong>但如今</strong>，你們從前遠離神的人，如今卻在基督耶穌裡，靠著他的血，已經得親近了。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而「外人」與「客旅」那兩個字，在當時有很具體的意思：<br><br><strong>外人</strong>——完全沒有身分的陌生人。<br><strong>客旅</strong>——住在城裡，卻沒有公民權的外籍居民。<br><br>——第二種特別值得注意：<strong>他住在那裡，而他不屬於那裡。</strong><br><br>而保羅說：<strong>不再是了。</strong><br><br>「是與聖徒<strong>同國</strong>，是<strong>神家裡的人</strong>了。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻在教會裡覺得自己是外人——覺得別人都很熟、都有位置，而你只是來了又走——</p>
+
+      <div class="highlight">
+        <strong>我想留下那個「腳」的例子</strong>
+        「設若腳說：我不是手，所以不屬乎身子——<strong>它不能因此就不屬乎身子。</strong>」<br><br>——注意保羅怎麼回應那種感覺。<br><br>他沒有說「不要這樣想」。<br><br>他說的是：<strong>你這樣覺得，也改變不了事實。</strong><br><br>而那是一個很硬的保證。<strong>因為它不建立在你的感覺上。</strong>
+      </div>
+
+      <div class="big-quote">
+        你們不再作外人和客旅，<br>是與聖徒同國，<br>是神家裡的人了
+        <cite>— 以弗所書 二章十九節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那三種比喻。</p>
+
+      <p>加油站、劇院、社團——那三種，我都用過。</p>
+
+      <p>而它們共同的問題，不是不夠敬虔。</p>
+
+      <p>是<strong>它們都讓我站在外面。</strong></p>
+
+      <p>而聖經給的四個比喻——家、殿、身體、新婦——每一個都把我放進去了。</p>
+
+      <p>而那位頭，說過一句話：<strong>「你為甚麼逼迫我？」</strong></p>
+
+      <p>——那意味著：那個身體受的傷，祂都算在自己身上。</p>
+
+      <p>願你今天，知道自己在裡面。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖經將教會比作什麼 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖餐與彌撒的分別 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1><span>一次</span>獻上</h1>
+  <p class="subtitle">我們所說的聖餐，與天主教的「彌撒」，有甚麼分別？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「成了」那兩個字，是完成式</h2>
+      <p class="card-hook">而完成的事，不需要再做一次</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>十字架上，主說的最後一句話，只有兩個字。</p>
+
+      <div class="highlight">
+        <strong>「成了」</strong>
+        約翰福音十九章三十節：<br><br>「耶穌嘗了那醋，就說：<strong>成了！</strong>便低下頭，將靈魂交付神了。」<br><br>——那兩個字，在原文裡是一個字。<br><br>而它的形態是<strong>完成式</strong>：<br><br>「<strong>已經完成了，而且效力一直存在。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        而那個字，在當時的日常生活裡有一個很具體的用法：<br><br>它被寫在<strong>還清了的欠據</strong>上。<br><br>意思是：<strong>這筆帳，付清了。</strong><br><br>——而付清的帳，不會有人再來收第二次。
+      </div>
+
+      <p>而這一題的核心，正是這件事。</p>
+
+      <p>接下來這幾篇，我想陪你把分別看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">舊約的祭司，站著；這一位，坐下了</h2>
+      <p class="card-hook">而那個姿勢的差別，希伯來書特意寫了出來</p>
+    </div>
+    <div class="card-body">
+
+      <p>希伯來書第十章，有一組很細的對比。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡祭司天天站著事奉神，屢次獻上一樣的祭物，這祭物永不能除罪。但基督獻了一次永遠的贖罪祭，就在神的右邊坐下了
+        </p>
+        <p class="scripture-ref">希伯來書 十章十一至十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>兩個姿勢</strong>
+        舊約的祭司——「<strong>天天站著</strong>」。<br><br>基督——「就在神的右邊<strong>坐下了</strong>」。<br><br>——而那個對比不是修辭。<br><br>因為聖所裡<strong>沒有椅子</strong>。<br><br>祭司永遠是站著的，因為工作永遠沒有做完。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪑</span>
+        而「坐下」這個動作，在那個處境裡只有一個意思：<br><br><strong>做完了。</strong><br><br>——而希伯來書把這件事重複了好幾次：<br><br>「他只<strong>一次</strong>將自己獻上。」（來七 27）<br><br>「只<strong>一次</strong>進入聖所，成了永遠贖罪的事。」（來九 12）<br><br>「基督既然<strong>一次</strong>被獻，擔當了多人的罪。」（來九 28）<br><br>「我們憑這旨意，靠耶穌基督，只<strong>一次</strong>獻上他的身體，就得以成聖。」（來十 10）
+      </div>
+
+      <div class="highlight">
+        <strong>而那一章的結論，是一句很重的話</strong>
+        「這些罪過既已<strong>赦免</strong>，就<strong>不用再為罪獻祭</strong>了。」（來十 18）<br><br>——「不用再」。<br><br>那句話關上了一扇門。
+      </div>
+
+      <p>下一篇，我們把分別說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">有很大的分別</h2>
+      <p class="card-hook">三項</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、把聖餐當作贖罪祭</span>
+          天主教的「彌撒」，把聖餐當作<strong>贖罪祭</strong>。<br><br>天主教徒需要「神甫」常常為他們「獻上基督」，而得赦罪。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、是一種「偶像的敬拜」</span>
+          天主教的「彌撒」，是一種<strong>「偶像的敬拜」</strong>，因他們認為祝謝了的餅與酒，已經變成主的身體和血，所以應該加以敬拜；<br><br>經祝禱之餅杯是主的身體和血，是思念主耶穌的愛，紀念救贖之奇妙，明白餅與杯之功效，<strong>而不可跪拜餅杯</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、只給「主的餅」，沒有「主的杯」</span>
+          天主教的「彌撒」，只給平信徒「<strong>主的餅</strong>」，沒有給他們「<strong>主的杯</strong>」<br>（最後一四一五年塔司坦司會議規定）。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>結論</strong>
+        為此，「彌撒」已<strong>失了「主的晚餐」的原意</strong>，<strong>限制了基督贖罪的功效</strong>，<strong>引進偶像的敬拜</strong>，<strong>減少信徒的權利</strong>，<br><br>與我們所說的聖餐，是<strong>大有分別</strong>的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>三項分別，對應到三件事：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>關乎</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">第一項</td>
+            <td><strong>贖罪的功效</strong>——那件事是不是已經完成了</td>
+          </tr>
+          <tr>
+            <td class="src">第二項</td>
+            <td><strong>敬拜的對象</strong>——餅與杯本身可不可以拜</td>
+          </tr>
+          <tr>
+            <td class="src">第三項</td>
+            <td><strong>信徒的權利</strong>——主給的，能不能都領到</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>接下來兩篇，我們回到聖經，看這三件事聖經是怎麼說的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">聖經怎麼說那三件事</h2>
+      <p class="card-hook">一次獻上、記念、你們都喝</p>
+    </div>
+    <div class="card-body">
+
+      <p><strong>第一，關於贖罪的功效。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為他一次獻祭，便叫那得以成聖的人永遠完全
+        </p>
+        <p class="scripture-ref">希伯來書 十章十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那節裡有兩個字，分量都很重</strong>
+        「<strong>一次</strong>」——次數。<br><br>「<strong>永遠</strong>」——效力。<br><br>——所以那件事的性質是：<strong>一次做完，永遠有效。</strong><br><br>而希伯來書七章二十五節接著說：<br><br>「凡靠著他進到神面前的人，他都能<strong>拯救到底</strong>；因為他是<strong>長遠活著，替他們祈求</strong>。」
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">τετέλεσται <span style="font-size:0.8em;opacity:0.75">tetelestai</span></div>
+        <div class="term-desc">
+          十字架上那句「<strong>成了</strong>」，原文是這一個字。<br><br>它的形態是<strong>完成式</strong>——表示<strong>動作已經完成，而效果持續到現在</strong>。<br><br>當時的商業文書上，這個字被寫在<strong>付清的帳單</strong>上，意思是「<strong>全數付清</strong>」。<br><br>——所以那不是「我撐完了」的意思。<br><br>是<strong>「這件事辦成了」</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而中保只有一位，聖經也說得很直接：<br><br>「因為只有<strong>一位</strong>神，在神和人中間，只有<strong>一位</strong>中保，乃是降世為人的基督耶穌。」（提前二 5）<br><br>——一位神，一位中保。<br><br>而希伯來書說：所以我們可以「<strong>坦然無懼地來到施恩的寶座前</strong>」（來四 16）。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p><strong>第二，關於餅與杯是什麼。</strong></p>
+
+      <div class="highlight">
+        <strong>主自己給的說明，是「記念」</strong>
+        「你們也應當如此行，<strong>為的是記念我</strong>。」（路廿二 19）<br><br>而保羅的解釋是：<br><br>「你們每逢吃這餅，喝這杯，是<strong>表明主的死</strong>，直等到他來。」（林前十一 26）<br><br>——「<strong>表明</strong>」，是宣告、公開講明的意思。<br><br>所以餅與杯的作用，是<strong>指向</strong>那件事，讓人思念主的愛、紀念救贖的奇妙。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而敬拜的對象，聖經從頭到尾只有一個答案：<br><br>「當拜主你的神，<strong>單要事奉他</strong>。」（太四 10）<br><br>而十誡的第二誡說：「不可為自己雕刻偶像……<strong>不可跪拜那些像</strong>。」（出廿 4～5）<br><br>——所以本題說的是：<strong>經祝禱之餅杯……不可跪拜餅杯。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p><strong>第三，關於杯。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">又拿起杯來，祝謝了，遞給他們，說：你們都喝這個
+        </p>
+        <p class="scripture-ref">馬太福音 二十六章二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「你們都喝這個」</strong>
+        ——注意那個「<strong>都</strong>」字。<br><br>而馬可福音記那一幕時，還加了一句：<br><br>「<strong>他們都喝了。</strong>」（可十四 23）<br><br>而保羅在哥林多前書寫的，也是兩樣並列：<br><br>「你們每逢<strong>吃這餅，喝這杯</strong>……」（林前十一 26）<br><br>「人應當自己省察，然後<strong>吃這餅、喝這杯</strong>。」（林前十一 28）
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">舊約的「年年」，與新約的「一次」</h2>
+      <p class="card-hook">希伯來書用了整整幾章講這個對比</p>
+    </div>
+    <div class="card-body">
+
+      <p>要看懂「一次」的分量，要先看舊約的祭是怎麼運作的。</p>
+
+      <div class="highlight">
+        <strong>贖罪日：每年一次，年年如此</strong>
+        利未記十六章規定：每年七月初十，大祭司要為自己和百姓贖罪。<br><br>他要牽公牛、公山羊，<strong>帶著血進到幔子內</strong>。<br><br>——而那件事，<strong>一年做一次，年年都要做</strong>。<br><br>而希伯來書指出那個安排本身在說什麼：<br><br>「但這些祭物是<strong>叫人每年想起罪來</strong>；因為公牛和山羊的血，<strong>斷不能除罪</strong>。」（來十 3～4）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔁</span>
+        而那個「年年」，本身就是一種宣告。<br><br>因為<strong>要重複做的事，等於承認上一次沒有做完。</strong><br><br>——就像一張要每年重繳的帳單：<br><br>它每年出現一次，就提醒你一次，這筆帳還沒有結清。<br><br>而希伯來書說：<strong>那些祭物的功用，正是「叫人每年想起罪來」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而主斷氣的那一刻，聖殿裡發生了一件事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">忽然，殿裡的幔子從上到下裂為兩半
+        </p>
+        <p class="scripture-ref">馬太福音 二十七章五十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那道幔子的作用，是「隔開」</strong>
+        它把至聖所隔起來——只有大祭司，一年一次，帶著血才能進去。<br><br>而那道幔子裂開的方向是：<strong>從上到下。</strong><br><br>——不是從下往上。<br><br>而希伯來書解釋了那件事的意思：<br><br>「弟兄們，我們既因耶穌的血得以<strong>坦然進入至聖所</strong>，是藉著他給我們開了一條又新又活的路，<strong>從幔子經過</strong>，這幔子就是他的身體。」（來十 19～20）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而那道裂開的幔子，是這一題最有力的一幅畫。<br><br>因為那道幔子的存在，本來就是在說：<strong>你不能進來。</strong><br><br>而它裂開之後，那句話就不成立了。<br><br>——所以希伯來書接下去說的是：<br><br>「並且我們有一位大祭司治理神的家，就當<strong>存著誠心和充足的信心來到神面前</strong>。」（來十 21～22）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而把兩邊放在一起，希伯來書的結構是這樣的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>舊約的祭</th>
+            <th>基督所獻的</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">次數</td>
+            <td><strong>年年、天天、屢次</strong></td>
+            <td><strong>只一次</strong>（來七 27；九 12、28；十 10）</td>
+          </tr>
+          <tr>
+            <td class="src">祭物</td>
+            <td>公牛和山羊的血</td>
+            <td><strong>他自己</strong>（來九 14）</td>
+          </tr>
+          <tr>
+            <td class="src">果效</td>
+            <td>「斷不能除罪」（來十 4）</td>
+            <td>「叫那得以成聖的人<strong>永遠完全</strong>」（來十 14）</td>
+          </tr>
+          <tr>
+            <td class="src">祭司的姿勢</td>
+            <td><strong>天天站著</strong>（來十 11）</td>
+            <td><strong>在神的右邊坐下了</strong>（來十 12）</td>
+          </tr>
+          <tr>
+            <td class="src">結論</td>
+            <td colspan="2"><strong>「這些罪過既已赦免，就不用再為罪獻祭了。」（來十 18）</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那個結論，決定了聖餐的性質</strong>
+        既然「不用再為罪獻祭」——<br><br>那麼聖餐就<strong>不是獻祭</strong>。<br><br>它是主吩咐的：<strong>記念</strong>。<br><br>「你們也應當如此行，<strong>為的是記念我</strong>。」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「不用再」，是一句好消息</h2>
+      <p class="card-hook">寫給那個總覺得還差一點的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在希伯來書那句話上。</p>
+
+      <div class="big-quote">
+        這些罪過既已赦免，<br>就不用再為罪獻祭了
+        <cite>— 希伯來書 十章十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話，是說給誰聽的？</strong>
+        說給那些<strong>總覺得還差一點</strong>的人。<br><br>——覺得赦免是有條件的。<br><br>覺得要再做一點什麼，那件事才算數。<br><br>覺得每一次犯錯之後，那個帳戶就要重新充值。<br><br>而希伯來書說：<strong>不用再。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        回到我開頭那張欠據。<br><br>那個字被寫在<strong>付清的帳單</strong>上：全數付清。<br><br>——而如果一個人已經拿到了那張蓋了章的單子，<br><br>他還是每個月焦慮地想著要不要再付一次，<br><br>那不是更謹慎。<br><br><strong>那是還沒有相信那張單子。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那位大祭司，現在在做什麼？希伯來書也寫了：</p>
+
+      <div class="highlight">
+        <strong>「長遠活著，替他們祈求」</strong>
+        「凡靠著他進到神面前的人，他都能<strong>拯救到底</strong>；因為他是長遠活著，<strong>替他們祈求</strong>。」（來七 25）<br><br>——所以那件事沒有停。<br><br>停的是<strong>獻祭</strong>。而<strong>代求</strong>還在。<br><br>此刻，就在此刻，有一位在為你祈求。
+      </div>
+
+      <p>而聖餐做的事，是把這一切變成看得見的。</p>
+
+      <p>一小塊餅：那身體，為你捨的。</p>
+
+      <p>一小口杯：那寶血，為你流的。</p>
+
+      <p>——而那兩樣，是<strong>遞到你手上</strong>的。</p>
+
+      <p>你要做的，不是再獻上什麼。</p>
+
+      <p>是<strong>伸手接過來</strong>。</p>
+
+      <p>因為那件事，在兩千年前的那個下午，已經說完了：</p>
+
+      <p><strong>成了。</strong></p>
+
+      <p>願你今天，安心地坐在那張桌前。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖餐與彌撒的分別 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖經的分類 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>四類，<span>四類</span></h1>
+  <p class="subtitle">舊約與新約的分類——一張讀經的地圖</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">六十六卷，翻開就迷路</h2>
+      <p class="card-hook">而問題往往不是內容，是沒有地圖</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>剛開始讀聖經的時候，我最大的困難不是看不懂某一節。</p>
+
+      <p>是<strong>不知道自己在哪裡。</strong></p>
+
+      <div class="highlight">
+        <strong>那種迷路的感覺很具體</strong>
+        我在讀一段族譜——這是要幹嘛的？<br>我在讀聖殿的度量——為什麼要記這麼細？<br>我在讀一段哀哭——這是誰在說話？對誰說？<br><br>——而每一段本身我都讀得懂。<br><br><strong>我只是不知道它在整本書的哪個位置。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗺️</span>
+        後來我發現，那有點像走進一座沒有標示的大型圖書館。<br><br>每一本書你都看得懂。<strong>而你不知道自己站在哪一區。</strong><br><br>而分類的作用，就是把那些標示掛回去。<br><br>——你不會拿讀小說的方式讀字典，也不會拿讀食譜的方式讀詩集。<br><br>而聖經裡，那幾種文體都有。
+      </div>
+
+      <p>接下來這幾篇，我想陪你把那張地圖攤開。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">主耶穌自己用過一種分法</h2>
+      <p class="card-hook">「律法、先知、詩篇」</p>
+    </div>
+    <div class="card-body">
+
+      <p>復活那天晚上，主對門徒說了一句話。而那句話裡，祂用了一個分類：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">摩西的律法、先知的書，和詩篇上所記的，凡指著我的話都必須應驗
+        </p>
+        <p class="scripture-ref">路加福音 二十四章四十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那是猶太人對舊約全書的傳統三分法</strong>
+        <strong>律法</strong>（Torah）——摩西五經。<br><strong>先知</strong>（Nevi'im）——包括歷史書與先知書。<br><strong>著作</strong>（Ketuvim）——以詩篇為首，所以常以「詩篇」代稱。<br><br>——而三個字合起來的縮寫，就是猶太人對舊約的稱呼：<strong>Tanakh</strong>。<br><br>所以主用那三個詞，意思就是<strong>「整本舊約」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📚</span>
+        而這件事本身就說明了：<strong>分類不是後人發明的方便。</strong><br><br>那是很早就有的、實際在使用的架構。<br><br>而我們今天用的四分法，是同一件事的另一種切法。
+      </div>
+
+      <p>那麼，那四類是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">舊約四類，新約四類</h2>
+      <p class="card-hook">而兩邊的結構，是對應的</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">舊約聖經，可分為四類</span>
+          <strong>律法</strong>、<strong>歷史</strong>、<strong>詩歌</strong>、<strong>先知</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">新約聖經，可分為四類</span>
+          <strong>福音</strong>、<strong>行傳</strong>、<strong>書信</strong>、<strong>預言</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而把兩邊排在一起，會看見一個很漂亮的對應：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>舊約</th>
+            <th>新約</th>
+            <th>共同的功能</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>律法</strong><br>創世記～申命記</td>
+            <td><strong>福音</strong><br>馬太～約翰</td>
+            <td><strong>根基</strong>——那個時代的核心啟示</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>歷史</strong><br>約書亞記～以斯帖記</td>
+            <td><strong>行傳</strong><br>使徒行傳</td>
+            <td><strong>神的百姓後來怎麼走的</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>詩歌</strong><br>約伯記～雅歌</td>
+            <td><strong>書信</strong><br>羅馬書～猶大書</td>
+            <td><strong>生活與內心</strong>——實際怎麼活</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>先知</strong><br>以賽亞書～瑪拉基書</td>
+            <td><strong>預言</strong><br>啟示錄</td>
+            <td><strong>將來</strong>——結局在哪裡</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這個對應，說明了一件事</strong>
+        兩邊的<strong>結構是一樣的</strong>：<br><br>先有<strong>根基性的啟示</strong>，然後是<strong>百姓的歷史</strong>，然後是<strong>生活的指引</strong>，最後是<strong>指向將來</strong>。<br><br>——所以那不是隨意的編排。<br><br>而各類的<strong>讀法</strong>，也因此不一樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而知道自己在讀哪一類，會直接影響怎麼讀。我把幾個重點列出來：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">讀「歷史」時</span>
+          要分清楚<strong>「記載」與「認可」</strong>。<br><br>聖經記了大衛的罪、記了雅各的欺騙、記了彼得的否認——<strong>記載不等於贊同。</strong><br>聖經對人的描寫，一貫是誠實到近乎殘酷的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">讀「詩歌」時</span>
+          要記得那是<strong>詩</strong>。<br><br>詩篇裡有大量的情緒——憤怒、絕望、控訴、甚至對神的抱怨。<br>那些是<strong>被允許帶到神面前的真話</strong>，不是教義的陳述。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">讀「先知」時</span>
+          要注意<strong>對象與處境</strong>。<br><br>大部分先知書，是對特定的人、在特定的危機中說的。<br>而其中的預言，有些已經應驗，有些指向更遠。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">讀「書信」時</span>
+          要注意<strong>那是回信</strong>。<br><br>保羅是在回答具體的問題、處理具體的糾紛。<br>——所以先問「他在處理什麼問題」，那段話就會清楚很多。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">讀「預言」時</span>
+          要守住分寸：<strong>經文說的，我們讀；沒說的，不硬編。</strong><br><br>啟示錄大量使用象徵。而它的主線很清楚：<strong>羔羊得勝。</strong>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">每一類的卷數與跨度</h2>
+      <p class="card-hook">攤開來看，比想像中好記</p>
+    </div>
+    <div class="card-body">
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>舊約四類</th>
+            <th>卷數</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">律法</td>
+            <td>5 卷</td>
+            <td>創世記、出埃及記、利未記、民數記、申命記。<br>從創造、墮落、洪水、列祖，到出埃及、立約、曠野。</td>
+          </tr>
+          <tr>
+            <td class="src">歷史</td>
+            <td>12 卷</td>
+            <td>約書亞記到以斯帖記。<br>進迦南、士師時代、王國、分裂、被擄、歸回。</td>
+          </tr>
+          <tr>
+            <td class="src">詩歌</td>
+            <td>5 卷</td>
+            <td>約伯記、詩篇、箴言、傳道書、雅歌。<br>苦難、敬拜、智慧、虛空、愛情。</td>
+          </tr>
+          <tr>
+            <td class="src">先知</td>
+            <td>17 卷</td>
+            <td>大先知書 5 卷（以賽亞～但以理），小先知書 12 卷（何西阿～瑪拉基）。<br>「大小」指的是<strong>篇幅</strong>，不是重要性。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>新約四類</th>
+            <th>卷數</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">福音</td>
+            <td>4 卷</td>
+            <td>馬太、馬可、路加、約翰。<br>四個角度，同一位。</td>
+          </tr>
+          <tr>
+            <td class="src">行傳</td>
+            <td>1 卷</td>
+            <td>使徒行傳。從耶路撒冷到羅馬——福音怎麼傳開的。</td>
+          </tr>
+          <tr>
+            <td class="src">書信</td>
+            <td>21 卷</td>
+            <td>保羅書信 13 卷，其餘 8 卷（希伯來書、雅各書、彼得前後書、約翰壹貳參書、猶大書）。</td>
+          </tr>
+          <tr>
+            <td class="src">預言</td>
+            <td>1 卷</td>
+            <td>啟示錄。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「書信」佔了新約 27 卷中的 21 卷——那個比例值得注意。<br><br>因為那意味著：<strong>新約有很大一部分，是在處理「信了之後怎麼活」。</strong><br><br>不是理論，是回信：教會裡的糾紛、婚姻的問題、吃祭偶像之物、奉獻怎麼收、怎麼對待奴僕、怎麼面對逼迫。<br><br>——那是很實際的一批文件。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「四福音」為什麼是四卷？這一點值得說明。</p>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        四卷不是四份重複的記錄。它們的<strong>對象與重心</strong>不同：<br><br><strong>馬太</strong>——大量引用舊約，反覆說「這是要應驗先知所說的話」；家譜從<strong>亞伯拉罕</strong>起。<br><strong>馬可</strong>——最短、最急，「立刻」「隨即」不斷出現；重在<strong>作為</strong>。<br><strong>路加</strong>——「詳細考察」後寫成；特別記下婦女、窮人、被邊緣的人；家譜追到<strong>亞當</strong>。<br><strong>約翰</strong>——最不一樣的一卷，明說寫作目的：「要叫你們信耶穌是基督，是神的兒子。」<br><br>——四個角度，同一位。<br><br>而正是那個角度的差異，讓那幅畫像立體了起來。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">分類是工具，不是切割</h2>
+      <p class="card-hook">而那條主線，穿過全部八類</p>
+    </div>
+    <div class="card-body">
+
+      <p>分類有它的用處，也有它的風險。</p>
+
+      <div class="highlight">
+        <strong>用處是：知道自己在讀什麼</strong>
+        不會拿讀律法的方式讀詩篇。<br>不會把歷史的記載當成教導。<br>不會把書信裡針對特定處境的話，硬套到所有情況上。<br><br>——這些都是很實際的幫助。
+      </div>
+
+      <div class="highlight">
+        <strong>而風險是：把它讀成八個獨立的區塊</strong>
+        好像律法歸律法、詩歌歸詩歌，各不相干。<br><br>而實際上，<strong>有一條線穿過全部八類。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧵</span>
+        而那條線是誰，主自己說了：<br><br>「摩西的<strong>律法</strong>、<strong>先知</strong>的書，和<strong>詩篇</strong>上所記的，<strong>凡指著我的話</strong>都必須應驗。」<br><br>——祂列了三類，然後說：全部指著我。<br><br>而新約那四類，更是明白：福音書記祂的生平，行傳記祂的教會，書信解釋祂的救恩，啟示錄記祂的再來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那條線在八類裡的樣子，可以這樣看：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">律法 —— 預表祂</span>
+          羔羊、祭壇、大祭司、會幕、逾越節。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">歷史 —— 預備祂的家系與舞台</span>
+          從亞伯拉罕到大衛，那條血脈一路被保守下來。<br>而路得記那卷小書，正是那條線上的一環。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">詩歌 —— 描寫祂的心與苦</span>
+          詩篇二十二篇、詩篇一一〇篇、詩篇十六篇——新約反覆引用。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">先知 —— 預言祂</span>
+          伯利恆、童女、受苦的僕人、和平的君、駕雲降臨的人子。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">而新約四類 —— 介紹祂、傳揚祂、解釋祂、等候祂</span>
+          福音、行傳、書信、預言。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>所以分類的正確用法，是「先定位，再連線」</strong>
+        <strong>定位</strong>——我在讀哪一類？這一類該怎麼讀？<br><strong>連線</strong>——這一段，跟那一位有什麼關係？<br><br>——而第二步，才是分類真正的目的。<br><br>因為地圖的用處，不是為了讓你知道自己在哪一區。<br><br><strong>是為了讓你找得到路。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">而你可以從任何一區開始</h2>
+      <p class="card-hook">寫給那個一直沒有讀完整本的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>八類看完了。而我想在最後說一件很實際的話。</p>
+
+      <div class="highlight">
+        <strong>那張地圖的用處，不是讓你按順序走完</strong>
+        很多人的讀經計畫，卡在「從創世記讀到啟示錄」這個順序上。<br><br>然後在利未記陣亡，然後隔年重來一次，再陣亡。<br><br>——而那八類的存在，其實給了另一種可能：<strong>你可以從你現在需要的那一區開始。</strong>
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">如果你很低落</span>
+          去<strong>詩歌</strong>那一區。那裡有人比你更低落，而且把話寫下來了。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">如果你剛信主</span>
+          去<strong>福音</strong>那一區。先認識那一位。約翰福音是很多人的起點。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">如果你不知道怎麼過日子</span>
+          去<strong>書信</strong>那一區。那裡處理的，全部是很實際的問題。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">如果你覺得神好像不管事了</span>
+          去<strong>先知</strong>那一區。那些書大多寫於國家崩塌的年代。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">如果你想知道結局</span>
+          去<strong>預言</strong>那一區。而它的結局，是「神要擦去他們一切的眼淚」。
+        </div>
+      </div>
+
+      <div class="big-quote">
+        摩西的律法、先知的書，和詩篇上所記的，<br>凡指著我的話都必須應驗
+        <cite>— 路加福音 二十四章四十四節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而無論從哪一區進去，那條線都在</strong>
+        因為主說的是：<strong>凡指著我的話。</strong><br><br>所以那張地圖上的每一條路，最後都通往同一個地方。<br><br>——而那正是下一題要談的：<strong>聖經的中心大題。</strong>
+      </div>
+
+      <p>願你今天，就找一區走進去。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖經的分類 · Threads Series
+</footer>
+
+</body>
+</html>

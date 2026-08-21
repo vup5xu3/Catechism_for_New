@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基督復臨安息日會的問題 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>越過了<span>聖經的教訓</span></h1>
+  <p class="subtitle">基督復臨安息日會的錯誤在那裏？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一件事本身沒有錯，而它可以被放錯位置</h2>
+      <p class="card-hook">而這一題，處理的正是這個</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這一題的答案，有一個很值得注意的結構。</p>
+
+      <div class="highlight">
+        <strong>它沒有說「守安息日是錯的」</strong>
+        它用的說法是：<strong>「雖然未可厚非。」</strong><br><br>——而它指出的問題，在後面那一段：<br><br><strong>「若根據舊約的律法，勉強他人接受自己的看法……那就越過聖經的教訓了。」</strong><br><br>——所以那個判語，落在<strong>「越過」</strong>兩個字上。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📏</span>
+        我想到一根柱子。<br><br>柱子本身沒有問題。<br><br>——而如果把它擺在原本不承重的位置，還要求整棟樓靠它站著，<br><br>那問題就來了。<br><br>不是柱子壞了。<br><br><strong>是位置錯了。</strong>
+      </div>
+
+      <p>而這一題指出的，是兩個位置的問題。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「那日子、那時辰，沒有人知道」</h2>
+      <p class="card-hook">主自己把這件事關上了</p>
+    </div>
+    <div class="card-body">
+
+      <p>關於主再來的時間，聖經有幾句話說得非常直接。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但那日子、那時辰，沒有人知道，連天上的使者也不知道，子也不知道，惟獨父知道
+        </p>
+        <p class="scripture-ref">馬可福音 十三章三十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的範圍，是層層往上的</strong>
+        <strong>沒有人知道</strong>——地上的人。<br><strong>連天上的使者也不知道</strong>——天上的。<br><strong>子也不知道</strong>——連子。<br><strong>惟獨父知道</strong>。<br><br>——所以那句話把每一層都排除了。<br><br>而祂接下去的吩咐是：「<strong>你們要謹慎，警醒祈禱，因為你們不曉得那日期幾時來到。</strong>」
+      </div>
+
+      <p>而升天之前，門徒又問了一次同樣的問題：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">父憑著自己的權柄所定的時候、日期，不是你們可以知道的
+        </p>
+        <p class="scripture-ref">使徒行傳 一章七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕰️</span>
+        而祂接下去說的話，把注意力轉到了別的地方：<br><br>「但聖靈降臨在你們身上，你們就必得著能力，<strong>並要在耶路撒冷、猶太全地，和撒馬利亞，直到地極，作我的見證。</strong>」（徒一 8）<br><br>——所以那個回答的結構是：<br><br><strong>那個不是你們要知道的；而這件事是你們要做的。</strong>
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩個問題上</h2>
+      <p class="card-hook">「基督復臨」與「安息日」</p>
+    </div>
+    <div class="card-body">
+
+      <div class="highlight">
+        <strong>最大的錯誤所在</strong>
+        最大的錯誤在乎<strong>「基督復臨」</strong>和<strong>「安息日」</strong>的問題上。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、關於「基督復臨」</span>
+          他們<strong>引證一些似乎與聖經有關的史實</strong>，<br><strong>大膽解釋預言</strong>，<br><br>曾因此<strong>鑄成嚴重的錯誤</strong><br>（例如對主再臨日期的預言）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、關於「守安息日」</span>
+          照聖經的教訓，<strong>雖然未可厚非</strong><br>（羅十四 5；賽五六 6～7）；<br><br>但若<strong>根據舊約的律法，勉強他人接受自己的看法</strong>，<br><br>而且看<strong>守安息日關係罪與義、聖潔與邪惡、蒙悅納與遭忿怒</strong>等事有關，<br>甚至<strong>有關將來的福祉</strong>，<br><br><strong>那就越過聖經的教訓了</strong>（加四 10；西二 16～17）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第二項的措辭，是非常有分寸的。它其實分了三層：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>層次</th>
+            <th>這一題怎麼說</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>守安息日這件事本身</strong></td>
+            <td>「照聖經的教訓，<strong>雖然未可厚非</strong>」（羅十四 5；賽五六 6～7）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>若勉強他人接受</strong></td>
+            <td>「根據舊約的律法，<strong>勉強他人接受自己的看法</strong>」——問題出現</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>若把它連到救恩上</strong></td>
+            <td>「看守安息日<strong>關係罪與義……甚至有關將來的福祉</strong>」——<strong>那就越過聖經的教訓了</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那三層的分界線，很清楚</strong>
+        <strong>自己守</strong>——未可厚非。<br><br><strong>要別人也守</strong>——勉強。<br><br><strong>把它與罪／義、聖潔／邪惡、蒙悅納／遭忿怒、將來的福祉綁在一起</strong>——越過了。<br><br>——所以問題不在那個日子。<br><br>在<strong>那個日子被賦予了什麼分量</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第一項那句「<strong>大膽解釋預言</strong>」，也值得看清楚它指的是什麼。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📅</span>
+        它舉的例子是：<strong>「對主再臨日期的預言。」</strong><br><br>——而那正是主自己說「沒有人知道」的那一件。<br><br>所以那個「大膽」，指的是：<br><br><strong>在主已經說明不可知的地方，去定出一個時間。</strong>
+      </div>
+
+      <p>下一篇，我們看這一題引的那幾處經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">這一題引的四處經文</h2>
+      <p class="card-hook">兩處給空間，兩處劃界線</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題引了四處經文。而它們的作用，正好是兩組。</p>
+
+      <div class="highlight">
+        <strong>第一組：給空間的兩處</strong>
+        <strong>羅馬書十四章五節</strong>——<br>「有人看這日比那日強；有人看日日都是一樣。<strong>只是各人心裡要意見堅定。</strong>」<br><br><strong>以賽亞書五十六章六至七節</strong>——<br>神說到那些「與耶和華聯合」的外邦人：「凡守安息日不干犯，又持守他約的人……<strong>我必領他們到我的聖山，使他們在禱告我的殿中喜樂</strong>……因我的殿必稱為萬民禱告的殿。」
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而羅馬書十四章那一整章，處理的正是這一類的事。<br><br>那一章的原則有三句：<br><br>「信心軟弱的，你們要<strong>接納</strong>，但不要辯論所疑惑的事。」（1 節）<br><br>「你是誰，竟論斷別人的僕人呢？他或站住或跌倒，<strong>自有他的主人在</strong>。」（4 節）<br><br>「所以，我們不可再<strong>彼此論斷</strong>，寧可定意誰也不給弟兄放下絆腳跌人之物。」（13 節）<br><br>——而那正是「未可厚非」四個字的根據。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>第二組：劃界線的兩處</strong>
+        <strong>加拉太書四章十節</strong>——<br>「你們謹守<strong>日子、月分、節期、年分</strong>。我為你們害怕，惟恐我在你們身上是枉費了工夫。」<br><br><strong>歌羅西書二章十六至十七節</strong>——<br>「所以，不拘在飲食上，或節期、月朔、<strong>安息日</strong>都不可讓人論斷你們。<br><br><strong>這些原是後事的影兒，那形體卻是基督。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌒</span>
+        而歌羅西書那個比喻，是這一題最關鍵的一句：<br><br><strong>「這些原是後事的影兒，那形體卻是基督。」</strong><br><br>——「影兒」與「形體」。<br><br>影子是真的。它證明<strong>有東西在那裡</strong>。<br><br>——而人不會抱著影子，說「我找到了」。<br><br>因為影子的作用，是<strong>指向那個投影的本體</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而希伯來書也用了同樣的字：<br><br>「律法既是<strong>將來美事的影兒</strong>，不是本物的真像。」（來十 1）<br><br>——而歌羅西書那節裡，被稱為影兒的，包括：<br><br><strong>飲食、節期、月朔、安息日。</strong><br><br>而「形體」——那個投下影子的本體——是：<strong>基督。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而加拉太書那一節，出現的位置也值得看：</p>
+
+      <div class="highlight">
+        <strong>它出現在保羅最擔心的那一段裡</strong>
+        前面一節：「現在你們既然認識神，更可說是被神所認識的，<strong>怎麼還要歸回那懦弱無用的小學，情願再給他作奴僕呢？</strong>」（加四 9）<br><br>後面一節：「我為你們害怕，惟恐我在你們身上是<strong>枉費了工夫</strong>。」（加四 11）<br><br>——而整卷加拉太書的主題，正是：<br><br>「你們既靠聖靈入門，如今還<strong>靠肉身成全</strong>嗎？」（加三 3）
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「影兒」與「形體」</h2>
+      <p class="card-hook">而安息真正的內容，希伯來書講過</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">σκιά <span style="font-size:0.8em;opacity:0.75">skia</span></div>
+        <div class="term-desc">
+          歌羅西書二章十七節「<strong>影兒</strong>」用的是這個字。<br><br>而與它相對的那個字，意思是<strong>「本體、實物、投下影子的那個東西」</strong>。<br><br>——所以那一節的意思是：<br><br><strong>那些是影子，而投影的那一位，是基督。</strong><br><br>而影子的兩個特性，正好說明了它的地位：<br><br><strong>一、影子證明本體是真的。</strong><br><strong>二、影子不能代替本體。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而「安息」的內容，希伯來書用了整整兩章來講</strong>
+        「這樣看來，<strong>必另有一安息日的安息為神的子民存留</strong>。」（來四 9）<br><br>「因為那進入安息的，乃是<strong>歇了自己的工</strong>，正如神歇了他的工一樣。」（來四 10）<br><br>——「<strong>歇了自己的工</strong>」。<br><br>所以那個安息的內容，是<strong>不再靠自己做工</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛏️</span>
+        而主自己說過一句話，用的正是「安息」：<br><br>「凡勞苦擔重擔的人可以到我這裡來，<strong>我就使你們得安息</strong>。」（太十一 28）<br><br>——「<strong>到我這裡來</strong>」。<br><br>所以那個安息，不是一段時間。<br><br><strong>那是一位。</strong><br><br>而歌羅西書那句話正好說明了同一件事：<strong>那形體卻是基督。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這一題最核心的判準，是那句「<strong>越過聖經的教訓</strong>」。</p>
+
+      <div class="highlight">
+        <strong>而「越過」這件事，聖經自己有警告</strong>
+        保羅寫過：「叫你們效法我們<strong>不可過於聖經所記</strong>。」（林前四 6）<br><br>而啟示錄的結尾：「若有人在這預言上<strong>加添</strong>甚麼，神必將寫在這書上的災禍加在他身上。」（啟廿二 18）<br><br>——所以那個原則是雙向的：<br><br><strong>不可減少，也不可加添。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而「加添」為什麼危險？<br><br>因為一件事一旦被加到<strong>救恩的條件</strong>裡，那救恩的性質就變了。<br><br>——而加拉太書處理的正是這件事。<br><br>那卷書的語氣，是保羅所有書信裡最急的：<br><br>「我希奇你們這麼快離開那藉著基督之恩召你們的，<strong>去從別的福音</strong>。」（加一 6）<br><br>而他要守住的，只有一句話：<br><br>「人稱義<strong>不是因行律法，乃是因信耶穌基督</strong>。」（加二 16）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而關於「解釋預言」，聖經也給過一個很重要的提醒。</p>
+
+      <div class="highlight">
+        <strong>彼得後書那一節</strong>
+        「第一要緊的，該知道經上所有的預言<strong>沒有可隨私意解說的</strong>；<br><br>因為預言從來沒有出於人意的，乃是人<strong>被聖靈感動，說出神的話來</strong>。」（彼後一 20～21）<br><br>——「<strong>沒有可隨私意解說的</strong>」。<br><br>而那正是這一題第一項指出的問題：<strong>大膽解釋預言。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔭</span>
+        而預言的性質，其實聖經自己說明過：<br><br>「你們留意，如同留意<strong>照在暗處的燈</strong>，直等到天發亮，晨星在你們心裡出現的時候。」（彼後一 19）<br><br>——「照在暗處的燈」。<br><br>燈的作用，是<strong>讓人看清腳前的路</strong>。<br><br>——不是讓人看見很遠的地方。<br><br>而主給的吩咐，也是同一個方向：<strong>「你們要謹慎，警醒祈禱。」</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「那形體卻是基督」</h2>
+      <p class="card-hook">而所有的影子，都指著同一個方向</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那一句上。</p>
+
+      <div class="big-quote">
+        這些原是後事的影兒，<br>那形體卻是基督
+        <cite>— 歌羅西書 二章十七節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話，其實是一個很好的讀經原則</strong>
+        舊約裡那些節期、祭禮、器皿、日子——<br><br>它們都是<strong>影子</strong>。<br><br>而影子的價值，在於它<strong>證明有東西在那裡</strong>。<br><br>——所以讀那些的時候，該問的問題是：<br><br><strong>這個影子，是誰投下來的？</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        而那正是主在以馬忤斯路上做的事。<br><br>「於是從摩西和眾先知起，<strong>凡經上所指著自己的話都給他們講解明白了。</strong>」（路廿四 27）<br><br>——「<strong>所指著自己的話</strong>」。<br><br>所以那一整段舊約，祂讀出來的內容是：<strong>那些都在講我。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那根柱子。</p>
+
+      <p>柱子本身沒有問題。而它不該承重的地方，不要讓它承重。</p>
+
+      <p>——而這一題的分寸，其實很寬：</p>
+
+      <p><strong>自己守，未可厚非。</strong></p>
+
+      <p>而它守住的那條線是：</p>
+
+      <p><strong>不要把它變成罪與義、聖潔與邪惡、蒙悅納與遭忿怒的分界。</strong></p>
+
+      <p>因為那條分界，聖經已經定了：</p>
+
+      <p>「人稱義不是因行律法，乃是因信耶穌基督。」</p>
+
+      <p>而關於那個日子——</p>
+
+      <p>主自己說：「那日子、那時辰，沒有人知道。」</p>
+
+      <p>然後祂加了一句：<strong>「所以，你們要警醒。」</strong></p>
+
+      <p>——所以我們該做的事，其實很清楚。</p>
+
+      <p>願你今天，眼睛落在那個形體上。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  基督復臨安息日會的問題 · Threads Series
+</footer>
+
+</body>
+</html>

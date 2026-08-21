@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>開荒佈道與國外佈道 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>在<span>更遠的地方</span></h1>
+  <p class="subtitle">聖徒應當怎樣注意開荒佈道、國外佈道的工作？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">去不了的人，也有一份</h2>
+      <p class="card-hook">而那一份，不是次要的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>談到開荒、國外佈道，很多人的第一個反應是：<strong>那是別人的事。</strong></p>
+
+      <div class="highlight">
+        <strong>而那個反應，其實很合理</strong>
+        我有工作。我有家庭。我有走不開的責任。<br><br>——我不可能去那些地方。<br><br>所以每次聽見那些報告，我心裡是<strong>感動的，也是有距離的</strong>。<br><br>感動歸感動，而那跟我的日常，好像沒有交集。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛵</span>
+        而我後來看見一件事，改變了那個距離感。<br><br>一艘船要出海，需要的不只是<strong>船上的人</strong>。<br><br>需要有人補給。有人修船。有人在岸上守著無線電。<br><br>——而那些人，不會出現在照片裡。<br><br>而如果沒有他們，那艘船出不去，也回不來。
+      </div>
+
+      <p>而這一題給的，正是<strong>岸上那一份</strong>。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">安提阿那一天，是從一場聚會開始的</h2>
+      <p class="card-hook">而差出去的，是教會最好的兩個人</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第十三章，記了教會第一次正式的差傳。</p>
+
+      <div class="highlight">
+        <strong>而那件事的起點，很安靜</strong>
+        「在安提阿的教會中，有幾位先知和教師……<br><br>他們<strong>事奉主、禁食</strong>的時候，聖靈說：<br><br><strong>要為我分派巴拿巴和掃羅，去做我召他們所做的工。</strong>」（徒十三 1～2）<br><br>——注意那個場合：<strong>他們在事奉主、禁食。</strong><br><br>不是在開會討論策略。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✋</span>
+        而接下來教會做的事，只有三個動作：<br><br>「於是<strong>禁食禱告</strong>，<strong>按手</strong>在他們頭上，就<strong>打發他們去了</strong>。」（徒十三 3）<br><br>——禁食禱告、按手、打發。<br><br>而「按手」那個動作，意思是<strong>認同、連結、我們與你同在這件事上</strong>。<br><br>所以那不是「你們去吧，我們留著」。<br><br><strong>那是「我們一起做，而你們去。」</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而值得注意的是：被差出去的，是誰</strong>
+        巴拿巴——那個把掃羅帶進教會的人，那個「<strong>好人，被聖靈充滿，大有信心</strong>」的人。<br><br>掃羅——後來的保羅。<br><br>——那是安提阿教會裡<strong>最重要的兩個人</strong>。<br><br>而教會把他們送走了。
+      </div>
+
+      <div class="highlight">
+        <strong>而那趟旅程結束之後，他們回來了</strong>
+        「到了那裡，聚集了會眾，就<strong>述說神藉他們所行的一切事</strong>，並神怎樣為外邦人開了信道的門。」（徒十四 27）<br><br>——他們回來報告。<br><br>所以那是一個<strong>來回</strong>的關係，不是單向的送出去。
+      </div>
+
+      <p>下一篇，我們把三件事列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三件事</h2>
+      <p class="card-hook">關心、奉獻、代禱</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、關心</span>
+          應當<strong>關心開荒佈道（國外佈道）工作</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、奉獻</span>
+          <strong>盡力奉獻錢財。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、代禱</span>
+          <strong>盡力為同工代禱。</strong>
+        </div>
+      </div>
+
+      <p>〔本會體系事工重點在中國大陸。〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三件事，是有順序的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>次序</th>
+            <th>那一項</th>
+            <th>為什麼在這個位置</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一</td>
+            <td><strong>關心</strong></td>
+            <td>因為<strong>不關心，後面兩項不會發生</strong>——奉獻與代禱，都是關心的結果</td>
+          </tr>
+          <tr>
+            <td class="src">二</td>
+            <td><strong>奉獻錢財</strong></td>
+            <td>因為那件事<strong>需要實際的支持</strong>——路費、生活、器材、場地</td>
+          </tr>
+          <tr>
+            <td class="src">三</td>
+            <td><strong>為同工代禱</strong></td>
+            <td>因為那是<strong>錢買不到</strong>的那一部分</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第一項是關鍵</strong>
+        因為「關心」不是一種情緒，是一個<strong>持續的動作</strong>：<br><br>知道那裡在做什麼。<br>記得那幾個人的名字。<br>聽他們的報告，而不是聽過就忘。<br><br>——而人只會為<strong>自己知道的事</strong>禱告。<br><br>所以那三項，其實是同一條線。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「開荒」這兩個字，本身就說明了那份工作的性質。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛏️</span>
+        開荒——那是<strong>在沒有田的地方，先把地弄出來</strong>。<br><br>要清石頭、拔樹根、翻土。<br><br>——那些工作，<strong>當年不會有收成</strong>。<br><br>而保羅說過同樣的志向：<br><br>「我立了志向，<strong>不在基督的名被稱過的地方傳福音</strong>，免得建造在別人的根基上。」（羅十五 20）<br><br>——「<strong>不在……被稱過的地方</strong>」。<br><br>那是刻意選擇最難的那一種。
+      </div>
+
+      <p>下一篇，我們看那三項在聖經裡的樣子。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">腓立比教會，是一個很好的例子</h2>
+      <p class="card-hook">而保羅把他們的奉獻，稱為「祭物」</p>
+    </div>
+    <div class="card-body">
+
+      <p>保羅的書信裡，腓立比教會是那個一直在後面支持他的教會。</p>
+
+      <div class="highlight">
+        <strong>而保羅提到他們的時候，用了幾個很重的說法</strong>
+        「因為<strong>從頭一天直到如今</strong>，你們是同心合意地興旺福音。」（腓一 5）<br><br>「我初傳福音……<strong>除了你們以外，並沒有別的教會供給我</strong>。就是我在帖撒羅尼迦，你們也<strong>一次兩次</strong>地打發人供給我的需用。」（腓四 15～16）<br><br>——「從頭一天直到如今」、「一次兩次」。<br><br>那是<strong>持續</strong>。
+      </div>
+
+      <p>而他形容那筆錢的時候，用的說法是這樣的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">如同馨香之氣，是神所收納、所喜悅的祭物
+        </p>
+        <p class="scripture-ref">腓立比書 四章十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而更值得注意的，是保羅在那之前說的一句話：<br><br>「我並不求甚麼餽送，所求的就是<strong>你們的果子漸漸增多，歸在你們的帳上</strong>。」（腓四 17）<br><br>——「<strong>歸在你們的帳上</strong>」。<br><br>所以在保羅眼裡，那筆錢最大的受益者不是他。<br><br>而是<strong>那間送出去的教會</strong>。<br><br>因為前線的果子，記在後方的帳上。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「為同工代禱」那一項，保羅求過很多次。而他求的內容，很值得看：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>他求什麼</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">求<strong>口才與膽量</strong></td>
+            <td>「使我得著口才，能以<strong>放膽</strong>開口講明福音的奧祕。」（弗六 19）</td>
+          </tr>
+          <tr>
+            <td class="src">求<strong>道路暢通</strong></td>
+            <td>「叫主的道理<strong>快快行開</strong>，得著榮耀。」（帖後三 1）</td>
+          </tr>
+          <tr>
+            <td class="src">求<strong>脫離攔阻</strong></td>
+            <td>「也叫我們脫離無理之惡人的手。」（帖後三 2）</td>
+          </tr>
+          <tr>
+            <td class="src">求<strong>傳講的機會</strong></td>
+            <td>「求神給我們開傳道的門。」（西四 3）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而請注意：他求的<strong>不是平安順利</strong>。<br><br>他求的是<strong>能講、講得開、有機會講</strong>。<br><br>——而「放膽」那一項，特別值得想。<br><br>因為那是保羅——那個被石頭打過、被下在監裡、被鞭打過的人。<br><br>而他還是請人為他求<strong>膽量</strong>。<br><br>所以在前線的人，不是不會怕。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而哥林多後書，記了保羅對代禱的看法，那節很直接：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們以祈禱幫助我們，好叫許多人為我們謝恩，就是為我們因許多人所得的恩
+        </p>
+        <p class="scripture-ref">哥林多後書 一章十一節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        「<strong>以祈禱幫助我們</strong>」——那個「幫助」，原文的意思是<strong>「一同出力」</strong>。<br><br>——所以代禱不是精神上的支持。<br><br>在保羅的理解裡，那是<strong>實際的參與</strong>。<br><br>而那節的結尾是：「好叫<strong>許多人</strong>為我們謝恩。」<br><br>——那些禱告的人，也在那份感謝裡。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「怎能聽見呢？」</h2>
+      <p class="card-hook">羅馬書第十章，有一串很有名的反問</p>
+    </div>
+    <div class="card-body">
+
+      <p>羅馬書第十章，保羅用了一連串的問句，把整件事的邏輯推到底。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">然而，人未曾信他，怎能求他呢？未曾聽見他，怎能信他呢？沒有傳道的，怎能聽見呢？若沒有奉差遣，怎能傳道呢？
+        </p>
+        <p class="scripture-ref">羅馬書 十章十四至十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那串問句，是一路往回推的</strong>
+        <strong>求告</strong> ← 要先<strong>信</strong><br><strong>信</strong> ← 要先<strong>聽見</strong><br><strong>聽見</strong> ← 要先<strong>有人傳</strong><br><strong>有人傳</strong> ← 要先<strong>有人差遣</strong><br><br>——所以那條鏈子的最後一環，是<strong>差遣</strong>。<br><br>而「差遣」那一環，正是這一題講的那三件事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔗</span>
+        而那條鏈子，任何一環斷了，後面就到不了。<br><br>——一個人之所以能求告主名，<br><br>是因為在他之前，有一長串的人做了該做的事。<br><br>而其中有些人，他永遠不會知道。
+      </div>
+
+      <div class="highlight">
+        <strong>而那段話的結尾，引了以賽亞書</strong>
+        「如經上所記：<strong>報福音、傳喜信的人，他們的腳蹤何等佳美！</strong>」（羅十 15）<br><br>——「<strong>腳蹤</strong>」。<br><br>那是一個很具體的意象：<strong>走過很多路的腳。</strong><br><br>而以賽亞書那節的原文場景，是<strong>報信的人翻過山頭</strong>，跑來報平安的消息。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而還有一節，把「留在後方的人」的份說得很清楚。</p>
+
+      <div class="highlight">
+        <strong>大衛定過一條例</strong>
+        那時大衛追擊亞瑪力人，有兩百人因為疲乏，留在溪邊看守器具。<br><br>而打完仗回來，有人說：那些沒去的，不可分戰利品。<br><br>而大衛說：<br><br>「<strong>上陣的得多少，看守器具的也得多少；應當大家平分。</strong>」（撒上三十 24）<br><br>——而聖經接著說：<br><br>「大衛定此為以色列的<strong>律例典章</strong>，從那日直到今日。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而那條例，我覺得是這一題最好的註腳。<br><br>因為它處理了一個很真實的落差：<br><br>上陣的人有故事、有見證、有照片。<br><br>而看守器具的人，什麼都沒有。<br><br>——而大衛說：<strong>平分。</strong><br><br>而約翰福音也講過同一個道理：<br><br>「那撒種的和那收割的一同快樂。」（約四 36）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「關心」這一項，具體可以怎麼做？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">知道名字</span>
+          記住那幾位同工的名字。<br><br>——因為一個有名字的人，比「宣教工作」容易禱告得多。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">知道近況</span>
+          聽他們的報告，看他們的消息。<br><br>——保羅寫給教會的信裡，總有一段是<strong>報告自己的情況</strong>。<br>那不是閒話。那是讓人能為他準確地求。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">固定地做</span>
+          腓立比教會是「<strong>一次兩次</strong>」、「<strong>從頭一天直到如今</strong>」。<br><br>——關鍵不在一次給多少，在<strong>沒有停</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">記得他們也是人</span>
+          會累、會怕、會孤單、會想家。<br><br>——所以保羅求的是「<strong>放膽</strong>」。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「上陣的得多少，看守器具的也得多少」</h2>
+      <p class="card-hook">寫給那個走不開的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那條律例上。</p>
+
+      <div class="big-quote">
+        上陣的得多少，<br>看守器具的也得多少；<br>應當大家平分
+        <cite>— 撒母耳記上 三十章二十四節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而大衛說那句話的時候，加了一個理由</strong>
+        「這事誰肯依從你們呢？<strong>因為耶和華所賜給我們的</strong>……」（撒上三十 23）<br><br>——他的理由是：<strong>這場勝仗本來就不是我們打的。</strong><br><br>那是耶和華賜的。<br><br>——所以分戰利品的時候，沒有人有資格說「這是我掙的」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⛵</span>
+        回到我開頭那艘船。<br><br>船上的人會遇見風浪，會看見新的海岸。<br><br>——而在岸上的人，什麼都看不見。<br><br>他們只是<strong>每天守著，補給，禱告</strong>。<br><br>而那艘船之所以出得去，是因為他們。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己「只能」奉獻和禱告——</p>
+
+      <p>我想把保羅那句話再說一次：</p>
+
+      <p><strong>「你們以祈禱幫助我們。」</strong></p>
+
+      <p>——「幫助」那個字的意思，是<strong>一同出力</strong>。</p>
+
+      <p>而那筆奉獻，保羅稱為「神所收納、所喜悅的祭物」。</p>
+
+      <p>並且——<strong>「歸在你們的帳上。」</strong></p>
+
+      <p>而安提阿那間教會，把自己最好的兩個人送走了。</p>
+
+      <p>那一天他們做的事只有三個動作：<strong>禁食禱告、按手、打發。</strong></p>
+
+      <p>——而從那一天起，福音走出了亞洲，走進了歐洲，走了兩千年，走到了你這裡。</p>
+
+      <p>願你今天，記住一個同工的名字。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  開荒佈道與國外佈道 · Threads Series
+</footer>
+
+</body>
+</html>

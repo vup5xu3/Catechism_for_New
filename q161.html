@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>怎樣對付不信派的錯誤 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>站穩，<span>然後伸手</span></h1>
+  <p class="subtitle">怎樣對付不信派的錯誤？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">最難處理的，是那種很有學問的懷疑</h2>
+      <p class="card-hook">因為它聽起來比較聰明</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種說法，特別容易讓人動搖。</p>
+
+      <div class="highlight">
+        <strong>而它的語氣，通常是很有教養的</strong>
+        「那一段其實是後人加的。」<br>「那個神蹟，當時的人是這樣理解的。」<br>「這一卷的作者，學者認為……」<br>「你不必那麼字面地讀。」<br><br>——而說這些話的人，往往比你讀得多。<br><br>所以那不像攻擊。<strong>那像是被指點。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪨</span>
+        我想到腳下的地。<br><br>地震不會把房子推倒。<br><br>——它做的事是<strong>讓地不再是穩的</strong>。<br><br>而房子倒下來，是自己倒的。<br><br>而「不信」的作用，性質接近這個：<br><br>它不需要說服你什麼。<strong>它只要讓那塊地鬆掉。</strong>
+      </div>
+
+      <p>而這一題給的四項，正好對著這件事。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「神豈是真說……」</h2>
+      <p class="card-hook">聖經裡第一句懷疑，是一個問句</p>
+    </div>
+    <div class="card-body">
+
+      <p>創世記第三章，記了聖經裡的第一句試探。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神豈是真說不許你們吃園中所有樹上的果子嗎？
+        </p>
+        <p class="scripture-ref">創世記 三章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話的形式，值得注意</strong>
+        ——那不是一個主張，是一個<strong>問句</strong>。<br><br>它沒有說「神是騙你的」。<br><br>它只是問：「<strong>神豈是真說……</strong>」<br><br>而那個問句做的事，是<strong>把那句話從穩固的位置，挪到需要被檢驗的位置</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐍</span>
+        而問完之後，才是那個直接的否定：<br><br>「<strong>你們不一定死。</strong>」（創三 4）<br><br>——注意那個順序。<br><br>先<strong>問</strong>，再<strong>否定</strong>。<br><br>而中間夏娃已經開始<strong>用自己的話重述</strong>神的吩咐了——而她說的，和神原本說的，已經不完全一樣。
+      </div>
+
+      <div class="highlight">
+        <strong>而那正是這一題第一項要對付的地方</strong>
+        「<strong>努力研讀聖經真理，堅信不移。</strong>」<br><br>——因為如果一個人對那句話本來就記不清楚、理解不深，<br><br>那麼一個問句就足以把它動搖。<br><br>而如果那句話在他心裡是清楚的、扎實的——<br><br>那個問句就只是一個問句。
+      </div>
+
+      <p>下一篇，我們把四項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四項</h2>
+      <p class="card-hook">兩項對自己，兩項對別人</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一</span>
+          <strong>努力研讀聖經真理，堅信不移。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二</span>
+          <strong>不在不信派人士主持的教會裡聚會。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三</span>
+          <strong>提醒那些認識不清的基督徒。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四</span>
+          <strong>用愛心挽回那些無知的傳道人和信徒。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四項，分成兩組：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>組別</th>
+            <th>哪幾項</th>
+            <th>作用</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>先站穩</strong></td>
+            <td>一、二</td>
+            <td><strong>自己不倒</strong>——那是前提</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>再伸手</strong></td>
+            <td>三、四</td>
+            <td><strong>去幫別人</strong>——提醒、挽回</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那個順序，不能顛倒</strong>
+        因為一個自己還站不穩的人，去拉別人，結果通常是<strong>兩個一起掉下去</strong>。<br><br>——而保羅給提摩太的吩咐，也是同樣的順序：<br><br>「你要<strong>謹慎自己和自己的教訓</strong>，要在這些事上恆心；<strong>因為這樣行，又能救自己，又能救聽你的人。</strong>」（提前四 16）<br><br>——「<strong>又能救自己，又能救聽你的人</strong>」。<br><br>自己在前面。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三、第四項的措辭，差別很細，值得看清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>第三項</th>
+            <th>第四項</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">對象</td>
+            <td><strong>認識不清</strong>的基督徒</td>
+            <td><strong>無知</strong>的傳道人和信徒</td>
+          </tr>
+          <tr>
+            <td class="src">動作</td>
+            <td><strong>提醒</strong></td>
+            <td><strong>挽回</strong></td>
+          </tr>
+          <tr>
+            <td class="src">態度</td>
+            <td>——</td>
+            <td><strong>用愛心</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「挽回」那個字，比「提醒」重</strong>
+        「提醒」是<strong>叫他注意</strong>。<br><br>「挽回」是<strong>把人拉回來</strong>——那意味著他已經走出去了一段。<br><br>——而聖經用這個字的時候，附了一個態度：<br><br>「若有人偶然被過犯所勝，你們屬靈的人就當用<strong>溫柔</strong>的心把他挽回過來；<strong>又當自己小心，恐怕也被引誘。</strong>」（加六 1）
+      </div>
+
+      <p>下一篇，我們看第一項與第二項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「不至於中了人的詭計」</h2>
+      <p class="card-hook">而以弗所書給的辦法，是「長大」</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">使我們不再作小孩子，中了人的詭計和欺騙的法術，被一切異教之風搖動，飄來飄去，就隨從各樣的異端
+        </p>
+        <p class="scripture-ref">以弗所書 四章十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的畫面，是一艘沒有錨的小船</strong>
+        「<strong>被一切異教之風搖動，飄來飄去</strong>」。<br><br>——注意那個描述：不是被推翻，是<strong>飄</strong>。<br><br>今天覺得這個有道理，明天覺得那個也不錯。<br><br>而保羅用的形容是：<strong>「小孩子。」</strong>
+      </div>
+
+      <p>而他給的辦法，在前一節與後一節：</p>
+
+      <div class="highlight">
+        <strong>前面（12～13 節）</strong>
+        「為要<strong>成全聖徒，各盡其職</strong>，建立基督的身體，<br><br>直等到我們眾人在<strong>真道上同歸於一，認識神的兒子</strong>，得以長大成人，滿有基督長成的身量。」<br><br><strong>後面（15 節）</strong><br><br>「惟用<strong>愛心說誠實話</strong>，凡事長進，連於元首基督。」
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那一整段給的解方，只有一個詞：<strong>長大。</strong><br><br>——不是「躲起來」。<br><br>而「長大」的內容是：<strong>在真道上同歸於一，認識神的兒子。</strong><br><br>而那正是本題第一項：<strong>努力研讀聖經真理。</strong><br><br>——而十五節那句「<strong>用愛心說誠實話</strong>」，正是第四項的態度。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二項——不在不信派人士主持的教會裡聚會——聖經裡也有對應的原則：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">羅十六 17</td>
+            <td>「那些離間你們、叫你們跌倒、背乎所學之道的人，我勸你們要<strong>留意躲避他們</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">提後三 5</td>
+            <td>「有敬虔的外貌，<strong>卻背了敬虔的實意</strong>；這等人你要<strong>躲開</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">約貳 10～11</td>
+            <td>「若有人到你們那裡，<strong>不是傳這教訓</strong>，不要接他到家裡，也不要問他的安。」</td>
+          </tr>
+          <tr>
+            <td class="src">林後六 14</td>
+            <td>「你們和不信的原不相配，不要同負一軛。<strong>義和不義有甚麼相交呢？</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而提摩太後書那節的形容，特別準：<br><br>「<strong>有敬虔的外貌，卻背了敬虔的實意。</strong>」<br><br>——「外貌」在，「實意」不在。<br><br>而那正是這一組題目一開始說的：<strong>看起來很像。</strong><br><br>而聖經給的動作，是一個很簡單的動詞：<strong>躲開。</strong><br><br>——不是辯論，不是說服。<br><br>是<strong>不要待在那裡</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「用愛心挽回」——那四個字很難</h2>
+      <p class="card-hook">因為堅持真理的人，常常會失去溫度</p>
+    </div>
+    <div class="card-body">
+
+      <p>四項裡，最後一項是最難的。</p>
+
+      <div class="highlight">
+        <strong>因為前面三項做久了，會有一個副作用</strong>
+        研讀真理、堅信不移、躲開、提醒別人——<br><br>做著做著，人很容易變成<strong>一個一直在檢查別人的人</strong>。<br><br>——而那時候，真理還在，而<strong>溫度沒有了</strong>。<br><br>所以第四項特意加了三個字：<strong>「用愛心。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌡️</span>
+        而以弗所書那句話，把兩樣綁在一起：<br><br>「惟用<strong>愛心</strong>說<strong>誠實話</strong>。」<br><br>——兩樣都要。<br><br>只有誠實而沒有愛心，那是<strong>刺人</strong>。<br><br>只有愛心而沒有誠實，那是<strong>放任</strong>。<br><br>而那節接下去說：「<strong>凡事長進，連於元首基督。</strong>」<br><br>——所以那兩樣一起，才叫長進。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而保羅給提摩太的一段話，把這件事的態度說得最完整。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">然而主的僕人不可爭競，只要溫溫和和地待眾人，善於教導，存心忍耐，用溫柔勸戒那抵擋的人；或者神給他們悔改的心，可以明白真道
+        </p>
+        <p class="scripture-ref">提摩太後書 二章二十四至二十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那段話裡，有五個要求</strong>
+        <strong>不可爭競</strong>——不要陷進辯論的輸贏。<br><strong>溫溫和和地待眾人</strong>——包括那些抵擋的。<br><strong>善於教導</strong>——要真的懂。<br><strong>存心忍耐</strong>——那會花時間。<br><strong>用溫柔勸戒</strong>——連勸戒都要溫柔。<br><br>——而理由在最後一句：<br><br>「<strong>或者神給他們悔改的心，可以明白真道。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        「<strong>或者</strong>」——那兩個字很重要。<br><br>因為它承認：<strong>那個結果不在我手上。</strong><br><br>——所以我的責任不是「說服他」。<br><br>是<strong>把話說清楚，然後把人交給神</strong>。<br><br>而那也把壓力拿掉了：<br><br>如果他不聽，那不是我失敗了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「不可爭競」那三個字，在今天特別實際。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">因為爭論的形式，本身會傷人</span>
+          尤其在網路上：留言、轉貼、公開回擊。<br><br>——而那些場合的規則是<strong>贏</strong>，不是<strong>挽回</strong>。<br><br>而目標一旦變成贏，那個人就成了對手。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">而聖經幾次談到這件事，措辭都一樣</span>
+          「惟有那<strong>愚拙無學問的辯論</strong>，總要棄絕，因為知道這等事是<strong>起爭競</strong>的。」（提後二 23）<br><br>「要遠避無知的<strong>辯論</strong>……因為這都是<strong>虛妄無益</strong>的。」（多三 9）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而下一題那句話，也是同一個原則</span>
+          第一六四題寫的是：<strong>「千萬不要跟他們辯論。」</strong><br><br>——那不是怕輸。<br><br>那是因為<strong>那個場子本身，不會產生好結果</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而彼得給的那句話，是最好的替代方案</strong>
+        「有人問你們心中盼望的緣由，就要<strong>常作準備</strong>，以<strong>溫柔、敬畏</strong>的心回答各人。」（彼前三 15）<br><br>——「<strong>有人問</strong>」。<br><br>那是<strong>回答</strong>，不是<strong>攻擊</strong>。<br><br>而「常作準備」那四個字，又繞回了第一項：<strong>努力研讀聖經真理。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">寫給那個心裡有疑問的你</h2>
+      <p class="card-hook">而有疑問，不等於不信</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想先分清楚一件事，因為這一題容易被誤讀。</p>
+
+      <div class="highlight">
+        <strong>「有疑問」與「不信」，是兩件事</strong>
+        ——聖經裡，有很多人問過很難的問題。<br><br>約伯問了整整幾十章。<br>詩人問：「耶和華啊，你忘記我要到幾時呢？」<br>哈巴谷問：「你為何使我看見罪孽？」<br>施洗約翰在監裡差人去問主：「<strong>那將要來的是你嗎？還是我們等候別人呢？</strong>」<br><br>——而神沒有責備他們任何一個。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而多馬那件事，是最好的例子。<br><br>他說：「我非看見他手上的釘痕……<strong>總不信</strong>。」<br><br>而主來的時候，做的事是：<br><br>「伸過你的指頭來，摸我的手；伸出你的手來，探入我的肋旁。」（約二十 27）<br><br>——祂沒有責備那個要求。<br><br><strong>祂滿足了它。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而分別在哪裡？</strong>
+        <strong>疑問</strong>是：我不懂，我要問——那個方向是<strong>朝著祂</strong>的。<br><br>而那個父親說的：「我信！但我信不足，<strong>求主幫助</strong>。」<br><br><strong>不信</strong>是：那件事我先否定了——那個方向是<strong>背過去</strong>的。<br><br>——所以疑問是<strong>往前走的路</strong>。
+      </div>
+
+      <div class="big-quote">
+        惟用愛心說誠實話，<br>凡事長進，<br>連於元首基督
+        <cite>— 以弗所書 四章十五節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那塊地。</p>
+
+      <p>地震不會把房子推倒。它只是讓地不再是穩的。</p>
+
+      <p>——而這一題的第一項，就是在<strong>把地夯實</strong>。</p>
+
+      <p>「努力研讀聖經真理，堅信不移。」</p>
+
+      <p>而那件事，是最平常的：一天一點，讀那本書。</p>
+
+      <p>而那樣的人，遇到一個問句的時候，不會慌。</p>
+
+      <p>因為他知道那句話原本是怎麼說的。</p>
+
+      <p>而最後那一項，我想再念一次：</p>
+
+      <p><strong>「用愛心挽回那些無知的傳道人和信徒。」</strong></p>
+
+      <p>——「挽回」。</p>
+
+      <p>那不是把人推開的動作。</p>
+
+      <p>願你今天，站得穩，也伸得出手。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  怎樣對付不信派的錯誤 · Threads Series
+</footer>
+
+</body>
+</html>

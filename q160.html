@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日教會的異端旁門 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>要<span>分辨</span></h1>
+  <p class="subtitle">通行於今日教會的異端、旁門、左道大約有幾？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">會出問題的，通常不是明顯的假</h2>
+      <p class="card-hook">是那些「幾乎一樣」的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果一個東西一看就是假的，那它不危險。</p>
+
+      <div class="highlight">
+        <strong>而真正需要分辨的，是那些很像的</strong>
+        用同一本聖經。<br>講同樣的名詞。<br>唱類似的詩歌。<br>而且很多人非常真誠、非常熱心。<br><br>——而在某一個關鍵的地方，不一樣。<br><br>而那個地方，常常不在表面上。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔑</span>
+        我想到一把配錯的鑰匙。<br><br>它的形狀幾乎一模一樣，插得進去，也轉得動一點。<br><br>——而它打不開那扇門。<br><br>而問題往往就在<strong>其中一兩個齒</strong>。
+      </div>
+
+      <p>而這一題，是把那幾個齒指出來。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">主自己給過警告，而且說得很具體</h2>
+      <p class="card-hook">「披著羊皮」</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">你們要防備假先知。他們到你們這裡來，外面披著羊皮，裡面卻是殘暴的狼
+        </p>
+        <p class="scripture-ref">馬太福音 七章十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個比喻，選得非常準</strong>
+        「<strong>外面披著羊皮</strong>」——那意味著：<strong>看起來就是自己人。</strong><br><br>不是外面來的敵人。<br><br>是<strong>混在羊群裡的</strong>。<br><br>——而主接下去給了一個判準：<br><br>「<strong>憑著他們的果子，就可以認出他們來。</strong>」（太七 16）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌳</span>
+        而「果子」那個判準，有一個特點：<strong>它需要時間。</strong><br><br>——因為果子不會馬上長出來。<br><br>而那也是為什麼主說：「<strong>凡好樹都結好果子，惟獨壞樹結壞果子。</strong>」<br><br>樹的種類，早就定了。<br><br>而看得出來，要等到結果的時候。
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅在米利都，說過一段類似的話</strong>
+        「我知道，我去之後<strong>必有兇暴的豺狼進入你們中間</strong>，不愛惜羊群。<br><br><strong>就是你們中間，也必有人起來說悖謬的話，要引誘門徒跟從他們。</strong>」（徒二十 29～30）<br><br>——注意那個「<strong>你們中間</strong>」。<br><br>而他叮囑的是：「<strong>所以你們應當警醒。</strong>」
+      </div>
+
+      <p>下一篇，我們把那份清單列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五項</h2>
+      <p class="card-hook">而每一項，都指出了一個具體的問題</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、不信派</span>
+          不信一部分聖經上的話，<br>或<strong>不信神蹟</strong>，<strong>不信福音真理</strong>等。<br><br>（此派人士已大量地滲透各派教會之中）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、基督復臨安息日會</span>
+          <strong>拘泥聖經字句，謬解預言</strong>；<br>將猶太教與基督教混合，<br><strong>律法與恩典、新約與舊約沒有分清楚</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、耶穌基督末世聖徒教會</span>
+          又名「摩門會」，<br><strong>否認聖經所示有關基督的神性</strong>，以及「將來世界」的教義；<br>適應屬肉體「基督徒」的口味，<br><strong>高舉摩門書與聖經平等</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、守望台</span>
+          另名「耶和華見證人」，<br><strong>否認基督的神性、救贖、復活、再來</strong>，<br>以及地獄或永刑、靈魂永存、未來天國等聖經要道。
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">五、天主教</span>
+          <strong>拜馬利亞及使徒們之雕像</strong>，可以拜祖先，<br><strong>公然犯上第二條誡命</strong>。
+        </div>
+      </div>
+
+      <p>〔註：以上所舉，係犖犖大者，另有其他，請參閱書末參考書。〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而把五項的<strong>問題點</strong>抽出來，會看見它們集中在幾個地方：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>爭議的位置</th>
+            <th>出現在</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>聖經的權威</strong></td>
+            <td>第一項（不信一部分聖經的話）、第三項（高舉別的書與聖經平等）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>基督的神性</strong></td>
+            <td>第三項、第四項（<strong>否認基督的神性</strong>）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>律法與恩典的關係</strong></td>
+            <td>第二項（新約與舊約沒有分清楚）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>敬拜的對象</strong></td>
+            <td>第五項（第二條誡命）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那四個位置，正是信仰的幾根主樑</strong>
+        <strong>聖經</strong>——我們怎麼知道的。<br><strong>基督是誰</strong>——救恩的根據。<br><strong>恩典</strong>——人怎麼得救。<br><strong>敬拜誰</strong>——第一與第二條誡命。<br><br>——所以這份清單指出的，不是<strong>做法的差異</strong>。<br><br>是<strong>那幾根樑</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第一項後面那個括號，是這份清單裡最值得警惕的一句。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌫️</span>
+        「（此派人士已<strong>大量地滲透各派教會之中</strong>）」<br><br>——「滲透」。<br><br>那意味著：它不是<strong>另外一個團體</strong>。<br><br>它是<strong>已經在裡面的</strong>。<br><br>——而那正好對上保羅那句話：<br><br>「<strong>就是你們中間，也必有人起來說悖謬的話。</strong>」
+      </div>
+
+      <p>下一篇，我們回到聖經，看分辨的判準。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">聖經給的判準，集中在一個問題上</h2>
+      <p class="card-hook">「你們論基督是怎樣看的？」</p>
+    </div>
+    <div class="card-body">
+
+      <p>新約談分辨的時候，判準幾乎都落在同一個地方。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡靈認耶穌基督是成了肉身來的，就是出於神的；從此你們可以認出神的靈來
+        </p>
+        <p class="scripture-ref">約翰壹書 四章二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的上一節，是那個吩咐</strong>
+        「親愛的弟兄啊，<strong>一切的靈，你們不可都信</strong>，總要<strong>試驗那些靈是出於神的不是</strong>，因為<strong>世上有許多假先知已經出來了</strong>。」（約壹四 1）<br><br>——「試驗」那個字，是<strong>驗金屬成色</strong>的意思。<br><br>而判準只有一個：<strong>他們論基督是怎麼說的。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而約翰在同一封信裡，把那個判準又說了一次，並且更重：<br><br>「誰是說謊話的呢？不是那<strong>不認耶穌為基督</strong>的嗎？<strong>不認父與子的，這就是敵基督的。</strong>」（約壹二 22）<br><br>「凡不認子的，就<strong>沒有父</strong>；<strong>認子的，連父也有了。</strong>」（約壹二 23）<br><br>——所以在約翰的書信裡，<strong>對基督的認識</strong>，是那條分界線。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主自己，也把那個問題當作最關鍵的一問：</p>
+
+      <div class="highlight">
+        <strong>該撒利亞腓立比的那一問</strong>
+        祂先問：「人說我人子是誰？」<br><br>門徒回答：有人說是施洗的約翰，有人說是以利亞，又有人說是耶利米。<br><br>然後祂問了第二句：<br><br>「<strong>你們說我是誰？</strong>」（太十六 15）<br><br>——而彼得回答：「你是基督，是永生神的兒子。」<br><br>而主說：「<strong>我還告訴你，你是彼得，我要把我的教會建造在這磐石上。</strong>」
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而保羅在寫給加拉太人的信裡，語氣是最重的：<br><br>「<strong>但無論是我們，是天上來的使者，若傳福音給你們，與我們所傳給你們的不同，他就應當被咒詛。</strong>」（加一 8）<br><br>——注意那個範圍：<strong>連「我們」和「天上來的使者」都包括在內。</strong><br><br>所以那個判準不是「誰講的」。<br><br>是<strong>「講的是不是那個福音」</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「福音」的內容，保羅寫過一段最簡明的定義：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">第一，就是基督照聖經所說，為我們的罪死了，而且埋葬了；又照聖經所說，第三天復活了
+        </p>
+        <p class="scripture-ref">哥林多前書 十五章三至四節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📏</span>
+        而那段定義，可以當作一把尺。<br><br><strong>基督是誰</strong>——神的兒子。<br><strong>祂做了什麼</strong>——為我們的罪死了。<br><strong>結果是什麼</strong>——第三天復活了。<br><br>——三項。<br><br>而那三項，正好是第三、第四項清單裡被點出來的地方。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">分辨的能力，是怎麼來的</h2>
+      <p class="card-hook">而聖經給的答案，可能出乎意料</p>
+    </div>
+    <div class="card-body">
+
+      <p>要能分辨，是不是要先把每一種說法都研究一遍？</p>
+
+      <p>而聖經給的答案，方向是相反的。</p>
+
+      <div class="highlight">
+        <strong>希伯來書那一節</strong>
+        「惟獨長大成人的才能吃乾糧；他們的<strong>心竅習練得通達</strong>，就能<strong>分辨好歹</strong>了。」（來五 14）<br><br>——「<strong>習練得通達</strong>」。<br><br>那個詞的意思是：<strong>經過反覆操練而變得熟練</strong>。<br><br>——所以分辨的能力，不是靠<strong>認識錯的</strong>，是靠<strong>熟悉對的</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💵</span>
+        而據說銀行訓練辨認偽鈔的方式，正是這樣：<br><br>不是把各種偽鈔背下來。<br><br>是<strong>反覆摸真鈔</strong>，摸到熟透。<br><br>——因為偽造的方式會一直變，而真的只有一種。<br><br>而那正是庇哩亞人做的事：<br><br>「<strong>天天考查聖經</strong>，要曉得這道是與不是。」（徒十七 11）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第一六一題（下一題）給的四項對策裡，第一項正是這個。</p>
+
+      <div class="highlight">
+        <strong>「努力研讀聖經真理，堅信不移」</strong>
+        ——那是<strong>第一項</strong>。<br><br>而那也符合這一題整組的邏輯：<br><br>防備的根本，不在<strong>認識異端</strong>，在<strong>認識真理</strong>。<br><br>而保羅給提摩太的吩咐也是這樣：<br><br>「你當<strong>竭力</strong>在神面前得蒙喜悅，作無愧的工人，<strong>按著正意分解真理的道</strong>。」（提後二 15）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        而「按著正意分解」那個詞，原文的畫面是<strong>「切得直」</strong>。<br><br>——像裁縫剪布，要沿著正確的線剪。<br><br>而這一題第二項點出的「拘泥聖經字句，謬解預言」，講的正是相反的：<br><br><strong>剪歪了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而分辨這件事，有兩個很容易掉進去的坑。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">坑一：什麼都不分</span>
+          覺得「反正大家都是信主的」。<br><br>——而聖經對這件事的態度很清楚：<br><br>「<strong>一切的靈，你們不可都信。</strong>」（約壹四 1）<br><br>而保羅那句「就應當被咒詛」，是聖經裡最重的措辭之一。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">坑二：什麼都分</span>
+          把<strong>不同</strong>當成<strong>異端</strong>。<br><br>——而聖經對次要的事，是留空間的：<br><br>「有人看這日比那日強；有人看日日都是一樣。<strong>只是各人心裡要意見堅定。</strong>」（羅十四 5）<br><br>而那一章的原則是：「<strong>信心軟弱的，你們要接納。</strong>」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而分辨兩者的方法，是問一句話</strong>
+        <strong>「這件事，動到那幾根樑了嗎？」</strong><br><br>——聖經的權威、基督是誰、人怎麼得救、敬拜誰。<br><br>如果動到了，那是<strong>根本</strong>的事。<br><br>如果沒有，那可能是<strong>看法</strong>的事。<br><br>而羅馬書十四章處理的，正是後面那一種。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而不管是哪一種，聖經給的態度是一致的：<br><br>「惟用<strong>愛心</strong>說誠實話。」（弗四 15）<br><br>——「愛心」與「誠實」，兩樣都要。<br><br>而下一題那四項對策的最後一項，正是：<br><br><strong>「用愛心挽回那些無知的傳道人和信徒。」</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">要認得的，是那個聲音</h2>
+      <p class="card-hook">寫給那個怕自己被騙的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>讀完這一題，可能會有一點不安：<strong>那我會不會分不出來？</strong></p>
+
+      <div class="highlight">
+        <strong>而主自己講過一段話，是給這種擔心的</strong>
+        「羊也跟著他，因為<strong>認得他的聲音</strong>。<br><br>羊不跟著生人；因為<strong>不認得他的聲音</strong>，必要逃跑。」（約十 4～5）<br><br>——注意那個機制。<br><br>羊不是靠<strong>認出壞人</strong>來保護自己。<br><br>是靠<strong>認得牧人的聲音</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐑</span>
+        而羊怎麼認得那個聲音的？<br><br>——沒有別的辦法。<br><br>就是<strong>天天聽</strong>。<br><br>而那正是希伯來書說的「心竅習練得通達」。<br><br>——所以最好的防備，其實是最平常的一件事：<br><br><strong>讀那本書，聽那個聲音。</strong>
+      </div>
+
+      <div class="big-quote">
+        羊也跟著他，<br>因為認得他的聲音
+        <cite>— 約翰福音 十章四節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那把配錯的鑰匙。</p>
+
+      <p>它的形狀幾乎一模一樣。而它打不開那扇門。</p>
+
+      <p>——而分辨的方法，不是把所有配錯的鑰匙都收集起來研究。</p>
+
+      <p>是<strong>把那把對的，用熟。</strong></p>
+
+      <p>而那把對的，聖經已經交給我們了：</p>
+
+      <p>「聖經都是神所默示的……<strong>叫屬神的人得以完全，預備行各樣的善事。</strong>」（提後三 16～17）</p>
+
+      <p>而在那本書的中間，站著一位。</p>
+
+      <p>「你們說我是誰？」</p>
+
+      <p>——那個問題的答案，就是那條分界線。</p>
+
+      <p>願你今天，多聽一點那個聲音。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  今日教會的異端旁門 · Threads Series
+</footer>
+
+</body>
+</html>

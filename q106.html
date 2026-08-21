@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舊約與新約的關係 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>預備，與<span>註釋</span></h1>
+  <p class="subtitle">舊約與新約，彼此相成，缺一不可</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">只讀一半的兩種人</h2>
+      <p class="card-hook">而兩種都會漏掉一些東西</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我遇過兩種讀經的人，他們的問題剛好相反。</p>
+
+      <div class="highlight">
+        <strong>一種只讀新約</strong>
+        理由聽起來很合理：「舊約是給以色列人的」、「那些律法已經過去了」、「利未記我讀不下去」。<br><br>結果是：那些詞彙變得<strong>沒有厚度</strong>。<br><br>「羔羊」只是一個溫和的形容。<br>「大祭司」只是一個職稱。<br>「贖罪」只是一個名詞。<br><br>——因為那些詞的定義，在另外一半裡。
+      </div>
+
+      <div class="highlight">
+        <strong>另一種特別鑽舊約</strong>
+        對預表、數字、節期、聖殿的度量非常熟。<br><br>而讀著讀著，重心會慢慢偏移——<strong>那些影子本身，變成了主角。</strong><br><br>而那正是歌羅西教會的問題：基督已經來了，他們還在爭論影子的細節。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        而這一題的答案，只有兩句話，卻剛好把這兩邊都擋住了：<br><br><strong>舊約是新約的預備，新約是舊約的註釋。</strong><br><br>——一個是「為了後面」，一個是「解釋前面」。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這兩句話。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">以馬忤斯路上那堂課</h2>
+      <p class="card-hook">復活的主，用舊約講解自己</p>
+    </div>
+    <div class="card-body">
+
+      <p>復活那天下午，主與兩個門徒同行。而祂做的第一件事，是上一堂聖經課。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">於是從摩西和眾先知起，凡經上所指著自己的話都給他們講解明白了
+        </p>
+        <p class="scripture-ref">路加福音 二十四章二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那一天稍晚，祂對眾門徒說了同一件事的完整版</strong>
+        「摩西的律法、先知的書，和詩篇上所記的，凡指著我的話都必須應驗。」<br><br>——注意祂列的三類：<strong>律法、先知、詩篇</strong>。<br><br>那是猶太人對舊約全書的傳統分法。<br><br>換句話說：<strong>祂說整本舊約都指著祂。</strong><br><br>而經文接著說：「於是<strong>開他們的心竅，使他們能明白聖經</strong>。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔑</span>
+        「開他們的心竅」——那是一個很有畫面的說法。<br><br>那些經文他們本來就讀過。<strong>缺的不是資料，是那把鑰匙。</strong><br><br>而那把鑰匙，就是那一位。<br><br>——這正是「新約是舊約的註釋」的意思。
+      </div>
+
+      <p>那麼，這兩句話具體是什麼意思？下一篇，我們展開。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩句話，一個關係</h2>
+      <p class="card-hook">彼此相成，缺一不可</p>
+    </div>
+    <div class="card-body">
+
+      <div class="big-quote">
+        舊約是新約的預備，<br>新約是舊約的註釋；<br>二者彼此相成，缺一不可。
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">舊約是新約的預備</span>
+          它<strong>鋪路</strong>：預言、預表、律法、歷史——全部指向那一位要來的。<br><br>而它也<strong>製造需要</strong>：律法叫人知罪，獻祭一再重複，先知一再說「日子將到」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">新約是舊約的註釋</span>
+          它<strong>解釋</strong>：那隻羔羊是誰、那個大祭司指什麼、那些影子的形體在哪裡。<br><br>而它也<strong>完成</strong>：那些「日子將到」的，到了。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">彼此相成，缺一不可</span>
+          少了舊約，新約的詞彙失去定義。<br>少了新約，舊約停在一個未完的狀態。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「註釋」這個說法，值得停一下——因為新約真的是這樣運作的。</p>
+
+      <div class="highlight">
+        <strong>新約大量在做「解釋舊約」的工作</strong>
+        <strong>希伯來書</strong>整卷書，幾乎就是一篇利未記的註解。<br><strong>馬太福音</strong>反覆使用一個句型：「這是要應驗先知所說的話。」<br><strong>羅馬書</strong>用亞伯拉罕來解釋因信稱義。<br><strong>加拉太書</strong>用夏甲與撒拉來解釋兩約。<br><strong>彼得前書</strong>用挪亞的方舟來解釋洗禮。<br>而<strong>使徒的每一篇講道</strong>，都是從舊約講起。<br><br>——所以「新約是舊約的註釋」不是一個比喻。<br><br><strong>那是新約作者實際在做的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「預備」與「註釋」的關係，可以用幾組具體的例子看清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>舊約預備了什麼</th>
+            <th>新約怎麼註釋</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">逾越節的羔羊，血塗門框</td>
+            <td>「<strong>我們逾越節的羔羊基督已經被殺獻祭了。</strong>」（林前五 7）</td>
+          </tr>
+          <tr>
+            <td class="src">大祭司一年一次帶血進至聖所</td>
+            <td>「乃用自己的血，<strong>只一次進入聖所</strong>，成了永遠贖罪的事。」（來九 12）</td>
+          </tr>
+          <tr>
+            <td class="src">曠野的銅蛇，望的就活</td>
+            <td>「摩西在曠野怎樣舉蛇，<strong>人子也必照樣被舉起來</strong>。」（約三 14）——主自己的註釋</td>
+          </tr>
+          <tr>
+            <td class="src">約拿三日三夜在魚腹中</td>
+            <td>「<strong>人子也要這樣三日三夜在地裡頭。</strong>」（太十二 40）</td>
+          </tr>
+          <tr>
+            <td class="src">至聖所前那幅厚重的幔子</td>
+            <td>「<strong>這幔子就是他的身體。</strong>」（來十 20）</td>
+          </tr>
+          <tr>
+            <td class="src">亞伯拉罕獻以撒</td>
+            <td>「他以為神還能叫人從死裡復活。」（來十一 19）；而「神必自己預備」成了各各他的預告</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這張表，兩邊都不能刪</strong>
+        <strong>只看右邊</strong>——那些話會變得單薄。「逾越節的羔羊」如果不知道出埃及那一夜發生了什麼，就只是一個好聽的稱呼。<br><br><strong>只看左邊</strong>——那些安排會變成謎題。為什麼血要塗在門框上？為什麼一年只能進去一次？<br><br>——所以那不是兩本書。<strong>那是一本書的兩半。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">主耶穌怎麼說這件事</h2>
+      <p class="card-hook">「我來不是要廢掉，乃是要成全」</p>
+    </div>
+    <div class="card-body">
+
+      <p>主耶穌自己，對這個關係有一句最直接的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">莫想我來要廢掉律法和先知；我來不是要廢掉，乃是要成全
+        </p>
+        <p class="scripture-ref">馬太福音 五章十七節</p>
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">Plēroō<br>成全</div>
+        <div class="term-desc">字面是「<strong>使之滿</strong>」、「填滿」、「使完全」。<br><br>而這個字的意象很重要：<strong>不是取代，是把它填滿。</strong><br><br>一個輪廓被填上顏色。<br>一個承諾被兌現。<br>一個模子被灌實。<br><br>——而主特別先說了「<strong>莫想</strong>我來要廢掉」，那表示當時已經有人這樣猜了。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而祂接下來那句更重：<br><br>「我實在告訴你們，就是到天地都廢去了，律法的<strong>一點一畫</strong>也不能廢去，都要成全。」<br><br>——「一點一畫」，指的是希伯來文字母上最小的筆畫與記號。<br><br>那是一個極強的說法。<br><br>而說這句話的人，正是那位要成全它的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主還有一句話，是對那些熟讀舊約卻沒有認出祂的人說的。那句話很銳利：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們查考聖經，因你們以為內中有永生；給我作見證的就是這經。然而，你們不肯到我這裡來得生命
+        </p>
+        <p class="scripture-ref">約翰福音 五章三十九至四十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>給我作見證的就是這經</strong>」——那是主自己對舊約性質的判定。<br><br>而祂指出的問題是：那些人<strong>查得很勤</strong>（「查考」那個字有搜索發掘的意思），卻停在書上。<br><br>「然而，你們<strong>不肯到我這裡來</strong>得生命。」<br><br>——所以舊約的功能，是<strong>把人帶到那一位面前</strong>。<br><br>而如果讀完了，人還停在書上——那就是走到門口，卻沒有進去。<br><br>而祂在同一段裡說：「你們如果信摩西，也必信我，<strong>因為他書上有指著我寫的話。</strong>」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「缺一不可」——教會歷史上有人試過只留一半</h2>
+      <p class="card-hook">而結果不好</p>
+    </div>
+    <div class="card-body">
+
+      <p>「二者彼此相成，缺一不可」——這句話不是理論。<strong>教會歷史上，真的有人試過只留一半。</strong></p>
+
+      <div class="highlight">
+        <strong>主後二世紀，有人主張把舊約整個刪掉</strong>
+        那個主張的邏輯是這樣的：舊約裡的神，看起來嚴厲、有審判、有戰爭；<br>而新約裡的神，是慈愛的。<br><br>——所以那不可能是同一位。<br><br>於是他編了一套自己的「聖經」：刪掉整本舊約，並且把新約裡引用舊約的部分也刪掉，最後只剩下路加福音的一部分和保羅的幾封書信。<br><br>而教會拒絕了這個主張。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✂️</span>
+        而那個主張的問題，其實一剪就露出來了：<br><br><strong>你沒辦法只刪舊約。</strong><br><br>因為新約整本都在引用它。<br><br>刪掉舊約，馬太福音的「這是要應驗先知所說的話」全部落空；希伯來書整卷書失去對象；保羅講因信稱義時舉的亞伯拉罕不見了；主自己說的「摩西在曠野怎樣舉蛇」也沒有了。<br><br>——所以那個人必須連新約也一起剪。<br><br><strong>而剪到最後，剩下的已經不是聖經了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「舊約的神比較嚴厲」這個印象，其實兩邊都經不起檢查。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>常見印象</th>
+            <th>而經文說</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">舊約只有審判</td>
+            <td>神在金牛犢之後，親口宣告自己「<strong>有憐憫有恩典……不輕易發怒，並有豐盛的慈愛和誠實</strong>」（出卅四 6）——那是舊約中被引用最多的一段自我啟示</td>
+          </tr>
+          <tr>
+            <td class="src">新約只有慈愛</td>
+            <td>而<strong>講到地獄最多的，是主耶穌自己</strong>；啟示錄的審判場景，強度不亞於舊約任何一處</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>所以那個印象，來自「只讀熟悉的部分」</strong>
+        大部分人對舊約的印象，來自洪水、十災、耶利哥城。<br>而對新約的印象，來自「神愛世人」與登山寶訓。<br><br>——那是<strong>取樣的問題</strong>，不是那兩本書的差別。<br><br>而聖經自己說：「<strong>耶穌基督，昨日、今日、一直到永遠，是一樣的。</strong>」（來十三 8）
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那把鑰匙，主自己給了</h2>
+      <p class="card-hook">寫給那個讀舊約讀得很吃力的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在以馬忤斯路上那個下午。</p>
+
+      <div class="highlight">
+        <strong>那兩個門徒，聖經全都讀過</strong>
+        他們是猶太人。那些經文他們從小背。<br><br>而他們正走在回家的路上，臉上帶著愁容，說著「<strong>我們素來所盼望</strong>要贖以色列民的就是他」——過去式。<br><br>他們有全部的資料，而拼不起來。<br><br>直到那位陌生人開始講解。<br><br>而後來他們說的那句話是：「在路上，他和我們說話，給我們講解聖經的時候，<strong>我們的心豈不是火熱的嗎？</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        「心裡火熱」——那是讀舊約時可能發生的事。<br><br>而條件是：<strong>知道那是指著誰寫的。</strong><br><br>而那一天，經文說主做了一件事：「於是<strong>開他們的心竅</strong>，使他們能明白聖經。」<br><br>——所以那把鑰匙，是祂給的。<br><br>而那件事，今天也可以求。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻讀舊約讀得很吃力——</p>
+
+      <div class="highlight">
+        <strong>我想留下一個很簡單的讀法</strong>
+        讀每一段的時候，問一個問題：<br><br><strong>「這一段，跟那一位有什麼關係？」</strong><br><br>——有時候答案很明顯（羔羊、祭司、預言）。<br>有時候是一個需要（律法叫人知罪、獻祭一再重複）。<br>有時候是一個人的失敗，指向那位不會失敗的。<br><br>而主自己說：「<strong>給我作見證的就是這經。</strong>」<br><br>——所以那個問題，是有答案的。
+      </div>
+
+      <div class="big-quote">
+        莫想我來要廢掉律法和先知；<br>我來不是要廢掉，乃是要成全
+        <cite>— 馬太福音 五章十七節</cite>
+      </div>
+
+      <p>舊約是新約的預備。所以那些看起來繁瑣的，是在鋪路。</p>
+
+      <p>新約是舊約的註釋。所以那些看不懂的，後面有解答。</p>
+
+      <p>而兩者彼此相成，缺一不可。</p>
+
+      <p>願你下次翻開舊約的時候，帶著那把鑰匙。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  舊約與新約的關係 · Threads Series
+</footer>
+
+</body>
+</html>

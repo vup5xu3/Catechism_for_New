@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>啟示與造就 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>啟示的<span>造就</span></h1>
+  <p class="subtitle">真理已經完全，而啟示仍然造就教會與信徒</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「沒有異象，民就放肆」</h2>
+      <p class="card-hook">而那句話的下半句，常被漏掉</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>箴言二十九章十八節，是一句常被引用的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">沒有異象（或譯：默示），民就放肆；惟遵守律法的，便為有福
+        </p>
+        <p class="scripture-ref">箴言 二十九章十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節經文，是一個對句</strong>
+        上半句講<strong>缺乏</strong>：沒有異象 → 民就放肆。<br>下半句講<strong>持守</strong>：遵守律法 → 便為有福。<br><br>——所以那不是兩件無關的事。<br><br>「異象」與「律法」，在同一節裡被放在一起。<br><br>而這正好對應了這一題的兩半：<strong>真理已經完全，而啟示仍在造就。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        而「放肆」那個字，原文帶有「<strong>放縱、散開、失控</strong>」的意思——像一群沒有人帶領的羊。<br><br>而它的相反不是「規矩很多」。<br><br>是<strong>有方向。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這個題目——它是接在前一題之後的。</p>
+
+      <p>前一題說：<strong>聖經到啟示錄為止。</strong></p>
+
+      <p>而這一題要問：<strong>那今天的啟示呢？</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">亞迦布那一次</h2>
+      <p class="card-hook">而那個啟示的內容，非常具體</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳記載了幾次很具體的啟示。而其中一次，值得完整看。</p>
+
+      <div class="highlight">
+        <strong>先是安提阿那一次（徒十一 27～30）</strong>
+        「有幾位先知從耶路撒冷下到安提阿。內中有一位，名叫<strong>亞迦布</strong>，站起來，藉著聖靈指明<strong>天下將有大饑荒</strong>。」<br><br>而教會的反應是什麼？<br><br>「於是門徒定意照各人的力量捐錢，<strong>送去供給住在猶太的弟兄</strong>。」<br><br>——那個啟示的結果，是一次<strong>實際的救濟行動</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>後來還有一次（徒廿一 10～14）</strong>
+        同一位亞迦布，來到保羅那裡，「拿保羅的腰帶捆上自己的手腳，說：『聖靈說：猶太人在耶路撒冷，要如此捆綁這腰帶的主人。』」<br><br>而眾人聽見，就<strong>苦勸保羅不要上耶路撒冷去</strong>。<br><br>而保羅的回應是：「<strong>我為主耶穌的名，不但被人捆綁，就是死在耶路撒冷也是願意的。</strong>」<br><br>而眾人不聽勸之後，說：「<strong>願主的旨意成就。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        這一段很值得注意，因為它示範了一個分寸：<br><br>那個啟示的內容是<strong>「將要發生什麼」</strong>——而它<strong>準確地應驗了</strong>。<br><br>而它<strong>沒有取代保羅自己在神面前的決定</strong>。<br><br>眾人根據那個啟示勸他不要去，而保羅還是去了。<br><br>——所以那份啟示的功能，是<strong>使人有準備</strong>，不是<strong>下命令</strong>。<br><br>而最後大家的結論是那句：「願主的旨意成就。」
+      </div>
+
+      <p>那麼，這一題的答案是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">原則上完全，而啟示仍然造就</h2>
+      <p class="card-hook">兩句話，一個順序</p>
+    </div>
+    <div class="card-body">
+
+      <p>啟示——如說預言、翻方言、看異象——對教會和信徒有益嗎？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 原則上：真理的啟示和教導，在六十六卷之聖經中已完全了</span>
+          ——這是前提，也是判準。<br>而這正是前一題的結論。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 而從神而來的啟示，可以造就教會和信徒</span>
+          <strong>啟示是聖靈將天父的旨意，藉著恩賜而賜下。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 而它涵蓋的範圍很寬</span>
+          上至<strong>國家</strong>、<strong>教會</strong>、<strong>禍福</strong>，及各人的<strong>帶領、勉勵與責備</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 沒有異象，民就放肆</span>
+          （或滅亡）——箴二九 18。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第一句與第二句的<strong>順序</strong>，是這一題最重要的地方。</p>
+
+      <div class="highlight">
+        <strong>因為那個順序，決定了兩者的關係</strong>
+        <strong>先說「真理已完全」</strong>——那是<strong>判準</strong>的位置。<br><br><strong>再說「啟示可以造就」</strong>——那是<strong>在判準之下</strong>的運作。<br><br>——所以那不是兩個並列的權威。<br><br>而我們在前面談過那個分辨：<br><br>聖經是<strong>那張地圖</strong>；而聖靈的引導，是<strong>在那張地圖上帶你走今天這一段</strong>。<br><br>而祂不會告訴你「其實那個懸崖不在那裡」——<strong>因為地圖是祂畫的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而那個範圍——<strong>國家、教會、禍福、各人的帶領勉勵與責備</strong>——正好對應了聖經裡實際的記載：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>範圍</th>
+            <th>聖經中的例子</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">國家</td>
+            <td>亞迦布指明「<strong>天下將有大饑荒</strong>」（徒十一 28）</td>
+          </tr>
+          <tr>
+            <td class="src">教會</td>
+            <td>「聖靈說：<strong>要為我分派巴拿巴和掃羅</strong>。」（徒十三 2）</td>
+          </tr>
+          <tr>
+            <td class="src">禍福</td>
+            <td>亞迦布預告保羅在耶路撒冷要被捆綁（徒廿一 11）</td>
+          </tr>
+          <tr>
+            <td class="src">個人的帶領</td>
+            <td>「聖靈對腓利說：<strong>你去！貼近那車走。</strong>」（徒八 29）</td>
+          </tr>
+          <tr>
+            <td class="src">勉勵</td>
+            <td>「作先知講道的，是對人說，要造就、<strong>安慰、勸勉</strong>人。」（林前十四 3）</td>
+          </tr>
+          <tr>
+            <td class="src">責備</td>
+            <td>「他心裡的隱情顯露出來，就必將臉伏地，敬拜神，說：<strong>神真是在你們中間了。</strong>」（林前十四 25）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而哥林多前書十四章三節，是最完整的一句</strong>
+        「作先知講道的，是對人說，要<strong>造就、安慰、勸勉</strong>人。」<br><br>——三個動詞，全部是<strong>對人的</strong>。<br><br>而那正好呼應了那個關鍵詞：<strong>造就。</strong>
+      </div>
+
+      <p>下一篇，我們看保羅對這件事定的規矩——因為那些規矩很實際。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">保羅立的那幾條規矩</h2>
+      <p class="card-hook">而每一條都指向同兩件事：造就與次序</p>
+    </div>
+    <div class="card-body">
+
+      <p>哥林多前書十四章，是保羅專門處理這件事的一章。而他立的規矩，非常具體：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>規矩</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">要有翻方言的</td>
+            <td>「若沒有人翻，就當在會中閉口。」（28 節）</td>
+          </tr>
+          <tr>
+            <td class="src">人數與次序</td>
+            <td>「至多三個人，且要輪流著說。」（27 節）<br>「至於作先知講道的，只好兩個人或是三個人。」（29 節）</td>
+          </tr>
+          <tr>
+            <td class="src">要有察驗</td>
+            <td>「<strong>其餘的就當慎思明辨。</strong>」（29 節）</td>
+          </tr>
+          <tr>
+            <td class="src">可以控制</td>
+            <td>「<strong>先知的靈原是順服先知的。</strong>」（32 節）</td>
+          </tr>
+          <tr>
+            <td class="src">顧及外人</td>
+            <td>「若都說方言，偶然有不通方言的，或是不信的人進來，豈不說你們癲狂了嗎？」（23 節）</td>
+          </tr>
+          <tr>
+            <td class="src">總原則</td>
+            <td>「凡事都要<strong>規規矩矩地按著次序行</strong>。」（40 節）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而第四條——「<strong>先知的靈原是順服先知的</strong>」——是這一整章最關鍵的一句。<br><br>它的意思是：<strong>那個人是可以控制自己的。</strong><br><br>而這句話直接排除了一種說法：「我當時無法自制，那是聖靈掌管我。」<br><br>——保羅說：不是這樣。<br><br>而下一句給了理由：「<strong>因為神不是叫人混亂，乃是叫人安靜。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎼</span>
+        而這一整章的兩個關鍵詞，貫穿始終：<strong>造就</strong>與<strong>次序</strong>。<br><br>「凡事都當<strong>造就</strong>人。」（26 節）<br>「凡事都要規規矩矩地按著<strong>次序</strong>行。」（40 節）<br><br>——一頭一尾，把整章框住了。<br><br>而這也正好對應這一題的核心：<strong>從神而來的啟示，可以造就教會和信徒。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第三條——「<strong>慎思明辨</strong>」——值得特別看，因為它是啟示與判準之間的接點。</p>
+
+      <div class="term-box">
+        <div class="term-original">Diakrinō<br>慎思明辨</div>
+        <div class="term-desc">「其餘的就當<strong>慎思明辨</strong>。」（林前十四 29）<br><br>這個字的意思是「<strong>分辨、判別、加以區分</strong>」。<br><br>而它與帖撒羅尼迦前書那句是同一個方向：<br><br>「不要銷滅聖靈的感動，不要藐視先知的講論；<strong>但要凡事察驗，善美的要持守</strong>。」（帖前五 19～21）</div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而帖前五章那三節，是一組的，缺一不可：<br><br><strong>19 節</strong>：不要銷滅——不要一概壓下去。<br><strong>20 節</strong>：不要藐視——不要一概看輕。<br><strong>21 節</strong>：<strong>但要凡事察驗</strong>——也不要一概照收。<br><br>——保羅同時擋住了三邊。<br><br>而「察驗」（dokimazō）那個字，我們看過：那是<strong>金屬檢驗</strong>的用字。<br><br>放進火裡，看是不是真的。<br><br>而檢驗的標準是什麼？<strong>就是那已經完全的六十六卷。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「造就」是那個檢驗標準</h2>
+      <p class="card-hook">而它是可以看得出來的</p>
+    </div>
+    <div class="card-body">
+
+      <p>整章十四章，保羅衡量的標準只有一個：<strong>造就了沒有。</strong></p>
+
+      <div class="term-box">
+        <div class="term-original">Oikodomeō<br>造就</div>
+        <div class="term-desc">字面是「<strong>建造房屋</strong>」。<br><br>而這個字的價值，在於它<strong>看得出來</strong>：<br><br>房子蓋起來沒有，是可以檢查的。牆有沒有立、樑有沒有上，不是靠感覺判斷的。<br><br>——所以保羅選這個字，是有用意的。</div>
+      </div>
+
+      <div class="highlight">
+        <strong>而「造就了什麼」，可以問得很具體</strong>
+        那件事之後，<strong>有人更認識基督了嗎？</strong><br>有人被安慰到了嗎？<br>有人在生活上有實際的改變嗎？<br>教會的合一，是加強了還是分裂了？<br>那個人自己，是更謙卑還是更被高舉？<br><br>——這些問題，都有答案。<br><br>而如果一件事激動人心，卻答不出這些——<strong>那要停下來看一看。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而哥林多前書十四章有一節，描述了「造就」在最好的情況下是什麼樣子：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他心裡的隱情顯露出來，就必將臉伏地，敬拜神，說：神真是在你們中間了
+        </p>
+        <p class="scripture-ref">哥林多前書 十四章二十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意那個結果</strong>
+        那個人做了什麼？<br><br><strong>將臉伏地，敬拜神。</strong><br><br>——而不是去找那位說話的人，也不是把焦點放在那個現象上。<br><br>他敬拜<strong>神</strong>。<br><br>而他說的那句話是：「<strong>神真是在你們中間了。</strong>」<br><br>——所以那件事的果效，是<strong>神被顯明</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        而這正好對應那個一貫的判準：<strong>「他要榮耀我。」</strong><br><br>聖靈的工作，是照亮基督。<br><br>——所以一件真正出於祂的事，最後被高舉的，不會是那個器皿。<br><br>而如果整件事下來，大家記得的是<strong>那個人</strong>——那就像燈光師搶了主角的鏡頭。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想把這一題的兩半，收成一個很簡單的框架。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">真理——已經完全</span>
+          關乎<strong>信仰、得救、生活準則</strong>的真理，六十六卷已經說完了。<br><br>所以任何宣稱「新的真理」的——<strong>那已經越界了。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">啟示——仍在造就</span>
+          而聖靈把天父的旨意，藉恩賜賜下：帶領、勉勵、責備、預告。<br><br>——那些不是<strong>新的真理</strong>。<br>那是<strong>已有的真理，用在今天這個處境上</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而兩者的關係是</span>
+          後者<strong>永遠在前者之下</strong>，並且要被前者察驗。<br><br>「凡事察驗，善美的要持守。」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而箴言那句話，正好把兩半接了起來</strong>
+        「沒有<strong>異象</strong>，民就放肆；惟遵守<strong>律法</strong>的，便為有福。」<br><br>——同一節裡，兩樣都在。<br><br>只有律法而沒有異象，會變成一套死的規條。<br>只有異象而沒有律法，會失去判準而放肆。<br><br><strong>而那節經文，把它們寫成了一個對句。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">神仍然在說話</h2>
+      <p class="card-hook">寫給那個覺得「神好像不管我」的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>前一題談完「聖經到啟示錄為止」，很容易產生一個副作用：<strong>那神現在是不是就不說話了？</strong></p>
+
+      <div class="highlight">
+        <strong>而這一題的答案是：祂仍然說話</strong>
+        「啟示是<strong>聖靈將天父的旨意，藉著恩賜而賜下</strong>。」<br><br>——那是現在進行的事。<br><br>而範圍很寬：上至國家、教會、禍福，<strong>及各人的帶領、勉勵與責備</strong>。<br><br>——注意最後那幾個字：<strong>「各人的」。</strong><br><br>那包括你。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        而祂說話最常用的方式，其實是最樸實的那一種：<br><br>你讀到一段經文，而它忽然刺到你。<br>你在做一個決定前，心裡不平安。<br>某個人說了一句話，而那句話你放不下。<br>某件你以為過去的事，被重新提起。<br><br>——那些都不壯觀。<br><br><strong>而那是祂在做的事。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下三件事。</p>
+
+      <p><strong>第一，判準永遠是那已經完全的。</strong></p>
+
+      <p>所以「察驗」不是不敬虔。那是保羅親口吩咐的：<strong>「凡事察驗，善美的要持守。」</strong></p>
+
+      <p><strong>第二，不要因為怕出錯，就把火熄了。</strong></p>
+
+      <div class="highlight">
+        <strong>因為帖前五章那三節，是一組的</strong>
+        「<strong>不要銷滅</strong>聖靈的感動，<strong>不要藐視</strong>先知的講論；<strong>但要凡事察驗</strong>，善美的要持守。」<br><br>——三句話，防三個方向。<br><br>而只抓最後一句的人，會慢慢變成一個什麼都不接受的人。<br><br>而那本身，就是第一句所禁止的。
+      </div>
+
+      <p><strong>第三，那個檢驗標準，是「造就」。</strong></p>
+
+      <p>而造就是看得出來的：<strong>有沒有人更認識基督、更被安慰、更謙卑、更合一。</strong></p>
+
+      <div class="big-quote">
+        沒有異象，民就放肆；<br>惟遵守律法的，便為有福
+        <cite>— 箴言 二十九章十八節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得「神好像不管我」——</p>
+
+      <div class="highlight">
+        <strong>我想留下那句最實際的話</strong>
+        那份啟示的範圍裡，明明白白寫著：<strong>「各人的帶領、勉勵與責備。」</strong><br><br>——「各人的」。<br><br>而那位在使徒行傳裡對腓利說「你去，貼近那車走」的，是同一位。<br><br>祂會為了<strong>一個人</strong>，差一個傳道人走進曠野。<br><br>——而那一天，那條路上只有一輛車。
+      </div>
+
+      <p>所以祂沒有不管你。</p>
+
+      <p>而祂說話的方式，可能就在你今天要讀的那一段裡。</p>
+
+      <p>願你聽得見。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  啟示與造就 · Threads Series
+</footer>
+
+</body>
+</html>

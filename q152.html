@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>醫療工作與傳福音 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>病床邊的<span>那扇門</span></h1>
+  <p class="subtitle">醫療的工作與傳福音有甚麼關係？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">人在健康的時候，很難想那些問題</h2>
+      <p class="card-hook">而躺下來之後，就想了</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種時刻，人會突然開始想一些平常不想的事。</p>
+
+      <div class="highlight">
+        <strong>那個時刻，通常是躺著的</strong>
+        醫院的天花板。<br><br>檢查報告出來之前的那幾天。<br><br>半夜醒著，聽見走廊的推車聲。<br><br>——而在那些時候，那些平常被排在很後面的問題，會自己冒出來：<br><br><strong>我這一生在忙什麼？如果就這樣了呢？有什麼是靠得住的？</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪟</span>
+        而我後來明白：<strong>那不是軟弱。</strong><br><br>那是人被拿走了一層保護之後，看見的真實。<br><br>——平常我們靠<strong>忙</strong>擋住那些問題。<br><br>而躺下來之後，就沒有東西可以擋了。<br><br>而那時候，如果有人在旁邊——<strong>那扇門是開著的。</strong>
+      </div>
+
+      <p>而這一題講的，正是那扇門。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">四個人拆了屋頂</h2>
+      <p class="card-hook">而那個癱子，是被抬去的</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬可福音第二章，記了一個很有畫面的場景。</p>
+
+      <div class="highlight">
+        <strong>那個場景</strong>
+        主在屋裡講道，「甚至連門前都沒有空地」。<br><br>而有四個人，抬著一個癱子來。<br><br>「因為人多，不得近前，就把耶穌所在的房子，<strong>拆了房頂</strong>，既拆通了，就把癱子連所躺臥的褥子都縋下來。」（可二 4）<br><br>——他們把別人的屋頂拆了。<br><br>而聖經對這件事的評語是：<br><br>「耶穌<strong>見他們的信心</strong>……」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        而「<strong>他們的</strong>信心」那四個字，很重要。<br><br>——不是那個癱子的信心。<br><br>是<strong>那四個抬他的人</strong>的。<br><br>而那個癱子自己做不了什麼。他只能躺著。<br><br>——所以那一天，把他帶到主面前的，是別人。
+      </div>
+
+      <div class="highlight">
+        <strong>而主說的第一句話，出乎所有人意料</strong>
+        「小子，<strong>你的罪赦了。</strong>」<br><br>——他們是為了<strong>病</strong>來的。<br><br>而主先處理了<strong>罪</strong>。<br><br>然後才說：「起來！拿你的褥子回家去吧。」<br><br>——兩件事都做了。而次序是那樣。
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">密切的關係</h2>
+      <p class="card-hook">而理由，在病人身上</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">關係</span>
+          醫療的工作與傳福音有<strong>密切的關係</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">理由</span>
+          因為病人在痛苦中——<br><br><strong>需要安慰</strong>，<br><strong>需要醫治</strong>，<br><strong>更需要有所倚靠</strong>；<br><br>他們<strong>很容易接受福音</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">歷來的做法</span>
+          所以歷來教會向外作<strong>開荒佈道</strong>時，<br><strong>常有醫療工作輔助</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">果效</span>
+          <strong>教會醫院傳福音的果效</strong>，<br>證明神賜福重用醫療傳道的工作。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三個「需要」，是<strong>層層往裡</strong>的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>需要</th>
+            <th>是什麼</th>
+            <th>誰能給</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>安慰</strong></td>
+            <td>有人在旁邊、有人聽、有人記得他</td>
+            <td>任何一個願意去的人</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>醫治</strong></td>
+            <td>身體上的照顧與治療</td>
+            <td>醫療</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>倚靠</strong></td>
+            <td><strong>一個撐得住的根據</strong>——不管結果怎樣</td>
+            <td>只有<strong>神</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那個「更」字，是這一段的重心</strong>
+        「需要安慰，需要醫治，<strong>更</strong>需要有所倚靠。」<br><br>——「更」意味著：<strong>那才是最深的那一層。</strong><br><br>因為安慰會過去，醫治不一定成功。<br><br>而「有所倚靠」——那是<strong>連治不好的時候也還在的東西</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「很容易接受福音」那句話，需要說得準確一點。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        因為那不是說「趁人虛弱好下手」。<br><br>——那是在描述一個事實：<strong>那個時候，土是鬆的。</strong><br><br>平常人的心，被很多東西壓得很硬：忙、成就、計畫、自信。<br><br>而生病會把那些暫時拿掉。<br><br>——所以那不是機會主義。<br><br><strong>那是知道什麼時候該去。</strong>
+      </div>
+
+      <p>下一篇，我們看主自己怎麼做這件事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「教訓、傳道、醫病」</h2>
+      <p class="card-hook">福音書用這三個動詞概括主的工作</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌走遍各城各鄉，在會堂裡教訓人，宣講天國的福音，又醫治各樣的病症
+        </p>
+        <p class="scripture-ref">馬太福音 九章三十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而馬太福音用這三個動詞，總結了兩次</strong>
+        四章二十三節一次，九章三十五節一次。<br><br>——中間夾著的，是<strong>登山寶訓</strong>（五～七章）和<strong>一連串的神蹟</strong>（八～九章）。<br><br>所以那個結構本身就在說：<br><br><strong>教訓、傳道、醫病，是同一份工作的三面。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而九章三十五節之後那一節，說明了那份工作的動力：<br><br>「他<strong>看見</strong>許多的人，就<strong>憐憫</strong>他們；因為他們<strong>困苦流離</strong>，如同羊沒有牧人一般。」（太九 36）<br><br>——所以主醫病，不是為了吸引人來聽道。<br><br>是因為<strong>祂看見了，心裡揪起來</strong>。<br><br>而那個「憐憫」的字根，指的是<strong>內臟</strong>——那是從肚子裡翻上來的感覺。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而使徒行傳裡，路加本身就是一個例子：</p>
+
+      <div class="highlight">
+        <strong>「所親愛的醫生路加」</strong>
+        保羅在歌羅西書四章十四節，這樣稱呼他。<br><br>——而路加寫了兩卷書：<strong>路加福音</strong>與<strong>使徒行傳</strong>。<br><br>那兩卷加起來，是新約裡篇幅最多的。<br><br>而他一路陪著保羅走——包括那趟遇到船難的旅程。<br><br>提摩太後書裡，保羅在生命最後那段時間寫著：<br><br>「<strong>獨有路加在我這裡。</strong>」（提後四 11）
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而路加福音記事的方式，也帶著醫生的眼睛：<br><br>他是唯一記下<strong>好撒瑪利亞人</strong>比喻的——那個比喻裡，那人「用油和酒倒在他的傷處，包裹好了」。<br><br>他記那個患血漏的婦人時，寫的是「<strong>在醫生手裡花盡了她一切養生的，並沒有一人能醫好她</strong>」。<br><br>——而他自己就是醫生。<br><br>所以那句話，寫得很誠實。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主自己說過一句話，把醫療與祂的工作接在一起：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">康健的人用不著醫生，有病的人才用得著
+        </p>
+        <p class="scripture-ref">馬可福音 二章十七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩺</span>
+        而那句話，是祂在被人指責「和稅吏並罪人一同吃喝」的時候說的。<br><br>而後半句是：「<strong>我來本不是召義人，乃是召罪人。</strong>」<br><br>——所以祂用了醫生的比喻，來說明自己來做什麼。<br><br>而那也意味著：<strong>祂看見人的方式，本來就像醫生看病人。</strong><br><br>——不是看「這個人好不好」，是看「這個人哪裡壞了」。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">而這件事，有一條界線</h2>
+      <p class="card-hook">上一組題目已經講過了</p>
+    </div>
+    <div class="card-body">
+
+      <p>醫療與傳福音關係密切——而那份密切，有一條要守的線。</p>
+
+      <div class="highlight">
+        <strong>而那條線，第一三八題已經寫過了</strong>
+        「<strong>救濟與傳福音必須分開</strong>，在這事上須求主賜智慧，不可自作聰明。」<br><br>——而醫療也是同樣的道理。<br><br>那意味著：<strong>幫助不可以附帶條件。</strong><br><br>不可以是「你聽我講完，我才幫你」。<br><br>也不可以讓病人覺得：「如果我不接受，這份照顧就會少一點。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而主自己，在這件事上示範得很清楚。<br><br>十個長大痲瘋的人來求祂，祂醫好了<strong>十個</strong>。<br><br>——而回來道謝的，只有<strong>一個</strong>。<br><br>而祂沒有把另外九個的病收回去。<br><br>祂只說了一句：「<strong>那九個在哪裡呢？</strong>」（路十七 17）<br><br>——那是遺憾，不是條件。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「有所倚靠」那一項，最深的地方在於：<strong>它不保證結果。</strong></p>
+
+      <div class="highlight">
+        <strong>那三個少年人的回答，是最好的說明</strong>
+        尼布甲尼撒要把他們扔進火窯，問：「有何神能救你們脫離我手呢？」<br><br>而他們的回答分成兩半：<br><br>「即便如此，我們所事奉的神能將我們從烈火的窯中救出來。王啊，他也必救我們脫離你的手；<br><br><strong>即或不然，王啊，你當知道我們決不事奉你的神。</strong>」（但三 17～18）<br><br>——「<strong>即或不然</strong>」。<br><br>那四個字，是整段話的重量所在。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而那正是「倚靠」與「交換」的分別。<br><br><strong>交換</strong>是：我信，所以祢要醫好我。<br><br><strong>倚靠</strong>是：祢能。<strong>而即或不然，祢還是祢。</strong><br><br>——所以在病床邊講的福音，不能是「信了就會好」。<br><br>因為那樣的話，治不好的時候，那個人會失去兩樣東西。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而在病床邊，最有用的事，往往不是講話。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">去</span>
+          「我病了，你們<strong>看顧我</strong>。」（太廿五 36）<br><br>——主列的那份清單裡，探病是其中一項。<br><br>而那一項的動作，只是<strong>去</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">陪</span>
+          約伯的三個朋友，一開始做對了一件事：<br><br>「他們就同他七天七夜坐在地上，<strong>一個人也不向他說句話</strong>，因為他極其痛苦。」（伯二 13）<br><br>——那七天，是他們做得最好的部分。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">做實際的事</span>
+          好撒瑪利亞人做的是：<strong>包紮、扶上牲口、帶到店裡、拿錢出來。</strong><br><br>——那一整段裡，他沒有講一句道理。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">禱告</span>
+          「你們中間有受苦的呢，他就該<strong>禱告</strong>。」（雅五 13）<br><br>——而如果對方願意，就在旁邊為他求一句。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那四樣，都不需要口才</strong>
+        因為在病床邊，最有力量的，常常是<strong>你出現了</strong>這件事本身。<br><br>——而那四個抬癱子的人，也沒有講什麼。<br><br>他們做的事是：<strong>把人抬到主面前。</strong><br><br>而主看見的，是他們的信心。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">寫給正在照顧病人的你</h2>
+      <p class="card-hook">還有那個正在病床上的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想對兩種人說話。</p>
+
+      <div class="highlight">
+        <strong>第一種：正在照顧的人</strong>
+        很累。很久了。而且看不到盡頭。<br><br>——而那些事，沒有人看見：換藥、翻身、跑醫院、半夜起來。<br><br>而主列的那份清單裡，有一項是：<strong>「我病了，你們看顧我。」</strong><br><br>而祂加了一句：<br><br>「這些事你們既做在我這弟兄中一個最小的身上，<strong>就是做在我身上了。</strong>」
+      </div>
+
+      <div class="highlight">
+        <strong>第二種：正在病床上的人</strong>
+        而如果此刻是你躺著——<br><br>那我想把那三個「需要」再說一次：<br><br>你需要<strong>安慰</strong>。那不是軟弱。<br>你需要<strong>醫治</strong>。求那件事，是對的。<br>而你<strong>更需要有所倚靠</strong>。<br><br>——而那一項，不會因為報告的數字而變動。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而那個癱子，是被抬去的。<br><br>他什麼也做不了。他只能躺在褥子上。<br><br>——而主「見<strong>他們</strong>的信心」。<br><br>所以在你自己撐不住的時候，<strong>別人的信心，也可以把你抬過去。</strong>
+      </div>
+
+      <div class="big-quote">
+        康健的人用不著醫生，<br>有病的人才用得著
+        <cite>— 馬可福音 二章十七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個天花板。</p>
+
+      <p>那些平常被排在很後面的問題，會在那種時候冒出來。</p>
+
+      <p>——而我後來覺得，那不是懲罰。</p>
+
+      <p>那是一扇平常關著的門，忽然開了。</p>
+
+      <p>而門的那一邊，站著一位。</p>
+
+      <p>祂說：「我來本不是召義人，乃是召罪人。」</p>
+
+      <p>——而那句話，是用醫生的比喻說的。</p>
+
+      <p>願你今天，在病床的哪一邊，都不孤單。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  醫療工作與傳福音 · Threads Series
+</footer>
+
+</body>
+</html>

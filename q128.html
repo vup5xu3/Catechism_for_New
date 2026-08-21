@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>甚麼人不可領受聖餐 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>誰不可<span>領受</span></h1>
+  <p class="subtitle">甚麼人不可領受主的餅和主的杯？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">先說一件事：覺得自己不配的人，不在名單上</h2>
+      <p class="card-hook">而那正是這份名單最奇怪的地方</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這一題聽起來很嚴厲。而我想先把一件事說在前面。</p>
+
+      <div class="highlight">
+        <strong>那份名單裡，沒有「覺得自己不配的人」</strong>
+        ——而這正是最值得注意的地方。<br><br>因為聖餐前最常有的念頭，就是「我這樣去領好嗎」。<br><br>而那種人，<strong>不在名單上</strong>。<br><br>名單上的第二項，寫的正好是相反的那種：<br><br><strong>「自以為配領受的信徒。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        我想到那個稅吏的比喻。<br><br>法利賽人站著自言自語：「神啊，我感謝你，我不像別人。」<br><br>而稅吏遠遠站著，連舉目望天都不敢，只捶著胸說：「<strong>神啊，開恩可憐我這個罪人！</strong>」<br><br>而主的評語是：<br><br>「我告訴你們，<strong>這人回家去比那人倒算為義了。</strong>」
+      </div>
+
+      <p>而這一題的四項，全部有同一個性質。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「不按理」——那三個字要怎麼理解</h2>
+      <p class="card-hook">而保羅在同一段裡自己解釋了</p>
+    </div>
+    <div class="card-body">
+
+      <p>哥林多前書十一章，有一句話讓很多人不敢領聖餐：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">所以，無論何人，不按理吃主的餅，喝主的杯，就是干犯主的身、主的血了
+        </p>
+        <p class="scripture-ref">哥林多前書 十一章二十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「不按理」是什麼意思？</strong>
+        很多人讀成：<strong>「不配的人」。</strong><br><br>——而那個讀法，會讓所有人都不敢領。<br><br>而原文那個字，是個<strong>副詞</strong>，形容的是<strong>吃喝的方式</strong>，不是<strong>吃喝的人</strong>。<br><br>——所以那句話問的不是「你配不配」。<br><br>是<strong>「你是怎麼吃的」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        而保羅並沒有讓人猜。<br><br>他在同一段裡，已經把那個「不按理」寫得清清楚楚：<br><br>「你們聚會的時候，彼此<strong>分門別類</strong>。」（18 節）<br><br>「各人先吃自己的飯，甚至這個<strong>飢餓</strong>，那個<strong>酒醉</strong>。」（21 節）<br><br>「你們要<strong>藐視神的教會</strong>，叫那沒有的<strong>羞愧</strong>嗎？」（22 節）<br><br>——那就是「不按理」的樣子。
+      </div>
+
+      <div class="highlight">
+        <strong>而他給的辦法，也在同一段</strong>
+        「人應當自己省察，<strong>然後吃這餅、喝這杯</strong>。」（28 節）<br><br>——不是「省察，然後別吃」。<br><br>是<strong>省察，然後吃</strong>。<br><br>而那正是這一題要分辨的：<br><br><strong>不是「誰不夠好」，是「哪一種狀態，會讓這件事失去意義」。</strong>
+      </div>
+
+      <p>下一篇，我們把四項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四種人</h2>
+      <p class="card-hook">而每一種，都在拒絕領受的前提</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一</span>
+          一直<strong>生活在罪中而不肯悔改</strong>離棄罪惡的「信徒」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二</span>
+          <strong>自以為義</strong>，自以為比別人聖潔，<strong>自以為配領受</strong>的信徒。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三</span>
+          <strong>不肯饒恕</strong>，或未曾饒恕他人的。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四</span>
+          <strong>未曾領洗</strong>，或已領洗而<strong>與救恩無關</strong>的人。
+        </div>
+      </div>
+
+      <p>〔註：聖經雖未明文規定：未領洗的人不可領受聖餐，然而這個限制是有益的，而且是多處教會的通例。〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而把四項排在一起，會看見一個共同的結構：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>擋住的是什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一、不肯悔改</td>
+            <td>手裡緊抓著罪不放——<strong>那隻手接不了東西</strong></td>
+          </tr>
+          <tr>
+            <td class="src">二、自以為配</td>
+            <td>覺得自己不需要恩典——<strong>那就沒有什麼可領的</strong></td>
+          </tr>
+          <tr>
+            <td class="src">三、不肯饒恕</td>
+            <td>領赦免，卻不放赦免出去——<strong>那是矛盾的</strong></td>
+          </tr>
+          <tr>
+            <td class="src">四、與救恩無關</td>
+            <td>還沒有進到那個關係裡——<strong>那張桌子是家裡的飯桌</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而四項的共同點是：都不是「不夠好」</strong>
+        沒有一項寫的是「犯過大罪的」、「軟弱的」、「常常失敗的」。<br><br>四項全部是<strong>一種姿態</strong>：<br><br>不肯悔改、自以為配、不肯饒恕、與救恩無關。<br><br>——而那四種姿態，全部在做同一件事：<br><br><strong>把手闔起來。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項，是四項裡最值得停下來的一項。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        因為它顛倒了一般人的直覺。<br><br>一般人以為：<strong>覺得自己不配的人，不該領。</strong><br><br>而聖經說的是：<strong>覺得自己配的人，不該領。</strong><br><br>——為什麼？<br><br>因為聖餐的內容，就是<strong>恩典</strong>。<br><br>而一個覺得自己配的人，領到手上的東西，性質已經變了：<br><br>那不再是禮物，那成了報酬。
+      </div>
+
+      <p>下一篇，我們看那幾項背後的經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「不肯饒恕」那一項，主自己講得最重</h2>
+      <p class="card-hook">而祂把它放進了主禱文</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三項——不肯饒恕——是四項裡，主自己講得最多的一項。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們饒恕人的過犯，你們的天父也必饒恕你們的過犯；你們不饒恕人的過犯，你們的天父也必不饒恕你們的過犯
+        </p>
+        <p class="scripture-ref">馬太福音 六章十四至十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那兩節，是接在主禱文後面的</strong>
+        主禱文裡只有這一句是<strong>雙向</strong>的：<br><br>「<strong>免我們的債，如同我們免了人的債。</strong>」<br><br>——而講完整篇禱文之後，主特意回頭，只把這一句拿出來再講一次。<br><br>那是整篇裡唯一被重講的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔓</span>
+        而那個惡僕的比喻，把這件事說得最清楚。<br><br>一個僕人欠了主人<strong>一千萬銀子</strong>——那是一個天文數字。<br><br>而主人動了慈心，把他放了，<strong>免了他的債</strong>。<br><br>然後他出去，遇見一個欠他<strong>十兩銀子</strong>的同伴。<br><br>他揪著那人的喉嚨說：「你把所欠的還我！」<br><br>——而主人的評語是：<br><br>「<strong>你不應當憐恤你的同伴，像我憐恤你嗎？</strong>」
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那個比喻的重點，不是「你要有良心」。<br><br>是：<strong>那兩筆數字的比例。</strong><br><br>一千萬 對 十兩。<br><br>——所以不肯饒恕的問題，根本上是<strong>忘了自己被免了多少</strong>。<br><br>而聖餐做的事，正是把那個數字重新擺在眼前：<br><br>那身體，那寶血。<br><br>——所以一邊記念那筆免了的債，一邊揪著別人的喉嚨，兩件事是撞在一起的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第一項——不肯悔改——約翰壹書講得很清楚：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">約壹一 6</td>
+            <td>「我們若說是與神相交，卻仍在<strong>黑暗裡行</strong>，就是說謊話，不行真理了。」</td>
+          </tr>
+          <tr>
+            <td class="src">約壹一 8</td>
+            <td>「我們若說自己<strong>無罪</strong>，便是自欺，真理不在我們心裡了。」</td>
+          </tr>
+          <tr>
+            <td class="src">約壹一 9</td>
+            <td>「我們若<strong>認</strong>自己的罪，神是信實的，是公義的，必要赦免我們的罪。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而請注意那三節的排列：<br><br>第六節講<strong>仍在黑暗裡行</strong>——那是第一項說的「一直生活在罪中」。<br><br>第八節講<strong>說自己無罪</strong>——那是第二項說的「自以為義」。<br><br>而第九節給了出路：<strong>認</strong>。<br><br>——所以約翰壹書第一章，正好把這一題的前兩項，和它們的解法，都寫在一起了。<br><br>而那個解法非常短：<strong>認自己的罪。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「悔改」這個字，本身也說明了為什麼「認」還不夠：</p>
+
+      <div class="term-box">
+        <div class="term-original">μετάνοια <span style="font-size:0.8em;opacity:0.75">metanoia</span></div>
+        <div class="term-desc">
+          這個字由<strong>「之後」</strong>加上<strong>「心思」</strong>組成，意思是<strong>「事後改變了心思」</strong>——整個想法轉過來。<br><br>而在舊約，對應的希伯來文動詞更具體：<strong>「轉身、回頭」</strong>。<br><br>——所以悔改不只是<strong>難過</strong>。<br><br>難過是感覺，而悔改是<strong>方向</strong>。<br><br>本題第一項寫的正是這個：「不肯悔改<strong>離棄</strong>罪惡」。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">第四項與那個註</h2>
+      <p class="card-hook">為什麼受洗在前，聖餐在後</p>
+    </div>
+    <div class="card-body">
+
+      <p>第四項說的是：未曾領洗，或已領洗而與救恩無關的人。</p>
+
+      <p>而後面那個註，說明得很誠實：</p>
+
+      <div class="highlight">
+        <strong>那個註是這樣寫的</strong>
+        「聖經雖<strong>未明文規定</strong>：未領洗的人不可領受聖餐，<br><br>然而<strong>這個限制是有益的</strong>，而且是<strong>多處教會的通例</strong>。」<br><br>——注意那份誠實：<br><br>它沒有硬說聖經有明文。<br><br>它說的是：<strong>這是有益的，而且是通例。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而那個次序，本身是很自然的。<br><br>因為受洗是<strong>門</strong>，聖餐是<strong>家裡的飯桌</strong>。<br><br>——先進門，才坐下吃飯。<br><br>而使徒行傳二章的次序，正是這樣：<br><br>「於是領受他話的人就受了洗……<strong>都恆心遵守使徒的教訓，彼此交接，擘餅，祈禱。</strong>」（徒二 41～42）<br><br>先受洗，然後才是擘餅。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第四項後半句——「已領洗而與救恩無關的人」——說的是另一種情況。</p>
+
+      <div class="highlight">
+        <strong>那是說：形式有了，實質沒有</strong>
+        受過洗，名字在冊子上，而生命裡沒有那件事。<br><br>——而聖經對這種情況，並不迴避。<br><br>主自己說過：<br><br>「凡稱呼我『主啊，主啊』的人不能都進天國；<strong>惟獨遵行我天父旨意的人才能進去。</strong>」（太七 21）<br><br>而保羅說：「你們總要<strong>自己省察有信心沒有</strong>，也要自己試驗。」（林後十三 5）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        我想到撒種的比喻裡那塊<strong>石頭地</strong>。<br><br>「就是人聽了道，當下<strong>歡喜領受</strong>，只因心裡沒有根，不過是暫時的。」<br><br>——那不是沒有發芽。<br><br>是發了芽，而<strong>底下是石頭</strong>。<br><br>而主講那個比喻的目的，不是要人絕望。<br><br>是要人<strong>去看看自己底下是什麼</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這一整題，有一個很重要的界線需要說清楚。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">這份名單，主要是給自己看的</span>
+          保羅那句話是：「<strong>人應當自己省察</strong>」。<br><br>——主詞是「人」，也就是<strong>領受的那個人自己</strong>。<br><br>而不是「你們要互相檢查」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">而拿它去看別人，正好落進第二項</span>
+          「自以為義，<strong>自以為比別人聖潔</strong>」——<br><br>那正是名單上的第二項。<br><br>——所以用這份名單去衡量旁邊那個人，本身就把自己放進了名單裡。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而教會的勸戒，是另一件事</span>
+          聖經確實給教會處理明顯罪惡的責任（參太十八 15～17；林前五 11～13）。<br><br>而那是<strong>有次序、以挽回為目的</strong>的事，不是個人在座位上做的判斷。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅那句話，把整件事的目的說了出來</strong>
+        「我們受審的時候，乃是被主懲治，<strong>免得我們和世人一同定罪</strong>。」（林前十一 32）<br><br>——所有這些警告的目的，是<strong>保住人</strong>。<br><br>不是把人趕出去。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">名單上沒有你</h2>
+      <p class="card-hook">寫給那個讀完這一題、更害怕的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果你讀到這裡，心裡更緊了——我想把那四項再念一次。</p>
+
+      <div class="highlight">
+        <strong>一直生活在罪中<span style="opacity:.8">而不肯悔改</span>的</strong>
+        ——注意重點在後半句。<br><br>而你正在為自己的軟弱難過，那就已經不是「不肯」了。<br><br><strong>難過本身，就是悔改的開頭。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>自以為義、自以為配領受的</strong>
+        ——而你此刻正覺得自己不配。<br><br><strong>那是相反的那一邊。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>不肯饒恕的</strong>
+        ——這一項要誠實面對。<br><br>而如果你心裡浮出了某個人的臉，那不是定罪，那是提醒。<br><br>而「不肯」與「還做不到」，是兩件事。<br><br><strong>願意，就已經在路上了。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>與救恩無關的</strong>
+        ——而一個真的與救恩無關的人，<strong>不會為這一題緊張。</strong><br><br>他根本不在乎。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="big-quote">
+        人應當自己省察，<br>然後吃這餅、喝這杯
+        <cite>— 哥林多前書 十一章二十八節</cite>
+      </div>
+
+      <p>回到我開頭那個稅吏。</p>
+
+      <p>他站得遠遠的，連舉目望天都不敢。</p>
+
+      <p>而他說的話很短：「神啊，開恩可憐我這個罪人。」</p>
+
+      <p>——而主說：這人回家去，倒算為義了。</p>
+
+      <p>所以這一題真正的分界線，不是「好人與壞人」。</p>
+
+      <p>是<strong>「伸手的與不伸手的」</strong>。</p>
+
+      <p>而那一夜，坐在桌邊的十二個人，沒有一個是配得的。</p>
+
+      <p>而祂說：「我很願意和你們吃這一頓。」</p>
+
+      <p>願你在那張桌前，把手打開。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  甚麼人不可領受聖餐 · Threads Series
+</footer>
+
+</body>
+</html>

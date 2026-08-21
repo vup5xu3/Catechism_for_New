@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神醫佈道的工作 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>以傳道為首，<span>以醫病為輔</span></h1>
+  <p class="subtitle">教會是不是應當舉行神醫佈道工作？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">次序，會決定一件事最後長成什麼樣子</h2>
+      <p class="card-hook">而這一題，講的幾乎全部是次序</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有些事情，做的內容一樣，而<strong>次序不一樣，結果就完全不同</strong>。</p>
+
+      <div class="highlight">
+        <strong>而這一題的答案，三項裡有三個次序</strong>
+        <strong>以傳道為首，以醫病為輔</strong>——那是<strong>主次</strong>。<br><br><strong>用來證實福音，不是當作福音</strong>——那是<strong>身分</strong>。<br><br><strong>帶領信主之後，才能為他作醫病的禱告</strong>——那是<strong>先後</strong>。<br><br>——三項，全部在講同一件事：<strong>什麼在前，什麼在後。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        我想到蓋房子。<br><br>牆和地基，用的可能是同一批材料。<br><br>——而如果次序弄反了，那棟房子就站不起來。<br><br>不是材料錯了。<br><br><strong>是次序錯了。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你把那三個次序看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">主在迦百農，天還沒亮就走了</h2>
+      <p class="card-hook">而那一夜，全城的人都在門口</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬可福音第一章，記了一個很值得看的晚上。</p>
+
+      <div class="highlight">
+        <strong>那個場景</strong>
+        主在迦百農醫好了彼得的岳母。<br><br>而到了晚上，日落的時候——<br><br>「有人帶著<strong>一切害病的和被鬼附的</strong>，來到耶穌跟前。<br><br><strong>合城的人都聚集在門前。</strong>」（可一 32～33）<br><br>——「合城的人」。<br><br>那是一個傳道人夢寐以求的場面。
+      </div>
+
+      <p>而第二天早上，發生的事出人意料：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">次日早晨，天未亮的時候，耶穌起來，到曠野地方去，在那裡禱告
+        </p>
+        <p class="scripture-ref">馬可福音 一章三十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而門徒找到祂的時候，說了一句話</strong>
+        「西門和同伴<strong>追了他去</strong>，遇見了就對他說：<strong>眾人都找你。</strong>」（可一 36～37）<br><br>——「眾人都找你」。<br><br>那句話的潛台詞是：<strong>快回去，那裡還有很多人在等。</strong>
+      </div>
+
+      <p>而主的回答，是這一題的核心：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我們可以往別處去，到鄰近的鄉村，我也好在那裡傳道，因為我是為這事出來的
+        </p>
+        <p class="scripture-ref">馬可福音 一章三十八節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        「<strong>我也好在那裡傳道，因為我是為這事出來的。</strong>」<br><br>——注意祂說自己是<strong>為哪一件事</strong>出來的。<br><br>不是「為醫病」。<br><br>而祂當然醫了很多病。<br><br>——所以那不是輕看醫病。<br><br>那是在<strong>把次序說清楚</strong>。
+      </div>
+
+      <p>下一篇，我們把答案列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">應當，而有三項原則</h2>
+      <p class="card-hook">以彰顯神的全能</p>
+    </div>
+    <div class="card-body">
+
+      <div class="highlight">
+        <strong>答案</strong>
+        <strong>教會應當舉行神醫佈道工作，以彰顯神的全能。</strong>
+      </div>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一</span>
+          主耶穌和祂的使徒們所行，是<br><strong>以傳道為首，以醫病為輔</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二</span>
+          神醫醫病，<strong>在聖靈認為必要時</strong>，<br>是<strong>用來證實福音，不是當作福音</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三</span>
+          神醫傳道必須<strong>著重在病與罪的關係</strong>；<br><br>還沒有信主的病人，<strong>帶領信主之後，才能為他作醫病的禱告</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三項，各自守住一個位置：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>守住的是</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>一、傳道為首，醫病為輔</strong></td>
+            <td><strong>主次</strong>——道是主，醫病是輔</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>二、證實福音，不是當作福音</strong></td>
+            <td><strong>身分</strong>——它是<strong>證據</strong>，不是<strong>內容</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>三、信主之後，才作醫病的禱告</strong></td>
+            <td><strong>先後</strong>——先歸主，再求病得醫治</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第二項裡那句「在聖靈認為必要時」，很值得注意</strong>
+        ——它把主權放在了聖靈那裡。<br><br>不是「只要我們夠有信心，祂就必須做」。<br><br>而希伯來書用的說法是：<strong>「神又按自己的旨意，用神蹟奇事……同他們作見證。」</strong>（來二 4）<br><br>——「<strong>按自己的旨意</strong>」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「以彰顯神的全能」那一句，說明了整件事的目的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        因為那個目的<strong>不是「讓人少受苦」</strong>——雖然那也是好的。<br><br>那個目的是：<strong>讓人看見那一位是誰。</strong><br><br>——而那正好呼應第二項：<br><br><strong>證實福音。</strong><br><br>所以神醫佈道，是一場<strong>指向</strong>：<br><br>它指著那一位，說：<strong>「祂是活的，祂真的能。」</strong>
+      </div>
+
+      <p>下一篇，我們看聖經裡的次序。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「你的罪赦了」，在「起來行走」之前</h2>
+      <p class="card-hook">而那個次序，主自己說明了理由</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三項說：<strong>神醫傳道必須著重在病與罪的關係。</strong></p>
+
+      <p>而那個癱子的事，是聖經裡最清楚的示範。</p>
+
+      <div class="highlight">
+        <strong>那個次序</strong>
+        四個人拆了屋頂，把癱子縋下來。<br><br>而主說的第一句話是：<br><br>「小子，<strong>你的罪赦了。</strong>」（可二 5）<br><br>——他們是為<strong>病</strong>來的。<br><br>而主先處理了<strong>罪</strong>。
+      </div>
+
+      <p>而祂為什麼要這樣做？下面幾節說明了理由：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但要叫你們知道，人子在地上有赦罪的權柄。就對癱子說：起來！拿你的褥子回家去吧
+        </p>
+        <p class="scripture-ref">馬可福音 二章十至十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        「<strong>但要叫你們知道，人子在地上有赦罪的權柄</strong>」——那句話說明了整件事的邏輯。<br><br>赦罪，是<strong>看不見</strong>的。<br><br>叫癱子起來走，是<strong>看得見</strong>的。<br><br>——所以那個醫治，是為了<strong>證明那件看不見的事已經發生了</strong>。<br><br>而那正是第二項說的：<strong>用來證實福音。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主醫好畢士大池邊那個人之後，說了一句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">後來耶穌在殿裡遇見他，對他說：你已經痊癒了，不要再犯罪，恐怕你遭遇的更加利害
+        </p>
+        <p class="scripture-ref">約翰福音 五章十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話，是在醫好「之後」說的</strong>
+        ——祂特意<strong>再去找他一次</strong>。<br><br>而祂說的是：「<strong>不要再犯罪。</strong>」<br><br>所以在那個例子裡，病與罪的關係，是被主自己點出來的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第一項——傳道為首，醫病為輔——福音書與使徒行傳裡的敘述，次序是一致的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>次序</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">太四 23；九 35</td>
+            <td>「<strong>教訓</strong>人，<strong>宣講</strong>天國的福音，<strong>又醫治</strong>各樣的病症。」</td>
+          </tr>
+          <tr>
+            <td class="src">路九 2</td>
+            <td>「差遣他們去<strong>宣傳神國的道</strong>，<strong>醫治</strong>病人。」</td>
+          </tr>
+          <tr>
+            <td class="src">可十六 20</td>
+            <td>「門徒出去，到處<strong>宣傳福音</strong>。主和他們同工，<strong>用神蹟隨著</strong>，證實所傳的道。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒三～四</td>
+            <td>瘸腿的人得醫治 → 眾人聚集 → <strong>彼得講道</strong> → 「聽道之人有許多信的。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而馬可福音那節裡的「<strong>隨著</strong>」，是一個很準的字。<br><br>——「隨著」的意思是<strong>跟在後面</strong>。<br><br>所以那個結構是：<br><br><strong>道在前面走，神蹟跟在後面作證。</strong><br><br>而那正是第一項說的：<strong>以傳道為首，以醫病為輔。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「不是當作福音」</h2>
+      <p class="card-hook">而福音的內容，聖經自己定義過</p>
+    </div>
+    <div class="card-body">
+
+      <p>第二項說：<strong>是用來證實福音，不是當作福音。</strong></p>
+
+      <p>而「福音」的內容是什麼？保羅寫過一段最簡明的定義。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我當日所領受又傳給你們的：第一，就是基督照聖經所說，為我們的罪死了，而且埋葬了；又照聖經所說，第三天復活了
+        </p>
+        <p class="scripture-ref">哥林多前書 十五章三至四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那段定義裡，有三件事</strong>
+        <strong>基督為我們的罪死了</strong>。<br><strong>埋葬了</strong>。<br><strong>第三天復活了</strong>。<br><br>——三件，全部關乎<strong>罪與死</strong>。<br><br>而保羅特別加了一句：「<strong>第一，就是……</strong>」<br><br>那意思是：<strong>這是最要緊的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💊</span>
+        而那正好說明了「證實」與「當作」的分別。<br><br>身體的病，是<strong>暫時的</strong>——就算醫好了，那個人還是會老、會死。<br><br>而罪與死的問題，是<strong>永遠的</strong>。<br><br>——所以醫治如果成了福音本身，那給出去的東西就小了。<br><br>就像有人欠了一大筆債，而你只替他付了當天的午餐。<br><br>——那頓午餐是真的，是好的。<br><br><strong>而那不是他真正的問題。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經裡有一段，把「醫治」與「更大的事」擺在一起比較。</p>
+
+      <div class="highlight">
+        <strong>七十個門徒回來的時候</strong>
+        他們「歡歡喜喜地回來，說：<strong>主啊！因你的名，就是鬼也服了我們。</strong>」<br><br>而主的回答，先肯定了那件事：「我曾看見撒但從天上墜落，像閃電一樣……」<br><br>然後祂說了一句：<br><br>「<strong>然而，不要因鬼服了你們就歡喜，要因你們的名記錄在天上歡喜。</strong>」（路十 20）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📖</span>
+        「<strong>不要因……就歡喜，要因……歡喜</strong>」<br><br>——那個句型很有意思。<br><br>祂沒有否定前面那件事。<br><br>祂是在說：<strong>還有一件更該歡喜的。</strong><br><br>而那件更該歡喜的，是<strong>「你們的名記錄在天上」</strong>。<br><br>——那正是「福音」與「證實福音的記號」的分別。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三項那個做法——<strong>帶領信主之後，才為他作醫病的禱告</strong>——也有它保護的作用。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">保護那個人歸主的動機</span>
+          因為如果醫治在前，那個人歸主的原因，可能是<strong>那個結果</strong>。<br><br>——而主自己處理過這件事：<br><br>「你們找我，並不是因見了神蹟，<strong>乃是因吃餅得飽</strong>。」（約六 26）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">保護那個人在治不好的時候</span>
+          因為如果他是<strong>為了得醫治</strong>而來的，<br><br>那沒有得醫治的時候，他會失去<strong>兩樣</strong>。<br><br>——而如果他是先歸了主，那麼<strong>那一項還在</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">讓禱告落在對的次序上</span>
+          先解決<strong>與神的關係</strong>，再求<strong>身體的事</strong>。<br><br>——而那正是那個癱子的次序：<br><br><strong>「你的罪赦了」→「起來，拿你的褥子。」</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個次序，其實是很體貼的</strong>
+        因為它把最重要的那一項，<strong>先給了</strong>。<br><br>——不管後面身體的事怎麼樣。<br><br>而主對那個十字架上的強盜，也是這樣：<br><br>祂沒有把他從十字架上救下來。<br><br>祂說的是：「<strong>今日你要同我在樂園裡了。</strong>」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「以彰顯神的全能」</h2>
+      <p class="card-hook">而那不是為了表演</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題的答案，開頭那一句是：<strong>教會應當舉行神醫佈道工作。</strong></p>
+
+      <div class="highlight">
+        <strong>所以這一題並不是在潑冷水</strong>
+        ——它說的是：<strong>應當。</strong><br><br>而理由是：<strong>以彰顯神的全能。</strong><br><br>而那三項原則，不是限制。<br><br>它們是<strong>讓那件事保持它本來的樣子</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏞️</span>
+        我想到河堤。<br><br>河堤不是為了讓水變少。<br><br>——河堤是為了<strong>讓水往該去的方向流</strong>。<br><br>而沒有堤的水，會漫開來，然後乾掉。<br><br>而那三項，就是那兩道堤。
+      </div>
+
+      <div class="big-quote">
+        我也好在那裡傳道，<br>因為我是為這事出來的
+        <cite>— 馬可福音 一章三十八節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到迦百農那個早上。</p>
+
+      <p>合城的人在門口。而祂天未亮就走了。</p>
+
+      <p>——那件事我想了很久。</p>
+
+      <p>因為如果那一天祂留下來，那一定會有更多人得醫治。</p>
+
+      <p>而祂說：「我們可以往<strong>別處</strong>去。」</p>
+
+      <p>——祂去了別的鄉村，繼續傳道。</p>
+
+      <p>而那個決定的意思是：</p>
+
+      <p><strong>那些人真正需要的，不只是身體好起來。</strong></p>
+
+      <p>而那一位，並沒有因為守住次序，就少醫了誰。</p>
+
+      <p>因為福音書接下來寫的是：祂繼續「<strong>在加利利全地，進了會堂，傳道，趕鬼</strong>」。</p>
+
+      <p>——傳道，趕鬼。兩件都在。</p>
+
+      <p>而次序是那樣。</p>
+
+      <p>願你今天，記得那個更大的醫治。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  神醫佈道的工作 · Threads Series
+</footer>
+
+</body>
+</html>

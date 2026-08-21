@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖餐設立的時候 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>被賣的<span>那一夜</span></h1>
+  <p class="subtitle">聖餐是甚麼時候設立的？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">一件事在什麼時候被說，會改變它的意思</h2>
+      <p class="card-hook">而這件事被說的時間，非常不尋常</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>同一句話，在不同的時刻說出來，重量是不一樣的。</p>
+
+      <div class="highlight">
+        <strong>比如「我還是愛你」這句話</strong>
+        在一切順利的時候說——是一句好聽的話。<br><br>在剛剛被辜負之後說——那就是另一件事了。<br><br>——時間點，會決定一句話的分量。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕰️</span>
+        而保羅在寫聖餐這件事的時候，特意把時間點寫出來了。<br><br>他大可以說：「主耶穌設立了聖餐。」<br><br>而他寫的是：<br><br><strong>「主耶穌被賣的那一夜，拿起餅來……」</strong><br><br>——那五個字，是他特意留下的。
+      </div>
+
+      <p>而這一題問的正是：那是什麼時候？</p>
+
+      <p>接下來這幾篇，我想陪你回到那一夜。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「我很願意在受害以先和你們吃這逾越節的筵席」</h2>
+      <p class="card-hook">祂是知道的</p>
+    </div>
+    <div class="card-body">
+
+      <p>路加福音第二十二章，記了那一頓飯的開頭。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我很願意在受害以先和你們吃這逾越節的筵席
+        </p>
+        <p class="scripture-ref">路加福音 二十二章十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那句話裡，有兩件事被說明了</strong>
+        <strong>第一，祂知道。</strong><br><br>「在<strong>受害以先</strong>」——祂知道再過幾個小時會發生什麼。<br><br><strong>第二，祂想要。</strong><br><br>「我<strong>很願意</strong>」——那是一種切切盼望的語氣。<br><br>——所以那不是一頓被動的、命運安排的晚餐。<br><br><strong>那是祂特意要的一頓飯。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍷</span>
+        而請把那個畫面放清楚一點：<br><br>桌上有十二個人。<br><br>其中一個，已經談好了價錢。<br><br>另一個，幾個小時後會三次說「我不認得他」。<br><br>其餘的，會在客西馬尼園逃走。<br><br>——而祂說：<strong>「我很願意和你們吃這一頓。」</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而那一夜，馬可福音記了一個細節</strong>
+        飯後，他們「<strong>唱了詩，就出來，往橄欖山去</strong>」。（可十四 26）<br><br>——逾越節筵席的末了，照例要唱詩篇。<br><br>而那些詩篇裡有這樣的句子：<br><br>「<strong>耶和華是我的力量……我必不至於死，仍要存活。</strong>」<br><br>唱完之後，祂走出去，往客西馬尼園。
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">時間、場合、設立者、名稱</h2>
+      <p class="card-hook">四件事，一句話說完</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">聖餐設立的時候</span>
+          是在<strong>耶穌被賣之夜</strong>，<br>恰好是<strong>逾越節筵的晚餐席上</strong>，<br><strong>主耶穌親自設立</strong>的，<br><br>所以稱為<strong>「主的晚餐」</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這句話裡的四個要素，每一個都有分量：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>要素</th>
+            <th>那意味著</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>被賣之夜</strong></td>
+            <td>那份愛，是在<strong>明知會被出賣的時候</strong>給出去的</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>逾越節筵</strong></td>
+            <td>它接上了舊約——<strong>羔羊、血、拯救</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>主耶穌親自設立</strong></td>
+            <td>不是後人訂的規矩——<strong>根據在祂的話</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>稱為「主的晚餐」</strong></td>
+            <td>那張桌子的<strong>主人是祂</strong>，不是我們</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第二項——逾越節——是理解聖餐的鑰匙</strong>
+        因為主不是<strong>另外發明</strong>了一個儀式。<br><br>祂是在一個<strong>已經行了一千多年的筵席上</strong>，拿起桌上本來就有的餅和杯，說：<br><br>「<strong>這是我的身體。</strong>」<br>「<strong>這杯是用我血所立的新約。</strong>」<br><br>——那一刻，那張桌子的意思被重新指定了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「主的晚餐」這個名稱，本身也在說一件事。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪑</span>
+        那不是「我們的聚餐」。<br><br>是<strong>「主的」</strong>晚餐。<br><br>——所以那張桌子的主人是祂。<br><br>擺桌的是祂。<br>邀請的是祂。<br>而餅與杯，是祂遞出來的。<br><br>而我們是<strong>被請來的客人</strong>。
+      </div>
+
+      <p>下一篇，我們看逾越節那個背景。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那張桌子上，本來就有一段記憶</h2>
+      <p class="card-hook">而祂把它接了上去</p>
+    </div>
+    <div class="card-body">
+
+      <p>逾越節那頓飯，是為了記念出埃及那一夜。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這血要在你們所住的房屋上作記號；我一見這血，就越過你們去
+        </p>
+        <p class="scripture-ref">出埃及記 十二章十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那一夜發生的事</strong>
+        每一家取一隻<strong>無殘疾、一歲的公羊羔</strong>。<br><br>把血塗在門框和門楣上。<br><br>當夜吃那羊羔的肉，配上<strong>無酵餅</strong>與苦菜。<br><br>而神說：「我一見這血，<strong>就越過你們去</strong>。」<br><br>——那個「越過」，就是「逾越」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而那一夜的結構，值得看清楚：<br><br><strong>羔羊死了，所以裡面的人活了。</strong><br><br>而分別不在那家人比較好。<br><br>分別只在<strong>門上有沒有血</strong>。<br><br>——而那個記念，以色列人守了一千多年。<br><br>每一年，每一家，同樣的羊羔、同樣的血、同樣的無酵餅。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而在那頓筵席上，主耶穌拿起餅來的時候，那塊餅本來就有意思：<br><br>它代表<strong>出埃及那一夜匆忙離開、來不及發酵的餅</strong>。<br><br>而祂說：「<strong>這是我的身體，為你們捨的。</strong>」<br><br>然後拿起杯來，那杯本來也有意思：<br><br>它是<strong>逾越節筵席上的杯</strong>。<br><br>而祂說：「<strong>這杯是用我血所立的新約。</strong>」<br><br>——舊的記號，指向了那位本人。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而新約好幾處，直接把主稱為那隻羊羔：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">約一 29</td>
+            <td>「看哪，<strong>神的羔羊</strong>，除去世人罪孽的！」</td>
+          </tr>
+          <tr>
+            <td class="src">林前五 7</td>
+            <td>「因為我們<strong>逾越節的羔羊基督已經被殺獻祭了</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">彼前一 19</td>
+            <td>「乃是憑著基督的寶血，如同<strong>無瑕疵、無玷污的羔羊之血</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">約十九 36</td>
+            <td>「他的骨頭一根也不可折斷。」——正是逾越節羊羔的規定（出十二 46）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而最後一項，是一個很細的印證。<br><br>出埃及記規定：那隻羊羔「<strong>骨頭一根也不可折斷</strong>」。<br><br>而十字架上，兵丁本來要打斷腿——那是當時加速死亡的做法。<br><br>「只是來到耶穌那裡，見他已經死了，<strong>就不打斷他的腿</strong>。」<br><br>而約翰特意加了一句：「<strong>這些事成了，為要應驗經上的話。</strong>」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「被賣的那一夜」——保羅為什麼要寫這五個字</h2>
+      <p class="card-hook">因為他寫信的對象，正在把那張桌子搞砸</p>
+    </div>
+    <div class="card-body">
+
+      <p>保羅在哥林多前書十一章，寫下了新約裡最完整的一段聖餐記載。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我當日傳給你們的，原是從主領受的，就是主耶穌被賣的那一夜，拿起餅來，祝謝了，就擘開，說：這是我的身體，為你們捨的，你們應當如此行，為的是記念我
+        </p>
+        <p class="scripture-ref">哥林多前書 十一章二十三至二十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而他為什麼要在那封信裡寫這一段？</strong>
+        因為哥林多教會的聖餐，出了問題。<br><br>「你們聚會的時候，彼此<strong>分門別類</strong>。」<br><br>「各人先吃自己的飯，甚至這個<strong>飢餓</strong>，那個<strong>酒醉</strong>。」<br><br>「你們要<strong>藐視神的教會</strong>，叫那沒有的<strong>羞愧</strong>嗎？」<br><br>——那張桌子上，有人吃飽了，有人餓著。<br><br>而保羅的回應，是把他們帶回<strong>那一夜</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        而那個回應方式很有意思。<br><br>他沒有先講道理。<br><br>他先講<strong>那個晚上發生的事</strong>。<br><br>——「主耶穌<strong>被賣的那一夜</strong>……」<br><br>因為只要一個人真的看見那一夜的畫面，他就很難再在那張桌子上分門別類。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而約翰福音記那一夜的時候，寫下了一句非常重的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他既然愛世間屬自己的人，就愛他們到底
+        </p>
+        <p class="scripture-ref">約翰福音 十三章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「到底」那兩個字，在原文裡有兩層意思</strong>
+        一層是<strong>時間上的</strong>：愛到最後。<br><br>一層是<strong>程度上的</strong>：愛到極處、愛到盡頭。<br><br>——而那句話，正是約翰福音記載那一夜的<strong>開場白</strong>。<br><br>接下來寫的是：祂脫了外衣，拿手巾束腰，替他們洗腳。<br><br>而祂洗的腳裡面，<strong>包括猶大的</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫗</span>
+        我常常在這裡停很久。<br><br>因為約翰在同一段裡寫著：「<strong>魔鬼已將賣耶穌的意思放在……猶大心裡</strong>。」<br><br>而下一句就是：祂起來洗腳。<br><br>——祂知道。而祂還是洗了。<br><br>而那雙腳，幾個小時後會走去帶人來抓祂。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而那一夜，主還說了一句往前看的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但我告訴你們，從今以後，我不再喝這葡萄汁，直到我在我父的國裡同你們喝新的那日子
+        </p>
+        <p class="scripture-ref">馬太福音 二十六章二十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>所以那一夜，同時看向兩個方向</strong>
+        <strong>往後看</strong>——「為的是記念我」。<br><br><strong>往前看</strong>——「直到我在我父的國裡同你們喝新的那日子」。<br><br>而保羅把這兩個方向寫成了一句話：<br><br>「你們每逢吃這餅，喝這杯，是<strong>表明主的死，直等到他來</strong>。」（林前十一 26）<br><br>——所以每一次的聖餐，都站在兩個時刻中間：<br><br><strong>那一夜，和那一天。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">祂在最壞的那一夜，設立了最溫柔的一件事</h2>
+      <p class="card-hook">寫給覺得自己配不上那張桌子的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那個時間點上。</p>
+
+      <div class="highlight">
+        <strong>祂大可以在別的時候設立這件事</strong>
+        比如五餅二魚之後，五千人吃飽的那一天。<br><br>比如拉撒路從墳墓裡出來、眾人歡呼的那一天。<br><br>比如騎驢進耶路撒冷、滿城喊「和散那」的那一天。<br><br>——那些時刻，都比較適合設立一個要世世代代記念的儀式。<br><br>而祂選的是：<strong>被賣的那一夜。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而我想那個選擇是有意思的。<br><br>因為如果那件事設立在光榮的時刻，那我們每次領受的時候，會想到<strong>要配得上</strong>。<br><br>而它設立在最不堪的那一夜——<br><br>桌上有出賣者，有將要逃走的人，有將要不認祂的人。<br><br>——所以那張桌子從一開始，就<strong>不是為配得的人擺的</strong>。
+      </div>
+
+      <div class="big-quote">
+        主耶穌被賣的那一夜，<br>拿起餅來，祝謝了，<br>就擘開
+        <cite>— 哥林多前書 十一章二十三至二十四節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己配不上那張桌子——</p>
+
+      <p>覺得自己這一段時間太軟弱、太冷淡、太多次做了同樣的事——</p>
+
+      <p>我想留下那一夜的畫面。</p>
+
+      <p>祂知道彼得幾小時後會不認祂。而祂還是把餅遞給了彼得。</p>
+
+      <p>祂知道他們全部都會逃走。而祂說：「我<strong>很願意</strong>和你們吃這一頓。」</p>
+
+      <p>——那句話裡沒有勉強。</p>
+
+      <p>而那一夜之後，祂做的事情是：走出去，往客西馬尼園，然後上十字架。</p>
+
+      <p>回到我開頭那句話：<strong>一件事在什麼時候被說，會改變它的意思。</strong></p>
+
+      <p>而這件事，是在祂被賣的那一夜被說的。</p>
+
+      <p>願你下一次坐到那張桌子前，記得那是誰擺的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖餐設立的時候 · Threads Series
+</footer>
+
+</body>
+</html>

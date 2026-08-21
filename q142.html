@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>求赦免與赦免人 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>免我們的債，<span>如同</span></h1>
+  <p class="subtitle">主禱文中，對於「求赦免」和「赦免人」，應當怎樣？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">主禱文裡最危險的兩個字</h2>
+      <p class="card-hook">「如同」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>主禱文有一句，如果認真念，是會讓人停下來的。</p>
+
+      <div class="highlight">
+        <strong>「免我們的債，如同我們免了人的債。」</strong>
+        ——注意中間那兩個字：<strong>如同</strong>。<br><br>那不是「請也幫我免了別人欠我的」。<br><br>那是：<strong>請照著我對待別人的方式，來對待我。</strong><br><br>——而那是一句很大膽的話。<br><br>因為它等於把<strong>我的量器</strong>，交出去給神用。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        我想到一把尺。<br><br>你拿那把尺量別人，然後把同一把尺遞過去說：<br><br>「請用這把來量我。」<br><br>——而主說過這句話：<br><br>「你們用甚麼量器量給人，也必用甚麼量器量給你們。」（太七 2）
+      </div>
+
+      <p>而這一題，就是那句話。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">整篇禱告講完之後，主只回頭重講了這一句</h2>
+      <p class="card-hook">那本身就是一種強調</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音第六章，主教完那篇禱告之後，做了一件事。</p>
+
+      <div class="highlight">
+        <strong>祂回頭，只把其中一句拿出來再講一次</strong>
+        不是「你的名」。<br>不是「你的國」。<br>不是「日用的飲食」。<br>不是「不叫我們遇見試探」。<br><br>——是<strong>赦免</strong>那一句。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">你們饒恕人的過犯，你們的天父也必饒恕你們的過犯；你們不饒恕人的過犯，你們的天父也必不饒恕你們的過犯
+        </p>
+        <p class="scripture-ref">馬太福音 六章十四至十五節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔁</span>
+        而那兩節的寫法，是<strong>正反各講一次</strong>。<br><br>正面講一遍：你們饒恕人，父也必饒恕你們。<br><br>反面再講一遍：你們不饒恕人，父也必不饒恕你們。<br><br>——同一件事，用兩個方向說。<br><br>而那是最強的一種強調方式：<strong>不讓人有繞過去的空間。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而更值得注意的是，那是唯一被重講的一句</strong>
+        六句禱告，主只回頭補了這一句。<br><br>——那不是偶然。<br><br>因為在所有的功課裡，<strong>這一件最容易被跳過</strong>。<br><br>人可以很虔誠地禱告，很認真地讀經，很殷勤地服事——<br><br>而心裡一直有一個名字，是不放的。
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩件事，綁在一起</h2>
+      <p class="card-hook">求赦免，與赦免人</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、求赦免</span>
+          有了罪，<strong>就必須求父赦免</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、赦免人</span>
+          求天父赦免的時候，<br><strong>自己當樂意赦免人</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第一項那句「<strong>有了罪，就必須求</strong>」，本身就在說一件事。</p>
+
+      <div class="highlight">
+        <strong>那句話預設了：信了主的人，還會有罪</strong>
+        ——因為主禱文是教<strong>門徒</strong>禱告的。<br><br>而祂把「免我們的債」寫進了<strong>日常</strong>的禱告裡，和「日用的飲食」放在一起。<br><br>——那意味著：<strong>這是每天的事。</strong><br><br>而約翰壹書說得更直接：<br><br>「我們若說自己無罪，便是<strong>自欺</strong>，真理不在我們心裡了。」（約壹一 8）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚿</span>
+        而那一夜洗腳的時候，主講過這個分別。<br><br>彼得說：「不但我的腳，連手和頭也要洗。」<br><br>而主說：「凡<strong>洗過澡</strong>的人，<strong>只要把腳一洗</strong>，全身就乾淨了。」（約十三 10）<br><br>——洗澡，是那一次的洗淨。<br><br>而腳，是走路走髒的。<br><br><strong>那需要天天洗。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項那個「<strong>樂意</strong>」，用字很準。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>三種「饒恕」</th>
+            <th>長什麼樣子</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>不饒恕</strong></td>
+            <td>記著、等機會、心裡有一個名字</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>勉強的饒恕</strong></td>
+            <td>嘴上說算了，而心裡那筆帳還在；見面還是繃著</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>樂意的饒恕</strong></td>
+            <td>真的<strong>把那筆帳劃掉</strong>——不再拿出來算</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而中間那一種，其實最常見</strong>
+        因為它看起來很像饒恕。<br><br>——沒有報復，沒有翻臉，甚至還說得出「沒關係」。<br><br>而那筆帳沒有劃掉，只是<strong>被收起來</strong>了。<br><br>而每次那個人再做錯一次，那筆舊帳就會被拿出來，加在上面。<br><br>——所以「樂意」那兩個字，是在區分這個。
+      </div>
+
+      <p>下一篇，我們看那個「債」字。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「債」——主用的是一個會計的字</h2>
+      <p class="card-hook">而「免」，是把它劃掉</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">ὀφείλημα <span style="font-size:0.8em;opacity:0.75">opheilēma</span></div>
+        <div class="term-desc">
+          主禱文裡譯作「<strong>債</strong>」的這個字，本義就是<strong>欠款、該還而未還的東西</strong>。<br><br>——那是一個<strong>商業與會計</strong>的用語。<br><br>而它把罪的性質說清楚了：<strong>罪不只是「做錯」，它是「欠著」。</strong><br><br>而「<strong>免</strong>」的那個動詞，本義是「<strong>放開、打發走、任其離去</strong>」。<br><br>——所以那個畫面是：<strong>把手鬆開，讓它走。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而「債」這個比喻，說明了一件很難的事</strong>
+        欠債的人，是<strong>真的欠</strong>。<br><br>——所以饒恕不是說「其實你沒有錯」。<br><br>如果對方真的沒錯，那就不需要饒恕，只需要澄清。<br><br>而饒恕的前提，正是：<strong>那件事是真的，那個傷是真的，那筆債是真的。</strong><br><br>然後——<strong>把它劃掉。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        而劃掉一筆帳，是有代價的。<br><br>因為那筆錢不會憑空出現。<br><br>——債主劃掉的那一刻，<strong>那個損失就落在他自己身上了</strong>。<br><br>所以饒恕從來不是「不痛」。<br><br><strong>那是決定自己承擔那個痛，不再向對方追討。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而路加福音記主禱文的時候，用的字不一樣：<br><br>「<strong>赦免我們的罪</strong>，因為我們也赦免凡虧欠我們的人。」（路十一 4）<br><br>——前半句用「<strong>罪</strong>」，後半句用「<strong>虧欠</strong>」。<br><br>那個對比很有意思：<br><br>我們向神欠的，是<strong>罪</strong>。<br>別人向我們欠的，是<strong>虧欠</strong>。<br><br>——而那正是那個惡僕比喻裡的數字差距。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而彼得問過一個很實際的問題：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">主啊，我弟兄得罪我，我當饒恕他幾次呢？到七次可以嗎？
+        </p>
+        <p class="scripture-ref">馬太福音 十八章二十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而彼得提的「七次」，其實已經很寬了</strong>
+        當時一般的教導，是三次。<br><br>——所以彼得把它加了一倍還多。<br><br>而主的回答是：<br><br>「我對你說，不是到七次，乃是到<strong>七十個七次</strong>。」<br><br>——那個數字不是要人算到四百九十。<br><br>它的意思是：<strong>別數了。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而「別數了」這件事，本身就是關鍵。<br><br>因為<strong>會數，就表示還在記帳</strong>。<br><br>而一個還在記帳的人，那些帳就還沒有被劃掉。<br><br>——而哥林多前書十三章那句話，用的正是同一個意象：<br><br>「愛是……<strong>不計算人的惡</strong>。」<br><br>「計算」那個字，也是<strong>記帳</strong>的用語。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主自己，把這件事做到了最遠的地方：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">當下耶穌說：父啊！赦免他們；因為他們所做的，他們不曉得
+        </p>
+        <p class="scripture-ref">路加福音 二十三章三十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話說出口的時間點，是釘十字架的時候</strong>
+        「當下」——就在他們釘祂的時候。<br><br>——不是事後。不是傷好了以後。<br><br>是<strong>正在受著的時候</strong>。<br><br>而祂還替他們找了一個理由：「<strong>因為他們所做的，他們不曉得。</strong>」
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">那如果我真的做不到呢</h2>
+      <p class="card-hook">這一題最需要被說的地方</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題如果只講到這裡，會壓死人。</p>
+
+      <p>因為有些傷，是真的很難放。</p>
+
+      <div class="highlight">
+        <strong>那個處境大概是這樣</strong>
+        我知道應該饒恕。<br><br>我禱告過了。我甚至以為自己已經放下了。<br><br>——而某一天，那個人的名字被提起來，我心裡還是<strong>整個縮起來</strong>。<br><br>然後我又開始自責：<strong>我是不是根本沒有饒恕？</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩹</span>
+        而我想先說一件事：<strong>「有感覺」不等於「沒饒恕」。</strong><br><br>因為饒恕是一個<strong>決定</strong>，不是一種<strong>感覺</strong>。<br><br>——就像一道傷口縫合了，而它還是會痛一陣子。<br><br>痛，不代表沒有縫。<br><br>而那個決定的內容是：<strong>我不再向他追討這筆帳。</strong><br><br>而感覺，會慢慢跟上。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經對「做不到」這件事，其實有一個很具體的辦法。</p>
+
+      <div class="highlight">
+        <strong>主給的處方是：為他禱告</strong>
+        「只是我告訴你們，要愛你們的仇敵，<strong>為那逼迫你們的禱告</strong>。」（太五 44）<br><br>——注意那個順序。<br><br>不是「先愛得起來，然後才為他禱告」。<br><br>是<strong>先禱告</strong>。<br><br>因為那是<strong>可以執行的動作</strong>。<br><br>而感覺跟不上的時候，動作可以先走。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而那個做法為什麼有效？<br><br>因為你很難<strong>一直為一個人禱告，同時一直恨他</strong>。<br><br>那兩件事會互相拉扯。<br><br>——而通常先鬆動的，是恨。<br><br>而約伯記那一幕，是這件事最強的例子：<br><br>「<strong>約伯為他的朋友祈禱，耶和華就使約伯從苦境轉回。</strong>」（伯四二 10）<br><br>——他的轉機，發生在他為那些傷他的人禱告之後。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而還有幾件事，需要說清楚，免得誤解。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">饒恕，不等於當作沒發生</span>
+          聖經從來沒有要人假裝。<br><br>——大衛在詩篇裡，把被害的痛講得很直接。<br><br>而饒恕是：<strong>我不再自己討這筆債。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">饒恕，不等於必須回到原來的關係</span>
+          有些關係需要距離，有些需要時間。<br><br>——「若是能行，總要盡力與眾人和睦。」（羅十二 18）<br><br>注意那兩個前提：<strong>「若是能行」、「盡力」</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">饒恕，不等於沒有公義</span>
+          「不要自己伸冤……因為經上記著：<strong>主說：伸冤在我，我必報應。</strong>」（羅十二 19）<br><br>——那句話不是說「這件事算了」。<br><br>是：<strong>這筆帳交給祂，不由我來收。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第三項，其實是最能鬆開手的一項</strong>
+        因為人抓著不放的原因，常常不是恨。<br><br>是<strong>怕那件事就這樣算了</strong>。<br><br>怕沒有人知道那有多不公平。<br><br>——而「伸冤在我」那句話的意思是：<strong>有人知道，而且祂會處理。</strong><br><br>所以放手，不是把那件事丟掉。<br><br><strong>是把它交出去。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「照著神在基督裡饒恕了你們一樣」</h2>
+      <p class="card-hook">而那句話，是動力，不是壓力</p>
+    </div>
+    <div class="card-body">
+
+      <p>以弗所書有一節，把這件事的順序講清楚了。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">並要以恩慈相待，存憐憫的心，彼此饒恕，正如神在基督裡饒恕了你們一樣
+        </p>
+        <p class="scripture-ref">以弗所書 四章三十二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「正如……一樣」那句話，方向是很重要的</strong>
+        它不是說：<strong>你先饒恕，神才饒恕你。</strong><br><br>它說的是：<strong>神已經饒恕了你，所以你也這樣。</strong><br><br>——那是<strong>已經完成的事</strong>，在推動<strong>還沒完成的事</strong>。<br><br>所以那不是門檻。<br><br><strong>那是動力。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💧</span>
+        我想到一個裝滿了水的杯子。<br><br>它不需要用力，水就會滿出來。<br><br>——而一個空杯子，再怎麼傾斜，也倒不出東西。<br><br>所以饒恕不出來的時候，也許問題不在意志。<br><br>是<strong>還沒有真的看見自己被免了多少</strong>。
+      </div>
+
+      <div class="big-quote">
+        免我們的債，<br>如同我們免了人的債
+        <cite>— 馬太福音 六章十二節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那把尺。</p>
+
+      <p>那句話確實很危險：請照著我對待別人的方式，來對待我。</p>
+
+      <p>——而換一個角度看，那句話也是一個提醒。</p>
+
+      <p>因為每一次念到那裡，你就會想起心裡那個名字。</p>
+
+      <p>而那不是要定你的罪。</p>
+
+      <p>那是<strong>每天都給你一次機會</strong>。</p>
+
+      <p>——因為主把那句話，放進了<strong>日常</strong>的禱告裡。</p>
+
+      <p>跟「日用的飲食」放在一起。</p>
+
+      <p>那意味著：這件事，是一天一天做的。</p>
+
+      <p>不是一次做完。</p>
+
+      <p>而如果你今天還做不到——</p>
+
+      <p>那就先禱告。先為那個人叫一次名字。</p>
+
+      <p>——而那個十字架上的人，是在<strong>還被釘著的時候</strong>說那句話的。</p>
+
+      <p>願你今天，鬆開一點點。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  求赦免與赦免人 · Threads Series
+</footer>
+
+</body>
+</html>

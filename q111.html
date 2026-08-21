@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>讀經的通病 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>三個<span>通病</span></h1>
+  <p class="subtitle">讀經生活中，最常卡住的三個地方</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">讀完了，然後呢？</h2>
+      <p class="card-hook">那種「什麼都沒發生」的感覺</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一陣子我很規律地讀經。時間固定，份量固定，進度也沒落下。</p>
+
+      <p>而我心裡有一個說不出口的問題：<strong>然後呢？</strong></p>
+
+      <div class="highlight">
+        <strong>那個狀態是這樣的</strong>
+        我讀完了那一章。我知道那一章在講什麼。我甚至可以複述。<br><br>而我闔上書的時候，<strong>什麼都沒有發生。</strong><br><br>沒有被刺到，沒有被安慰到，沒有被提醒任何事。<br><br>——像是完成了一項作業。
+      </div>
+
+      <p>而讓我開始檢查的，是希伯來書那句話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為有福音傳給我們，像傳給他們一樣；只是所聽見的道與他們無益，因為他們沒有信心與所聽見的道調和
+        </p>
+        <p class="scripture-ref">希伯來書 四章二節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🥄</span>
+        「<strong>調和</strong>」那個字，帶有<strong>混合、拌在一起</strong>的意思。<br><br>而那個畫面很具體：兩樣東西倒在一起，如果不攪拌，它們會分層。<br><br>——油浮在上面，水沉在下面。<strong>看起來都在同一個杯子裡，而它們沒有混。</strong><br><br>而那正是我當時的狀態：<strong>道進來了，而它沒有跟我混在一起。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那三個通病。</p>
+
+      <p>而它們有一個共同點：<strong>不是讀得不夠，是有東西卡在中間。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">以馬忤斯路上，主的第一句話是責備</h2>
+      <p class="card-hook">而祂責備的，正是這件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>復活那天下午，兩個門徒往以馬忤斯去。他們把整件事說了一遍——資料完全正確：主被釘、被埋、婦女說墳墓是空的、有人去看也是如此。</p>
+
+      <p>而主對他們說的第一句話，是責備：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">無知的人哪，先知所說的一切話，你們的心信得太遲鈍了
+        </p>
+        <p class="scripture-ref">路加福音 二十四章二十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>注意祂責備的是什麼</strong>
+        不是「你們讀得不夠」——他們讀得很多。<br>不是「你們資料錯了」——他們的資料是對的。<br><br>是：<strong>「你們的<span style="font-size:inherit;">心</span>信得太遲鈍了。」</strong><br><br>——問題在<strong>心</strong>，不在頭腦。<br><br>那些經文他們從小背。而那些話沒有進到心裡去。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧠</span>
+        而這正是第一個通病：<strong>只用頭腦讀，不用心靈讀。</strong><br><br>那兩個門徒是最好的例子——因為他們的頭腦部分完全合格。<br><br>他們知道所有的事實。<strong>而他們正在往回走。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主接下來做的事，也很值得注意。</p>
+
+      <div class="highlight">
+        <strong>祂沒有給他們新的資料</strong>
+        祂做的是：「<strong>從摩西和眾先知起，凡經上所指著自己的話都給他們講解明白了。</strong>」<br><br>——那些經文，他們本來就有。<br><br>而他們後來的反應是：「在路上，他和我們說話，給我們講解聖經的時候，<strong>我們的心豈不是火熱的嗎？</strong>」<br><br>——「<strong>心</strong>」火熱。<br><br>從「心信得太遲鈍」，到「心裡火熱」。<br><br>而中間發生的，是那一位親自講解。
+      </div>
+
+      <p>那麼，那三個通病是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個通病</h2>
+      <p class="card-hook">頭腦、字句、成見</p>
+    </div>
+    <div class="card-body">
+
+      <p>讀經生活中的通病，有三個：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、只用頭腦讀，不用心靈讀</span>
+          <strong>沒有信心與神的道調和。</strong><br>「無知的人哪，先知所說的一切話，你們的<strong>心</strong>信得太遲鈍了。」（路廿四 25～27）<br>「只是所聽見的道與他們無益，因為他們<strong>沒有信心與所聽見的道調和</strong>。」（參來四 2）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、只重字句，不重精意</span>
+          「<strong>字句是叫人死，精意是叫人活。</strong>」（參林後三 6）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、心有成見</span>
+          「然而直到今日，每逢誦讀摩西書的時候，<strong>帕子還在他們心上</strong>。」（參林後三 15）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這三個通病，其實是三種不同的「卡住」：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>通病</th>
+            <th>卡在哪裡</th>
+            <th>症狀</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">只用頭腦</td>
+            <td>道進來了，<strong>沒有與信心調和</strong></td>
+            <td>讀懂了，而心裡沒有任何動靜</td>
+          </tr>
+          <tr>
+            <td class="src">只重字句</td>
+            <td>停在<strong>表面的文字</strong>上</td>
+            <td>抓住規條，錯過精神；或者鑽細節，錯過重點</td>
+          </tr>
+          <tr>
+            <td class="src">心有成見</td>
+            <td><strong>進來之前就被擋掉了</strong></td>
+            <td>只看見自己本來就相信的；不合的部分自動略過</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第三項最嚴重，因為它發生在最前面</strong>
+        前兩項，至少那些話進來了——只是沒有被消化。<br><br>而<strong>成見</strong>是一道濾網：那些話<strong>還沒進來，就被篩掉了。</strong><br><br>而保羅用的意象是「<strong>帕子</strong>」——蓋在臉上的布。<br><br>——你不會知道你沒看見什麼。<strong>因為那被蓋住了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「字句」與「精意」那一組，最容易被誤讀，所以我想說清楚。</p>
+
+      <div class="highlight">
+        <strong>「不重字句」不是「可以不管經文怎麼寫」</strong>
+        因為那會滑向另一個極端：<strong>隨意解釋、想怎麼讀就怎麼讀。</strong><br><br>而保羅那句話的上下文，講的是<strong>兩種職事的對比</strong>：<br><br>「<strong>他叫我們能承當這新約的執事，不是憑著字句，乃是憑著精意；因為那字句是叫人死，精意是叫人活。</strong>」（林後三 6）<br><br>——他在對比的是<strong>刻在石版上的舊約體制</strong>，與<strong>寫在心版上的新約</strong>。<br><br>而下面幾節說得很明白：「用墨寫的……用永生神的靈寫的；不是寫在石版上，乃是寫在心版上。」<br><br>所以那個對比不是「文字 vs 靈意」，<strong>是「外面的條文 vs 裡面的生命」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        而「只重字句」實際上長什麼樣子？<br><br>主耶穌責備法利賽人的那些話，就是最好的例子：<br><br>「你們將薄荷、茴香、芹菜獻上十分之一，<strong>那律法上更重的事，就是公義、憐憫、信實，反倒不行了</strong>。」<br><br>——他們連廚房裡的香草都數過。<strong>而他們錯過了整件事的重點。</strong><br><br>而主接著說了一句很生動的話：「你們這瞎眼領路的，<strong>蠓蟲你們就濾出來，駱駝你們倒吞下去。</strong>」
+      </div>
+
+      <p>下一篇，我們細看那個「帕子」。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「帕子還在他們心上」</h2>
+      <p class="card-hook">而那個帕子，本來蓋在摩西臉上</p>
+    </div>
+    <div class="card-body">
+
+      <p>哥林多後書第三章那個「帕子」的比喻，來自出埃及記三十四章。</p>
+
+      <div class="highlight">
+        <strong>那個典故是這樣的</strong>
+        摩西從西奈山下來，「<strong>因耶和華和他說話，臉皮就發了光</strong>」。<br><br>而亞倫和以色列人看見他，就怕挨近他。<br><br>於是摩西與他們說完話，就<strong>用帕子蒙上臉</strong>。<br><br>——而保羅把這個畫面，用在了讀經上。
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">然而直到今日，每逢誦讀摩西書的時候，帕子還在他們心上
+        </p>
+        <p class="scripture-ref">哥林多後書 三章十五節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧣</span>
+        而保羅做了一個轉換，很值得注意：<br><br>原本那塊帕子，是<strong>蓋在摩西臉上</strong>的。<br><br>而保羅說：如今那塊帕子，<strong>在讀經的人心上</strong>。<br><br>——位置換了。<br><br>問題不在經文那一邊（經文一直在發光）。<br><br><strong>問題在讀的人這一邊。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅接著說了那個帕子怎麼除去：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但他們的心幾時歸向主，帕子就幾時除去了
+        </p>
+        <p class="scripture-ref">哥林多後書 三章十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        「<strong>心幾時歸向主，帕子就幾時除去</strong>」——注意那個對應。<br><br>不是「讀得更用功，帕子就會薄一點」。<br>不是「懂得更多，就看得見了」。<br><br>是<strong>心的轉向</strong>。<br><br>而下一節接著說：「<strong>主就是那靈；主的靈在哪裡，那裡就得以自由。</strong>」<br><br>——所以除帕子這件事，是聖靈做的。<br><br>這也正好接上前一題的第五項：<strong>須求聖靈啟導。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「調和」那個字，也值得看。</p>
+
+      <div class="term-box">
+        <div class="term-original">Synkerannymi<br>調和</div>
+        <div class="term-desc">希伯來書四章二節：「因為他們沒有信心與所聽見的道<strong>調和</strong>。」<br><br>這個字由 syn（一同）＋ kerannymi（混合）組成——字面是「<strong>混在一起</strong>」。<br><br>而保羅在哥林多前書用同一個字來形容身體：「神配搭這身子……」——那個「配搭」是同一個字。<br><br>所以那個意象是：<strong>兩樣東西不只是放在一起，是融為一體。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那節經文最尖銳的地方在於：<strong>「有福音傳給我們，像傳給他們一樣。」</strong><br><br>——同樣的道，傳給了兩批人。<br><br>而結果不同。<br><br>「只是所聽見的道<strong>與他們無益</strong>」——因為那道沒有與信心調和。<br><br>所以聽見了，不等於得著。<br><br>而那一段講的正是<strong>出埃及那一代</strong>：他們親眼看過紅海分開、親口吃過嗎哪——<strong>而他們倒斃在曠野。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">成見這件事，人是看不見自己的</h2>
+      <p class="card-hook">而那正是它最麻煩的地方</p>
+    </div>
+    <div class="card-body">
+
+      <p>三個通病裡，最難處理的是<strong>成見</strong>。</p>
+
+      <div class="highlight">
+        <strong>因為前兩個，你自己會察覺</strong>
+        「只用頭腦讀」——你會發現自己心裡很乾。<br>「只重字句」——別人可能會提醒你。<br><br>而<strong>成見不會有症狀</strong>。<br><br>因為一個帶著成見讀經的人，<strong>讀起來感覺非常好</strong>：<br><br>每一段都印證了他本來就相信的。<br>每一節都支持他原本的立場。<br><br>——那種「處處印證」的感覺，很容易被誤認為是聖靈的引導。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕶️</span>
+        我想到戴著有色眼鏡的人。<br><br>他不會覺得「這個世界看起來有點藍」。<br><br>他會覺得<strong>世界本來就是這個顏色</strong>。<br><br>——因為那副眼鏡，是他從來沒有拿下來過的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而成見最常見的來源，我想列出幾種：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 過去的傷</span>
+          一個被權威傷過的人，讀到「順服」會自動繃緊。<br>一個被父親忽略過的人，讀「天父」時會有一層擋在中間。<br><br>——那些不是理性的抗拒。<strong>那是更深的東西。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 已經有的立場</span>
+          當一個人心裡已經有答案，讀經就會變成<strong>找支持的段落</strong>。<br><br>而聖經很長。<strong>幾乎任何立場，都找得到幾節看起來支持的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 不想改的那件事</span>
+          這一種最誠實，也最少被承認。<br><br>當一段經文碰到一件我不打算改的事，心會自動找出路：<br>「這是給當時的人的」、「這要看上下文」、「這不是字面的意思」。<br><br>——而那些理由，本身可能都是對的。<strong>問題在於使用的時機。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 熟悉本身</span>
+          太熟的經文，會失去刺。<br><br>「神愛世人」——熟到聽不見了。<br><br>而以馬忤斯那兩個門徒，正是被熟悉擋住的。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而處理成見，聖經給的方向只有一個</strong>
+        「但他們的<strong>心幾時歸向主</strong>，帕子就幾時除去了。」<br><br>——不是「更努力客觀」，不是「多讀幾種註解」。<br><br>是<strong>心的轉向</strong>。<br><br>而那件事，可以求。<br><br>詩篇一一九篇那句正是：「求你<strong>開我的眼睛</strong>，使我看出你律法中的奇妙。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想留下幾個很實際的自我檢查。它們不能根除成見，但可以讓它現形：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>問題</th>
+            <th>在檢查什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">最近有沒有一段經文，讓我不舒服？</td>
+            <td>如果<strong>很久沒有</strong>——那可能是帕子的跡象。<br>因為一個真的在讀的人，會定期被刺到。</td>
+          </tr>
+          <tr>
+            <td class="src">我有沒有「自動跳過」的段落？</td>
+            <td>那些跳過的，往往正是要說我的。</td>
+          </tr>
+          <tr>
+            <td class="src">我讀完之後，有沒有一件可以做的事？</td>
+            <td>「你們既知道這事，若是<strong>去行</strong>就有福了。」</td>
+          </tr>
+          <tr>
+            <td class="src">我有沒有跟人一起讀？</td>
+            <td>別人的眼睛，常常看得見我的帕子。<br>——而這正是下一題會談到的：<strong>與明白真理的人共同研讀。</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第一項，我覺得最有用</strong>
+        因為它反過來檢查：<strong>不是「我讀到了什麼」，是「有沒有東西刺到我」。</strong><br><br>希伯來書說：神的道「比一切兩刃的劍更快……<strong>連心中的思念和主意都能辨明</strong>」。<br><br>——一把那樣的劍，不可能每次都沒有感覺。<br><br>所以如果很久沒有被刺到了，<strong>那大概不是那把劍鈍了。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那兩個門徒，後來回頭了</h2>
+      <p class="card-hook">寫給那個覺得自己讀經一直沒有進展的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>三個通病看完，如果你在其中對號入座了——那是好事。</p>
+
+      <div class="highlight">
+        <strong>因為「通病」的意思，是大家都有</strong>
+        而那兩個往以馬忤斯去的門徒，是最好的例子：<br><br>他們的頭腦部分合格，心卻遲鈍。<br>他們熟悉經文，卻被熟悉擋住。<br>他們心裡有一個成見——<strong>「彌賽亞不會被釘死」</strong>。<br><br>——三個通病，他們都有。<br><br>而主做的，不是放棄他們。<strong>祂陪他們走了十一公里。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚶</span>
+        而那一段路的細節很溫柔。<br><br>祂先<strong>問</strong>：「你們走路彼此談論的是甚麼事呢？」——讓他們把話說出來。<br><br>然後祂<strong>責備</strong>：「無知的人哪……」<br><br>然後祂<strong>講解</strong>：從摩西和眾先知起。<br><br>然後到了村子，「耶穌好像還要往前行，他們卻<strong>強留他</strong>」——而祂就進去了。<br><br>——那個「好像還要往前行」，是給他們一個機會開口留祂。<br><br>而他們留了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那個轉折發生在哪裡？</p>
+
+      <div class="highlight">
+        <strong>不是在講解的時候，是在擘餅的時候</strong>
+        「到了坐席的時候，耶穌拿起餅來，祝謝了，擘開，遞給他們。<strong>他們的眼睛明亮了，這才認出他來。</strong>」<br><br>——「眼睛明亮了」。<br><br>那個字，就是「開他們的心竅」的同一個字：<strong>徹底打開。</strong><br><br>而那個動作，是祂做的。
+      </div>
+
+      <p>而他們立刻起身，回耶路撒冷去。</p>
+
+      <p>同樣的十一公里，這次是在夜裡，往回走。</p>
+
+      <div class="big-quote">
+        但他們的心幾時歸向主，<br>帕子就幾時除去了
+        <cite>— 哥林多後書 三章十六節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個「然後呢」。</p>
+
+      <p>我後來調整的，不是讀的量，也不是讀的方法。</p>
+
+      <p>是<strong>讀之前，先說一句話。</strong></p>
+
+      <p>那句話很短：「求你開我的眼睛。」</p>
+
+      <p>因為那三個通病，說到底都是<strong>心的問題</strong>——而心的問題，方法治不了。</p>
+
+      <p>而那位在以馬忤斯路上講解聖經的，今天也在。</p>
+
+      <p>願你今天，也有那個「眼睛明亮了」的一刻。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  讀經的通病 · Threads Series
+</footer>
+
+</body>
+</html>

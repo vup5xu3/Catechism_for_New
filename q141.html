@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>禱告的最高目的 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>父的名、父的國、<span>父的旨意</span></h1>
+  <p class="subtitle">主教導門徒，禱告的最高目的是甚麼？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我的禱告，通常從第四句開始</h2>
+      <p class="card-hook">而主教的那篇，前三句在別的地方</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>把主禱文攤開來看，會發現一件事。</p>
+
+      <div class="highlight">
+        <strong>它的前三句，沒有一句是關於我的</strong>
+        願人都尊<strong>你的名</strong>為聖。<br>願<strong>你的國</strong>降臨。<br>願<strong>你的旨意</strong>行在地上，如同行在天上。<br><br>——三句，主詞都是「<strong>你的</strong>」。<br><br>而第四句才是：「我們日用的飲食，今日賜給我們。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎬</span>
+        而我自己的禱告，通常<strong>從第四句開始</strong>。<br><br>——直接進入需要。<br><br>那不是不敬虔，只是本能：<strong>人一開口，就是自己的事。</strong><br><br>而主教的那篇，先花了三句，把眼睛<strong>抬起來</strong>。
+      </div>
+
+      <p>而這一題問的，正是那三句。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「你們要先求他的國和他的義」</h2>
+      <p class="card-hook">而那句話，是接在「不要憂慮」後面的</p>
+    </div>
+    <div class="card-body">
+
+      <p>馬太福音第六章，主講完主禱文之後，接著講了一大段關於憂慮的話。</p>
+
+      <div class="highlight">
+        <strong>而祂舉的例子，全部是很實際的需要</strong>
+        「不要為<strong>生命</strong>憂慮吃甚麼，喝甚麼；為<strong>身體</strong>憂慮穿甚麼。」<br><br>——吃、喝、穿。<br><br>那不是奢侈的東西，那是<strong>活下去需要的東西</strong>。<br><br>而祂說：「你們需用的這一切東西，<strong>你們的天父是知道的</strong>。」
+      </div>
+
+      <p>然後祂給了那個順序：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們要先求他的國和他的義，這些東西都要加給你們了
+        </p>
+        <p class="scripture-ref">馬太福音 六章三十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話的結構，值得看清楚</strong>
+        「<strong>先求</strong>他的國和他的義」——那是第一順位。<br><br>「這些東西都要<strong>加給</strong>你們了」——那是附帶的。<br><br>——注意「加給」那個詞。<br><br>它的意思是<strong>「另外加上去」</strong>。<br><br>所以那些東西不是被否定了，是被<strong>放到第二順位</strong>，並且被保證了。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧺</span>
+        我想到一個裝東西的籃子。<br><br>如果你先把小東西一件一件塞滿，大的就放不進去了。<br><br>——而如果先把大的放進去，小的會落在縫隙裡，剛剛好。<br><br>而主教的那三句，就是<strong>先放大的那幾樣</strong>。
+      </div>
+
+      <p>下一篇，我們把三個目的列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三個目的</h2>
+      <p class="card-hook">名、國、旨意</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、願天父的名被尊為聖</span>
+          「願人都尊你的名為聖。」<br>（太六 9）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、願天父的國降臨</span>
+          「願你的國降臨。」<br>（太六 10）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、願天父的旨意行在地上</span>
+          「願你的旨意行在地上，如同行在天上。」<br>（太六 10）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>因此——</strong>
+        我們禱告的時候，應當以<strong>父的名</strong>、<strong>父的國</strong>、<strong>父的旨意</strong>為重。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三句，其實是<strong>由內往外</strong>展開的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一句</th>
+            <th>關乎</th>
+            <th>範圍</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>你的名</strong></td>
+            <td>祂<strong>是誰</strong>——祂的身分、性情、位分</td>
+            <td>祂本身</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>你的國</strong></td>
+            <td>祂的<strong>統治</strong>——祂作王的範圍</td>
+            <td>祂的權柄所及</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>你的旨意</strong></td>
+            <td>祂的<strong>心意</strong>——祂要成就的事</td>
+            <td>「<strong>行在地上</strong>」——落到這裡</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而三句的動詞，全部是「願」</strong>
+        願人都尊……願你的國……願你的旨意……<br><br>——「願」的意思是：<strong>我盼望這件事發生。</strong><br><br>而那三句在文法上都是<strong>祈使</strong>的語氣。<br><br>所以那不是三句讚美詞。<br><br><strong>那是三個很強烈的請求。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「尊為聖」那三個字，意思常常被讀淺了。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✨</span>
+        「聖」的本意是<strong>「分別出來、不與別的混同」</strong>。<br><br>——所以「尊你的名為聖」，不是「說你的名字很好聽」。<br><br>是：<strong>把祂當作祂本來的那一位對待</strong>，不把祂跟別的擺在同一格。<br><br>而反過來說，「妄稱神的名」的問題，正是<strong>把那個名字當成了普通的東西</strong>。
+      </div>
+
+      <p>下一篇，我們一句一句看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那三句，各自在求什麼</h2>
+      <p class="card-hook">而它們都有舊約的根</p>
+    </div>
+    <div class="card-body">
+
+      <p><strong>第一句：願人都尊你的名為聖。</strong></p>
+
+      <div class="highlight">
+        <strong>而以西結書有一段，正好講這件事</strong>
+        神說：以色列人在列國中「<strong>褻瀆了我的聖名</strong>」——因為外邦人看見他們的行為，就說「這是耶和華的民」。<br><br>而神說：<br><br>「我要使我的大名顯為聖；這名在列國中已被褻瀆，就是你們在他們中間所褻瀆的。<strong>我在他們眼前，在你們身上顯為聖的時候，他們就知道我是耶和華。</strong>」（結卅六 23）<br><br>——所以「尊名為聖」不只是嘴上的事。<br><br><strong>那個名字，是靠著屬祂的人的生活被尊、也被褻瀆的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏷️</span>
+        我想到一個牌子。<br><br>一間店的招牌好不好，不是靠招牌本身的字寫得漂不漂亮。<br><br>是靠<strong>裡面的人怎麼做事</strong>。<br><br>——而主說過同樣的話：<br><br>「你們的光也當這樣照在人前，叫他們看見你們的好行為，<strong>便將榮耀歸給你們在天上的父</strong>。」（太五 16）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p><strong>第二句：願你的國降臨。</strong></p>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「神的國」在福音書裡，有兩個時態同時存在：<br><br><strong>已經來了</strong>——「我若靠著神的靈趕鬼，這就是<strong>神的國臨到你們了</strong>。」（太十二 28）<br><br><strong>還沒有完全</strong>——「願你的國<strong>降臨</strong>。」（太六 10）<br><br>——所以這一句求的是：<strong>那個已經開始的，快快成全。</strong><br><br>而聖經最後一卷書的倒數第二節，正是同一個禱告：<br><br>「<strong>主耶穌啊，我願你來！</strong>」（啟廿二 20）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        我想到天亮之前。<br><br>天邊已經有光了——那是真的，不是錯覺。<br><br>而太陽還沒有出來。<br><br>——而「願你的國降臨」，就是站在那個時刻說的話。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p><strong>第三句：願你的旨意行在地上，如同行在天上。</strong></p>
+
+      <div class="highlight">
+        <strong>而那句話的比較對象，是「天上」</strong>
+        ——在天上，祂的旨意是<strong>毫無阻礙</strong>地成就的。<br><br>「聽從他命令、成全他旨意、<strong>有大能的天使</strong>，都要稱頌耶和華！」（詩一〇三 20）<br><br>而在地上，不是。<br><br>——所以這一句在求的是：<strong>讓這裡，變得像那裡。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而這一句，主自己在客西馬尼園禱告過。<br><br>「他又去第二次禱告說：我父啊，這杯若不能離開我，必要我喝，就<strong>願你的意旨成全</strong>。」（太廿六 42）<br><br>——注意那和主禱文用的是同一句話。<br><br>所以主教門徒說的那一句，<strong>祂自己在最難的那一夜，親自說了一遍。</strong><br><br>而那一夜的處境是：汗珠如大血點滴在地上。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼要先求那三句</h2>
+      <p class="card-hook">因為它們會改變後面三句的內容</p>
+    </div>
+    <div class="card-body">
+
+      <p>那三句放在前面，不只是禮貌上的次序。</p>
+
+      <p>它們會<strong>實際改變</strong>後面那三句的內容。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">先求「你的名」，會改變我求的方式</span>
+          因為如果我真的在乎那個名字的分量，<br>我就不會把祂當成<strong>解決問題的窗口</strong>。<br><br>——關係會回到正確的位置。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">先求「你的國」，會改變我求的尺度</span>
+          因為在一個更大的圖景裡，我的難處會被<strong>放回它的比例</strong>。<br><br>——不是變得不重要，是<strong>不再是全部</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">先求「你的旨意」，會改變我求的內容</span>
+          因為說完那一句之後，<br>我再求的東西，會自然地加上一句：<strong>「如果那是好的。」</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個改變，是很實際的</strong>
+        雅各書說：「你們求也得不著，是因為你們<strong>妄求</strong>，要浪費在你們的宴樂中。」（雅四 3）<br><br>——「妄求」的意思是<strong>求得不對</strong>。<br><br>而主禱文的前三句，正是在<strong>校正那個方向</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「以父的旨意為重」，最難的地方在於：<strong>有時候答案是不。</strong></p>
+
+      <div class="highlight">
+        <strong>而保羅的例子，值得看</strong>
+        「有一根刺加在我肉體上……我三次求過主，叫這刺離開我。」（林後十二 7～8）<br><br>——三次。<br><br>而主的回答是：<br><br>「<strong>我的恩典夠你用的，因為我的能力是在人的軟弱上顯得完全。</strong>」<br><br>——那不是「好」。<br><br>而保羅的反應是：「<strong>所以，我更喜歡誇自己的軟弱</strong>，好叫基督的能力覆庇我。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        而那個轉變，我覺得是禱告最深的一層。<br><br>他求的事沒有成。<br><br>而他得到的，是<strong>那位本人</strong>。<br><br>——「我的恩典夠你用的。」<br><br>那句話的主詞是<strong>「我的」</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而有一個很常見的誤會，需要說清楚。</p>
+
+      <div class="highlight">
+        <strong>「以父的名、國、旨意為重」，不等於「不可以求自己的事」</strong>
+        因為主禱文的後半段，講的全部是我們的事：<br><br><strong>日用的飲食</strong>、<strong>免我們的債</strong>、<strong>不叫我們遇見試探</strong>。<br><br>——吃飯、罪、試探。<br><br>那是一個人最實際的三個需要。<br><br>而主把它們寫進了那篇禱告裡。<br><br>所以問題從來不是「求自己的事」。<br><br><strong>問題是次序。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        我想到出門前先看地圖。<br><br>看地圖不會取消你要去的地方。<br><br>——它只是讓你<strong>知道自己在哪裡</strong>。<br><br>而主禱文的前三句，做的就是這件事：<br><br>在講自己的事之前，先<strong>把座標定好</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「你們的天父是知道的」</h2>
+      <p class="card-hook">寫給那個怕自己的事被排到後面的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>而讀完這一題，可能會有一個擔心：</p>
+
+      <div class="highlight">
+        <strong>「那我的事怎麼辦？」</strong>
+        如果什麼都要以祂的名、祂的國、祂的旨意為重——<br><br>那我那些很急的事呢？<br><br>那個檢查報告。那筆錢。那個關係。那份工作。<br><br>——它們會不會就被排到很後面去了？
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而主在講完「先求他的國」之前，先講了一句話：<br><br>「你們需用的這一切東西，<strong>你們的天父是知道的</strong>。」（太六 32）<br><br>——「<strong>是知道的</strong>」。<br><br>所以「先求他的國」不是要你<strong>假裝那些事不重要</strong>。<br><br>是因為<strong>那些事已經有人在記著了</strong>。<br><br>你不必一直提醒祂。
+      </div>
+
+      <div class="highlight">
+        <strong>而祂舉的兩個例子，都很小</strong>
+        「你們看那天上的飛鳥，也不種，也不收，也不積蓄在倉裡，<strong>你們的天父尚且養活牠</strong>。」<br><br>「你想野地裡的百合花怎麼長起來……<strong>就是所羅門極榮華的時候，他所穿戴的，還不如這花一朵呢！</strong>」<br><br>——鳥和花。<br><br>而祂的推論是：「<strong>何況你們呢！</strong>」
+      </div>
+
+      <div class="big-quote">
+        你們要先求他的國和他的義，<br>這些東西<br>都要加給你們了
+        <cite>— 馬太福音 六章三十三節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那件事。</p>
+
+      <p>我的禱告，通常從第四句開始。</p>
+
+      <p>而後來我試著做一件很小的事：</p>
+
+      <p><strong>在講自己的事之前，先把那三句念一遍。</strong></p>
+
+      <p>不是很虔誠地念，就是慢慢地、認真地念一遍。</p>
+
+      <p>——而我發現一件事。</p>
+
+      <p>念完那三句之後，我要求的那些事，<strong>常常會變。</strong></p>
+
+      <p>有時候變小了。有時候變得更清楚了。</p>
+
+      <p>有時候我發現，我本來要求的，其實不是我真正需要的。</p>
+
+      <p>——而那三句，什麼都沒有改變。</p>
+
+      <p>它們只是<strong>讓我先看見祂</strong>。</p>
+
+      <p>願你今天，從第一句開始。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  禱告的最高目的 · Threads Series
+</footer>
+
+</body>
+</html>

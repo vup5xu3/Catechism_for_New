@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖經的中心大題 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>中心<span>大題</span></h1>
+  <p class="subtitle">舊約預表並預言祂，新約介紹並講論祂</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">讀了很多，卻拼不起來</h2>
+      <p class="card-hook">而問題不是讀得不夠，是沒有中心</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一段時間，我讀經讀得很勤，卻有一種說不上來的散。</p>
+
+      <div class="highlight">
+        <strong>那種散是這樣的</strong>
+        我知道很多故事——挪亞、亞伯拉罕、大衛、以利亞。<br>我背了不少經文——分佈在各卷。<br>我也讀過不少注釋。<br><br>而如果有人問我：<strong>「那整本聖經，到底在講什麼？」</strong><br><br>我答不出一句話。<br><br>——我有很多點，而沒有那條線。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧩</span>
+        後來我想到一個比喻。<br><br>拼圖如果不看盒子上的圖，也可以拼——靠邊緣、靠顏色，慢慢試。<br><br>而<strong>看過那張圖之後，速度完全不一樣。</strong><br><br>因為你不再是「這一塊跟哪一塊接得上」，而是「這一塊在整幅畫的哪個位置」。<br><br>——而聖經有那張圖。
+      </div>
+
+      <p>而那張圖上的中心，只有一個名字。</p>
+
+      <p>接下來這幾篇，我想陪你把它放回中間。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「書卷上寫的是我」</h2>
+      <p class="card-hook">而那句話，本來是詩篇裡的一句</p>
+    </div>
+    <div class="card-body">
+
+      <p>希伯來書第十章，引用了詩篇四十篇的一段話，並且把它放在主耶穌口中：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">那時我說：神啊，我來了，為要照你的旨意行；我的事在經卷上已經記載了
+        </p>
+        <p class="scripture-ref">希伯來書 十章七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「我的事在經卷上已經記載了」</strong>
+        ——注意那個順序。<br><br>那句話是在祂「來」<strong>之前</strong>說的。<br><br>「我來了……<strong>我的事在經卷上已經記載了。</strong>」<br><br>所以那本書不是後來才被解釋成關於祂的。<br><br><strong>那本書從一開始就是關於祂的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主自己，對那些查考聖經卻沒有認出祂的人，說過一句更直接的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們查考聖經，因你們以為內中有永生；給我作見證的就是這經
+        </p>
+        <p class="scripture-ref">約翰福音 五章三十九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔍</span>
+        「查考」那個字，帶有<strong>搜索、發掘</strong>的意思——像在礦裡挖東西。<br><br>而祂說的是：那些人挖得很勤，<strong>而挖的目標搞錯了。</strong><br><br>他們以為經文本身就是永生。<br><br>而祂說：「<strong>給我作見證的就是這經</strong>……然而，你們不肯到我這裡來得生命。」<br><br>——經文是<strong>見證人</strong>，不是<strong>目的地</strong>。
+      </div>
+
+      <p>而還有一句，是啟示錄裡的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為預言中的靈意乃是為耶穌作見證</p>
+        <p class="scripture-ref">啟示錄 十九章十節</p>
+      </div>
+
+      <p>那麼，這個中心大題是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">就是「耶穌基督」</h2>
+      <p class="card-hook">兩邊，四個動詞</p>
+    </div>
+    <div class="card-body">
+
+      <p>聖經的中心大題，就是<strong>「耶穌基督」</strong>。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">舊約 —— 預表並預言基督</span>
+          <strong>預表</strong>：羔羊、祭壇、大祭司、會幕、逾越節、銅蛇、約拿。<br><strong>預言</strong>：伯利恆、童女、受苦的僕人、和平的君、駕雲降臨的人子。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">新約 —— 介紹並講論基督</span>
+          <strong>介紹</strong>：四福音記祂的生平。<br><strong>講論</strong>：書信闡明祂所成就的；行傳記祂的教會；啟示錄記祂的再來。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而由此帶出一個很實用的讀經原則</strong>
+        信徒研讀聖經，如能：<br><br><strong>在舊約中看見基督</strong>，<br><strong>在新約中認定基督為中心</strong>——<br><br>就<strong>不致不知門徑或不得要領了</strong>。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「不知門徑」與「不得要領」這兩個說法，指出了讀經時兩種不同的困難。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>困難</th>
+            <th>症狀</th>
+            <th>解方</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>不知門徑</strong></td>
+            <td>讀舊約時完全進不去——族譜、律例、度量、征戰，不知道從哪裡切入</td>
+            <td><strong>在舊約中看見基督</strong>——問那一段跟那一位有什麼關係</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>不得要領</strong></td>
+            <td>讀新約時知道很多道理，卻抓不到重心；變成一堆教訓、規矩、原則的集合</td>
+            <td><strong>在新約中認定基督為中心</strong>——那些教訓，全部是從祂而來、指向祂的</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎯</span>
+        我覺得第二種困難，反而更隱蔽。<br><br>因為一個「不得要領」的人，看起來讀得很好——他知道很多原則，可以講很多道理。<br><br>而那些原則，慢慢會脫離那一位，變成一套<strong>獨立運作的道德系統</strong>。<br><br>——然後信仰就變成了努力。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「在舊約中看見基督」，具體怎麼看？我把常見的幾種方式列出來：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 直接的預言</span>
+          彌迦書指名伯利恆；以賽亞書五十三章描寫受苦的僕人。<br>——這一類最明顯。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 預表（新約有明說的）</span>
+          逾越節的羔羊、銅蛇、約拿、麥基洗德、大祭司、會幕的幔子。<br>——這些<strong>新約自己指認過</strong>，最穩妥。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 那個「需要」</span>
+          律法叫人知罪；獻祭年年重複；祭司自己也需要贖罪；王一個一個敗壞。<br>——舊約用一整部歷史在說：<strong>需要有一位不會倒的。</strong>
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 神的性情</span>
+          出埃及記三十四章那段自我啟示、何西阿書那份不放棄的愛。<br>——而那位性情，在基督身上有了臉。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這裡要守一個分寸</strong>
+        第 ① ② 類，是<strong>經文自己指認的</strong>——那最穩。<br><br>而在第 ③ ④ 類上，可以看見指向，但<strong>不宜把每一個細節都硬套成預表</strong>。<br><br>——這正是下一題（q112）要處理的：<strong>謬解與強解</strong>。<br><br>而穩妥的做法是：<strong>新約說了的，我們照著看；新約沒說的，可以體會，但不當作定論。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">新約自己指認過的那些預表</h2>
+      <p class="card-hook">這一份清單，是最穩的起點</p>
+    </div>
+    <div class="card-body">
+
+      <p>要在舊約中看見基督，最穩妥的方法，是先看<strong>新約自己指認過的</strong>。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>舊約</th>
+            <th>新約的指認</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">逾越節的羔羊</td>
+            <td>「我們逾越節的羔羊<strong>基督</strong>已經被殺獻祭了。」（林前五 7）</td>
+          </tr>
+          <tr>
+            <td class="src">曠野的銅蛇</td>
+            <td>「摩西在曠野怎樣舉蛇，<strong>人子也必照樣被舉起來</strong>。」（約三 14）——主自己說的</td>
+          </tr>
+          <tr>
+            <td class="src">約拿三日三夜</td>
+            <td>「<strong>人子也要這樣三日三夜在地裡頭。</strong>」（太十二 40）——主自己說的</td>
+          </tr>
+          <tr>
+            <td class="src">曠野的嗎哪</td>
+            <td>「<strong>我就是生命的糧</strong>……你們的祖宗在曠野吃過嗎哪，還是死了。」（約六 48～51）</td>
+          </tr>
+          <tr>
+            <td class="src">磐石出水</td>
+            <td>「所喝的是出於隨著他們的靈磐石；<strong>那磐石就是基督</strong>。」（林前十 4）</td>
+          </tr>
+          <tr>
+            <td class="src">麥基洗德</td>
+            <td>「照著麥基洗德的等次<strong>永遠為祭司</strong>。」（來七）</td>
+          </tr>
+          <tr>
+            <td class="src">至聖所的幔子</td>
+            <td>「從幔子經過，<strong>這幔子就是他的身體</strong>。」（來十 20）</td>
+          </tr>
+          <tr>
+            <td class="src">亞當</td>
+            <td>「亞當乃是<strong>那以後要來之人的預像</strong>。」（羅五 14）</td>
+          </tr>
+          <tr>
+            <td class="src">安息日</td>
+            <td>「這些原是後事的影兒，那形體卻是基督。」（西二 16～17）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        這份清單有一個很重要的價值：<strong>它示範了方法。</strong><br><br>當你看見新約作者怎麼從舊約讀出基督，你就慢慢學會了那個讀法。<br><br>——而那正是主在以馬忤斯路上做的事：<strong>「從摩西和眾先知起，凡經上所指著自己的話都給他們講解明白了。」</strong><br><br>祂上了一堂示範課。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「在新約中認定基督為中心」，也有一個很清楚的證據：<strong>使徒講道的方式。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>講員</th>
+            <th>講道的中心</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">彼得（五旬節）</td>
+            <td>引約珥書、詩篇，結論是：「<strong>你們釘在十字架上的這位耶穌，神已經立他為主，為基督了。</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">腓利（對太監）</td>
+            <td>「腓利就開口<strong>從這經上起，對他傳講耶穌</strong>。」——那段經正是以賽亞書五十三章</td>
+          </tr>
+          <tr>
+            <td class="src">保羅（帖撒羅尼迦）</td>
+            <td>「本著聖經與他們辯論，講解陳明基督必須受害，從死裡復活；又說：<strong>我所傳與你們的這位耶穌就是基督。</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">保羅（哥林多）</td>
+            <td>「因為我曾定了主意，<strong>在你們中間不知道別的，只知道耶穌基督並他釘十字架。</strong>」（林前二 2）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而保羅那句「<strong>定了主意，不知道別的</strong>」，語氣特別強。<br><br>因為哥林多是一個崇尚辯才與哲學的城市——保羅大可以用他們喜歡的方式講。<br><br>而他刻意不。<br><br>他前一句說：「我到你們那裡去，並沒有用高言大智對你們宣傳神的奧祕。」<br><br>——那是一個<strong>取捨</strong>。<br><br>他把中心固定住了。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">中心錯了，其餘都會歪</h2>
+      <p class="card-hook">而最常見的替代中心，有三種</p>
+    </div>
+    <div class="card-body">
+
+      <p>一本書可以有很多主題。而「中心大題」的意思是：<strong>其餘的一切，都繞著它轉。</strong></p>
+
+      <p>而如果中心換了，整本書的讀法就會歪掉。我想列出三種常見的替代中心。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">替代一：以「我」為中心</span>
+          讀每一段的時候，問的是：<strong>「這對我有什麼用？」</strong><br><br>結果是：聖經變成一本人生指南。<br>而那些「用不上」的部分——族譜、律例、審判——就被跳過了。<br><br>而更麻煩的是：<strong>那些應許會被抽離上下文，變成對自己的保證。</strong>
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">替代二：以「道德」為中心</span>
+          把每個人物讀成榜樣：學大衛的勇敢、學但以理的堅持、學約瑟的貞潔。<br><br>而問題是：<strong>那些人的失敗怎麼辦？</strong><br>大衛犯了姦淫與謀殺，挪亞醉酒，亞伯拉罕說謊兩次，彼得三次不認主。<br><br>——聖經對人的記載，誠實到不適合當道德教材。<br><br>因為它記那些，<strong>本來就不是要人學他們。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">替代三：以「知識」為中心</span>
+          把聖經當成一個待解的系統：預言的時間表、數字的意義、預表的對應。<br><br>而主對那些人說過：「你們<strong>查考</strong>聖經……然而，你們<strong>不肯到我這裡來</strong>得生命。」<br><br>——那是走到門口，卻沒有進去。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這三種替代，有一個共同的特徵</strong>
+        它們都<strong>可以運作得很好</strong>——至少一段時間。<br><br>以「我」為中心的人，會覺得聖經很實用。<br>以「道德」為中心的人，會活得很努力。<br>以「知識」為中心的人，會懂得很多。<br><br>——所以它們不容易被發現。<br><br>而它們共同缺的，是那一位。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「以基督為中心」，實際上會怎麼改變讀法？我舉一個例子。</p>
+
+      <div class="highlight">
+        <strong>大衛與歌利亞</strong>
+        <strong>道德讀法</strong>：學大衛的勇敢，去面對你生命中的巨人。<br>——這個讀法很勵志，而且常被使用。<br><br>而問題是：<strong>那個故事裡，以色列全軍在做什麼？</strong><br><br>他們在害怕，在後面看。<br><br>而歌利亞提的是<strong>「代表之戰」</strong>：「你們揀選一個人，使他下到我這裡來。他若能與我戰鬥，將我殺死，我們就作你們的僕人。」<br><br>——所以那不是一個「每個人都要打敗自己的巨人」的故事。<br><br><strong>那是一個「有一位代表我們去打，而他贏了，我們就得自由」的故事。</strong><br><br>而百姓做了什麼？<strong>他們什麼都沒做。他們得著了那場勝利。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗡️</span>
+        而這兩種讀法，導向的生命完全不同。<br><br>一種說：<strong>你要像大衛一樣勇敢。</strong>——而你會累。<br><br>一種說：<strong>有一位代替你去打了，而祂贏了。</strong>——而那是福音。<br><br>而有意思的是：那個故事裡，大衛用的不是自己的兵器。他脫下掃羅的鎧甲，說「我素來沒有穿慣」，然後拿了五塊光滑的石子。<br><br>——連那個「勇敢」，都不是靠裝備來的。
+      </div>
+
+      <div class="highlight">
+        <strong>而這正是那句話的意思</strong>
+        <strong>「在舊約中看見基督」</strong>——不是把每個細節都硬套，而是問：<br><br>「這一段，在整個救恩的故事裡，站在什麼位置？」<br><br>而那個問題，會把散落的點，接回那條線上。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">那本書，是為了讓你認識一位</h2>
+      <p class="card-hook">寫給那個讀了很多、卻覺得神很遙遠的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在約翰福音那句話上。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">給我作見證的就是這經。然而，你們不肯到我這裡來得生命
+        </p>
+        <p class="scripture-ref">約翰福音 五章三十九至四十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那句話裡有一個很沉的「然而」</strong>
+        他們查考。他們熟。他們以為內中有永生。<br><br><strong>然而。</strong><br><br>——那個「然而」的意思是：<strong>做完了那一切，還可以沒有到。</strong><br><br>而主說的是：<strong>「你們不肯到我這裡來。」</strong><br><br>不是「你們讀得不夠」，不是「你們理解錯了」。<br><br>是「<strong>不肯來</strong>」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💌</span>
+        我想到一個比方。<br><br>如果有人把一封情書研究得很透——分析文法、統計用詞、考證紙張年代——<br><br>而從來沒有去見寫信的那個人。<br><br>那他做的事，跟那封信的用意，是脫節的。<br><br>——而聖經是一封那樣的信。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻讀了很多、卻覺得神很遙遠——</p>
+
+      <div class="highlight">
+        <strong>我想留下一個很小的調整</strong>
+        讀每一段的時候，多問一個問題：<br><br><strong>「這一段，讓我看見祂的什麼？」</strong><br><br>不是「這對我有什麼用」。<br>不是「我該學什麼」。<br><br>而是：<strong>祂是什麼樣的一位。</strong><br><br>——因為那本書的目的，約翰說得很清楚：<br><br>「但記這些事要叫你們<strong>信耶穌是基督，是神的兒子</strong>；並且叫你們信了他，就可以因他的名<strong>得生命</strong>。」
+      </div>
+
+      <div class="big-quote">
+        我的事在經卷上已經記載了
+        <cite>— 希伯來書 十章七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那種「散」的感覺。</p>
+
+      <p>後來把中心放回去之後，那些散落的點，慢慢接起來了。</p>
+
+      <p>那些族譜——是在保守一條血脈。</p>
+
+      <p>那些律例——是在畫一個輪廓。</p>
+
+      <p>那些失敗的王——是在說「需要一位不會倒的」。</p>
+
+      <p>那些哀哭的詩——是在等一位真的會來的。</p>
+
+      <p>而它們全部，指向同一個名字。</p>
+
+      <p>願你翻開任何一頁，都能在那裡看見祂。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖經的中心大題 · Threads Series
+</footer>
+
+</body>
+</html>

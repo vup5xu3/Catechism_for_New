@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主擔當我們的疾病 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>他<span>擔當</span>了</h1>
+  <p class="subtitle">「主耶穌擔當我們的疾病而受鞭傷」，這話可信嗎？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「可信嗎」——這個問題問得很誠實</h2>
+      <p class="card-hook">而這一題的回答，非常乾脆</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這一題的問法，我覺得很好。</p>
+
+      <div class="highlight">
+        <strong>因為它沒有裝作沒有疑問</strong>
+        它直接問：<strong>「這話是可信的嗎？」</strong><br><br>——而那個疑問，是很多人心裡真實有的。<br><br>因為那句話聽起來太大了。<br><br>而我們身邊有太多沒有好的例子。
+      </div>
+
+      <p>而這一題的回答，只有三個字加一個驚嘆號：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">✅</span>
+        <strong>「十分可信！」</strong><br><br>——然後它給了<strong>四個根據</strong>。<br><br>而那四個根據，一個比一個近：<br><br>從<strong>白紙黑字</strong>，到<strong>發生過的事</strong>，到<strong>此刻還在的恩賜</strong>，到<strong>你今天可以做的事</strong>。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那四個根據。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">以賽亞書五十三章，是七百年前寫的</h2>
+      <p class="card-hook">而馬太福音在一個晚上引用了它</p>
+    </div>
+    <div class="card-body">
+
+      <p>以賽亞書第五十三章，是舊約裡描述受苦僕人最完整的一章。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他誠然擔當我們的憂患，背負我們的痛苦
+        </p>
+        <p class="scripture-ref">以賽亞書 五十三章四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而馬太福音記載一個晚上的事，然後引了這一節</strong>
+        「到了晚上，有人帶著許多被鬼附的來到耶穌跟前，他只用一句話就把鬼都趕出去，並且治好了一切有病的人。<br><br>這是要應驗先知以賽亞的話，說：<br><br><strong>他代替我們的軟弱，擔當我們的疾病。</strong>」（太八 16～17）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        而那個引用，本身就說明了一件事：<br><br>七百年前寫下的那一句，<strong>馬太認為那天晚上正在應驗</strong>。<br><br>——而以賽亞書那一章接下去的話，是這樣的：<br><br>「哪知他為<strong>我們的過犯</strong>受害，為<strong>我們的罪孽</strong>壓傷。<br><br>因他受的刑罰，我們得平安；<strong>因他受的鞭傷，我們得醫治。</strong>」（賽五三 5）
+      </div>
+
+      <div class="highlight">
+        <strong>而那一章的重點，是「代替」</strong>
+        「<strong>我們</strong>的憂患」、「<strong>我們</strong>的痛苦」、「<strong>我們</strong>的過犯」、「<strong>我們</strong>的罪孽」——<br><br>而承受的，是<strong>他</strong>。<br><br>——所以這一題的問句裡那個「<strong>擔當</strong>」，正是這一章的核心動詞。
+      </div>
+
+      <p>下一篇，我們把四個根據列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">十分可信</h2>
+      <p class="card-hook">四個根據</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、這是聖經上的話</span>
+          （出十五 26；賽五三 4；太八 17）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、也是許多聖徒所經驗過的事實</span>
+          ——那不只是道理，那是發生過的事。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、聖靈有醫病的恩賜賜給聖徒</span>
+          （林前十二 9、28）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、聖經也有祈禱醫病的應許</span>
+          （雅五 13～16）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四個根據，是<strong>四種不同性質</strong>的證據：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>根據</th>
+            <th>它是什麼</th>
+            <th>它回答的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一、聖經的話</td>
+            <td><strong>白紙黑字</strong></td>
+            <td>這件事有沒有根據？</td>
+          </tr>
+          <tr>
+            <td class="src">二、聖徒的經驗</td>
+            <td><strong>發生過的事</strong></td>
+            <td>那只是理論嗎？</td>
+          </tr>
+          <tr>
+            <td class="src">三、醫病的恩賜</td>
+            <td><strong>教會裡的設立</strong></td>
+            <td>那是古時候的事嗎？</td>
+          </tr>
+          <tr>
+            <td class="src">四、祈禱的應許</td>
+            <td><strong>我可以做的事</strong></td>
+            <td>那我現在能做什麼？</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而四個加起來，是一個很紮實的結構</strong>
+        它不是只講「聖經說」。<br><br>也不是只講「我有經驗」。<br><br>——它把<strong>話語、事實、恩賜、應許</strong>四樣放在一起。<br><br>而其中第一項是根，其餘三項是從那根長出來的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項「許多聖徒所經驗過的事實」，值得特別停一下。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👥</span>
+        因為那是一個<strong>很謙卑的說法</strong>。<br><br>它沒有說「每個人都會」。<br><br>它說的是：<strong>「許多聖徒經驗過。」</strong><br><br>——那是在陳述一件<strong>確實發生過、而且不只一次</strong>的事。<br><br>而那個說法，也給了空間：<br><br>因為聖經裡確實也有<strong>沒有得醫治</strong>的記載。
+      </div>
+
+      <p>下一篇，我們看那幾個字的原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「擔當」與「背負」，是兩個很重的動詞</h2>
+      <p class="card-hook">而它們原本用在別的地方</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">נָשָׂא <span style="font-size:0.8em;opacity:0.75">nasa'</span></div>
+        <div class="term-desc">
+          以賽亞書五十三章四節「<strong>擔當</strong>」用的是這個字。<br><br>它的本義是<strong>「舉起、扛起、背在身上」</strong>——那是一個<strong>把重量接過來</strong>的動作。<br><br>——而同一個字，也是<strong>「赦免」</strong>的用字：<br><br>「耶和華——耶和華，是有憐憫有恩典的神……<strong>赦免</strong>罪孽、過犯，和罪惡。」（出卅四 6～7）<br><br>因為在希伯來文的思路裡，<strong>赦免罪，就是把那個重量從人身上「舉走」</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節裡另一個動詞「背負」，畫面同樣具體</strong>
+        它的意思是<strong>「揹著沉重的東西走」</strong>——像牲口馱重物那樣。<br><br>——所以以賽亞書五十三章四節的畫面是：<br><br><strong>他把那些重量從我們身上拿起來，扛在自己肩上，然後揹著走。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那節說的「憂患」與「痛苦」，希伯來文本身就<strong>含著病痛</strong>的意思：<br><br>前一個字，常被譯作<strong>「疾病」</strong>；後一個字，是<strong>「疼痛」</strong>。<br><br>——所以馬太福音把它譯作「他<strong>代替我們的軟弱，擔當我們的疾病</strong>」，是貼著原文的。<br><br>而以賽亞書同一章的下一節說的是<strong>罪孽</strong>。<br><br>——所以那一章裡，<strong>罪與病，是一起被擔當的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「我是醫治你的」那個稱呼，希伯來文也很有意思：</p>
+
+      <div class="term-box">
+        <div class="term-original">רָפָא <span style="font-size:0.8em;opacity:0.75">rapha</span></div>
+        <div class="term-desc">
+          出埃及記十五章二十六節「<strong>醫治</strong>」用的是這個字。<br><br>它的本義是<strong>「修補、縫合、使完整」</strong>——那是把破掉的東西<strong>補回去</strong>。<br><br>——而它的用法很廣：<br><br>用在<strong>身體</strong>：「他醫好傷心的人，<strong>裹好他們的傷處</strong>。」（詩一四七 3）<br>用在<strong>土地</strong>：「我必<strong>醫治</strong>他們的地。」（代下七 14）<br>用在<strong>水</strong>：以利沙把鹽倒進水源，「這水就<strong>治好了</strong>」。（王下二 21～22）<br><br>——所以那個字說的是：<strong>把壞掉的，恢復成該有的樣子。</strong>
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而詩篇一四七篇那節，把兩件事寫在一起：<br><br>「他<strong>醫好傷心的人</strong>，裹好他們的傷處。」<br><br>——「傷心的人」。<br><br>所以那個字治的，不只是身體。<br><br>而詩篇一〇三篇的排列也是這樣：<br><br>「他<strong>赦免</strong>你的一切罪孽，<strong>醫治</strong>你的一切疾病；他<strong>救贖</strong>你的命脫離死亡，以<strong>仁愛和慈悲</strong>為你的冠冕。」（詩一〇三 3～4）
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「出於信心的祈禱」</h2>
+      <p class="card-hook">雅各書那一段，是給每一個人的</p>
+    </div>
+    <div class="card-body">
+
+      <p>第四個根據，引的是雅各書五章十三至十六節。</p>
+
+      <p>而那一段，是聖經裡最具體的一份指示。</p>
+
+      <div class="highlight">
+        <strong>那一段的結構</strong>
+        「你們中間有<strong>受苦</strong>的呢，他就該<strong>禱告</strong>；有<strong>喜樂</strong>的呢，他就該<strong>歌頌</strong>。<br><br>你們中間有<strong>病了</strong>的呢，他就該<strong>請教會的長老來</strong>；他們可以<strong>奉主的名用油抹他，為他禱告</strong>。<br><br><strong>出於信心的祈禱要救那病人，主必叫他起來；他若犯了罪，也必蒙赦免。</strong><br><br>所以你們要<strong>彼此認罪，互相代求</strong>，使你們可以得醫治。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫒</span>
+        而那段裡有一個很具體的動作：<strong>用油抹他。</strong><br><br>——那是當時的做法。<br><br>而重點在前面那五個字：<strong>「奉主的名」</strong>。<br><br>所以那油本身沒有力量。<br><br>力量在<strong>那個名字</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而那一段的最後一句，是一個很有力的結尾</strong>
+        「<strong>義人祈禱所發的力量是大有功效的。</strong>」（雅五 16）<br><br>——而雅各接著舉了一個例子：<strong>以利亞。</strong><br><br>「以利亞與我們是<strong>一樣性情的人</strong>，他懇切禱告，求不要下雨，雨就三年零六個月不下在地上。」（雅五 17）<br><br>——「<strong>與我們是一樣性情的人</strong>」。<br><br>那句話是特意加的。<br><br>因為雅各知道人會想：<strong>那是以利亞，我不是。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這裡需要說一件事，因為它關係到很多人的心情。</p>
+
+      <div class="highlight">
+        <strong>聖經裡，也有沒有得醫治的記載</strong>
+        <strong>保羅</strong>——那根刺，求了三次，沒有拿走。（林後十二 8）<br><br><strong>提摩太</strong>——「因你胃口不清，<strong>屢次患病</strong>。」（提前五 23）<br><br><strong>以巴弗提</strong>——「他實在是病了，<strong>幾乎要死</strong>。」（腓二 27）<br><br><strong>特羅非摩</strong>——「我<strong>留他在米利都</strong>，因他<strong>患病</strong>。」（提後四 20）<br><br>——而寫下這些的，正是那個神藉他的手行了非常奇事的保羅。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        而那些記載，其實是一種<strong>誠實</strong>。<br><br>因為聖經如果只記得醫治的例子，那它就成了一本宣傳品。<br><br>——而它把這些也寫了下來。<br><br>而保羅得到的回答是：<br><br>「<strong>我的恩典夠你用的，因為我的能力是在人的軟弱上顯得完全。</strong>」<br><br>——所以那不是「祂沒有能力」。<br><br>是<strong>祂給了別的東西</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而以巴弗提那一段，還有一句很溫暖的話。</p>
+
+      <div class="highlight">
+        <strong>腓立比書二章二十七節</strong>
+        「他實在是病了，幾乎要死；<strong>然而神憐恤他</strong>，不但憐恤他，也憐恤我，<strong>免得我憂上加憂</strong>。」<br><br>——注意保羅怎麼說那件事。<br><br>他沒有說「他信心夠，所以好了」。<br><br>他說的是：<strong>「神憐恤他。」</strong><br><br>——而那個字的重心，落在<strong>神的性情</strong>上，不是人的表現上。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而那句「<strong>免得我憂上加憂</strong>」，我很喜歡。<br><br>因為它顯出：那個醫治，同時是給<strong>旁邊那個擔心的人</strong>的。<br><br>——所以在病床邊禱告的人，也在那份憐恤裡面。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「他誠然擔當」</h2>
+      <p class="card-hook">寫給那個正在痛的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那個動詞上。</p>
+
+      <div class="highlight">
+        <strong>「擔當」的意思，是把重量接過來</strong>
+        ——不是「祂知道你在痛」。<br><br>是<strong>「祂把那個重量，扛到自己身上了。」</strong><br><br>而希伯來書用另一種說法講同一件事：<br><br>「因我們的大祭司並非不能<strong>體恤</strong>我們的軟弱。他也曾凡事受過試探，與我們一樣。」（來四 15）<br><br>——「<strong>體恤</strong>」那個字的原文，意思是<strong>「一同感受」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩹</span>
+        而祂身上留著那些傷。<br><br>復活之後，祂對多馬說：「伸過你的指頭來，摸我的手；伸出你的手來，探入我的肋旁。」（約二十 27）<br><br>——那是<strong>復活之後的身體</strong>。<br><br>而那些傷還在。<br><br>所以那些傷，不是需要被治好的東西。<br><br><strong>那是憑據。</strong>
+      </div>
+
+      <div class="big-quote">
+        因他受的鞭傷，<br>我們得醫治
+        <cite>— 以賽亞書 五十三章五節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻正在病中，我想留下三件很實際的事。</p>
+
+      <p><strong>第一，可以求。</strong>雅各書說：「你們中間有受苦的呢，他就該禱告。」</p>
+
+      <p><strong>第二，可以請人一起。</strong>「他就該請教會的長老來。」——那不是麻煩別人。那是聖經寫的做法。</p>
+
+      <p><strong>第三，那些應許是對你說的。</strong>因為你是家裡的人。</p>
+
+      <p>而如果求了，還沒有好——</p>
+
+      <p>那個「幾乎要死」的以巴弗提，聖經沒有責備他信心不夠。</p>
+
+      <p>而那根刺留在保羅身上一輩子。</p>
+
+      <p>——而他得到的那句話，也留下來給我們了：</p>
+
+      <p><strong>「我的恩典夠你用的。」</strong></p>
+
+      <p>願你今天，把重量交給那位已經擔當過的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  主擔當我們的疾病 · Threads Series
+</footer>
+
+</body>
+</html>

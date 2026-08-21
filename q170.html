@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>甚麼職業對聖徒不合 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>那份工作，<span>做什麼的</span></h1>
+  <p class="subtitle">甚麼職業，對聖徒不合？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">飯碗這件事，是最難談的</h2>
+      <p class="card-hook">因為它連著一整家人</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>談職業，跟談別的事不一樣。</p>
+
+      <div class="highlight">
+        <strong>因為那不只是一個人的事</strong>
+        那是房租。是孩子的學費。是父母的醫藥費。<br><br>——所以當一個人發現自己的工作出了問題，<br><br>他要面對的不是一個原則的問題。<br><br>是：<strong>那換掉之後，這個月怎麼辦？</strong><br><br>而那個問題，是真的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧱</span>
+        所以我想先說一件事。<br><br>這一題列的四類，<strong>不是在批評做那些工作的人</strong>。<br><br>——很多人是在信主之前就在那裡了。<br><br>而它做的事，是<strong>把界線畫清楚</strong>，讓一個人知道自己站在哪裡。<br><br>而接下來要走幾步、走多快——<br><br><strong>那是另一件事，而且需要智慧。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那四類。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">以弗所那場暴動，起因是生意</h2>
+      <p class="card-hook">而那個銀匠說得很誠實</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第十九章，記了以弗所城的一場大騷亂。</p>
+
+      <div class="highlight">
+        <strong>而事情的起因，是一個做生意的人</strong>
+        「有一個銀匠，名叫底米丟，是<strong>製造亞底米神銀龕</strong>的，他使這樣手藝人生意發達。」（徒十九 24）<br><br>——他把同行聚集起來，說了一段話。<br><br>而那段話的第一句，非常誠實：
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">眾位，你們知道我們是倚靠這生意發財
+        </p>
+        <p class="scripture-ref">使徒行傳 十九章二十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而他接下去說的，正是問題所在</strong>
+        「這保羅……<strong>引誘迷惑許多人，說：人手所做的，不是神。</strong><br><br>這樣，不獨我們這事業被人藐視，就是大女神亞底米的廟也要被人輕忽。」（徒十九 26～27）<br><br>——所以他很清楚：<br><br>那個信仰如果傳開了，<strong>他這一行就沒有了。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚒️</span>
+        而那個場面，最後變成了一場暴動：<br><br>「滿城都轟動起來」、「眾人一齊喊著說：<strong>大哉，以弗所人的亞底米啊！</strong>」——喊了<strong>約有兩小時</strong>。<br><br>——而聖經記那一段的口氣，帶著一點苦笑：<br><br>「聚集的人紛紛亂亂，<strong>有喊叫這個的，有喊叫那個的，大半不知道是為甚麼聚集</strong>。」（徒十九 32）
+      </div>
+
+      <p>下一篇，我們把四類列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四類</h2>
+      <p class="card-hook">迷信、道德、法律、國家</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、與迷信有關的</span>
+          就如：<strong>製造迷信物品</strong>，<strong>出售香燭紙錢</strong>，<strong>相命</strong>等。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、有礙道德的</span>
+          就如：<strong>開設舞廳、戲院、煙酒</strong>，<strong>放高利貸</strong>，<br><strong>出版或經營淫穢書畫</strong>等。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、干犯法律的</span>
+          就如：<strong>販毒、走私</strong>等。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、危害國家民族的</span>
+          就如：<strong>擔任外國諜報員</strong>，<strong>敵國廣播員</strong>等。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四類，正好對應到四條誡命與原則：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一類</th>
+            <th>牴觸的是</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>一、與迷信有關</strong></td>
+            <td><strong>第一、第二條誡命</strong>——除我以外，不可有別的神；不可為自己雕刻偶像</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>二、有礙道德</strong></td>
+            <td><strong>不可姦淫</strong>、<strong>不可貪戀</strong>——並且<strong>叫弟兄跌倒</strong>（羅十四 21）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>三、干犯法律</strong></td>
+            <td><strong>不可偷盜</strong>——並且「在上有權柄的，人人當順服他」（羅十三 1）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>四、危害國家民族</strong></td>
+            <td><strong>愛人如己</strong>——而下一題會講到聖徒對國家的本分</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而四類的共同點是：那份工作的「內容本身」有問題</strong>
+        ——不是「那個行業裡的人比較壞」。<br><br>是<strong>那件事做出來，會產出什麼</strong>。<br><br>而第一六五題那組原則，正好可以用在這裡：<br><br><strong>榮神益人？討主喜悅？無礙靈性？無虧良心？</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而有一個分別，需要說清楚，免得誤用這份清單。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔪</span>
+        <strong>「那份工作本身是什麼」</strong>與<strong>「那份工作可以被怎麼做」</strong>，是兩件事。<br><br>——一個工作如果<strong>本身</strong>就是產出那些東西，那是這一題講的四類。<br><br>而大部分的工作不是。<br><br>大部分工作的問題，出在<strong>做法</strong>上：<br><br>誠不誠實、有沒有偷懶、有沒有欺負人、有沒有拿不該拿的。<br><br>——而那一部分，聖經也講了很多。
+      </div>
+
+      <p>下一篇，我們看施洗約翰的一段話。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「我們當作甚麼呢？」</h2>
+      <p class="card-hook">而約翰的回答，都是關於「怎麼做」</p>
+    </div>
+    <div class="card-body">
+
+      <p>路加福音第三章，施洗約翰在講悔改的道。而好幾種人來問他同一個問題。</p>
+
+      <div class="highlight">
+        <strong>三組人，三個回答</strong>
+        <strong>眾人</strong>問：「這樣，我們當作甚麼呢？」<br>——「有兩件衣裳的，就<strong>分給那沒有的</strong>；有食物的，也當這樣行。」<br><br><strong>稅吏</strong>問：「夫子，我們當作甚麼呢？」<br>——「<strong>除了例定的數目，不要多取。</strong>」<br><br><strong>兵丁</strong>問：「我們當作甚麼呢？」<br>——「<strong>不要以強暴待人，也不要訛詐人，自己有錢糧就當知足。</strong>」（路三 10～14）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎖️</span>
+        而那三個回答，有一個共同點：<br><br><strong>他沒有叫任何人辭職。</strong><br><br>——稅吏在當時是被鄙視的職業：替羅馬人收稅，而且常常多收。<br><br>兵丁也一樣：有權有勢，很容易欺負人。<br><br>而約翰的回答，全部落在<strong>「你在那個位置上，要怎麼做」</strong>上。<br><br>——「不要多取」、「不要以強暴待人」、「不要訛詐」、「要知足」。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那正好標出了這一題那條界線的位置：<br><br>稅吏與兵丁——那是<strong>做法</strong>的問題，可以在原位改。<br><br>而這一題列的四類——那是<strong>內容</strong>的問題。<br><br>——因為「製造迷信物品」這件事，沒有辦法<strong>誠實地做</strong>。<br><br>那不是態度可以修正的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而以弗所那一場，記了一件很具體的事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">平素行邪術的，也有許多人把書拿來，堆積在眾人面前焚燒。他們算計書價，便知道共合五萬塊錢
+        </p>
+        <p class="scripture-ref">使徒行傳 十九章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個數字，是特意寫下來的</strong>
+        「<strong>五萬塊錢</strong>」——那在當時是一筆非常大的數目。<br><br>而聖經還加了一句：「他們<strong>算計書價</strong>」——他們是<strong>算過</strong>的。<br><br>——所以那不是一時衝動。<br><br>他們知道自己在燒掉什麼。<br><br>而那一段的下一節是：<br><br>「<strong>主的道大大興旺，而且得勝。</strong>」
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那些人為什麼要燒，而不是<strong>賣掉</strong>？<br><br>——如果賣掉，可以拿回五萬塊。<br><br>而他們燒了。<br><br>因為那些東西如果轉手，<strong>它們還會繼續害人</strong>。<br><br>——所以那個動作說明的是：<br><br><strong>那不是「我不做了」，是「這東西不該存在」。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">那如果我現在正在那樣的工作裡？</h2>
+      <p class="card-hook">這一題不能不談的一件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題如果只列清單，對一個正在那裡面的人是沒有幫助的。</p>
+
+      <div class="highlight">
+        <strong>因為那個處境很具體</strong>
+        「我知道那不對。」<br>「而我現在辭掉，下個月要怎麼辦？」<br>「而且家裡的人靠這個吃飯。」<br><br>——而那些顧慮，不是藉口。<br><br>那是真的。<br><br>而聖經對「養家」這件事，態度也很重：<br><br>「人若不看顧親屬，就是背了真道，<strong>比不信的人還不好</strong>。」（提前五 8）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        而我想這裡有幾件事，是可以同時成立的：<br><br><strong>第一，那個方向要定。</strong>——知道那不是長久的地方。<br><br><strong>第二，要求主開路。</strong>——那正是第一五七題說的：「求主指示引導。」<br><br><strong>第三，要找人商量。</strong>——第一六七題也說了同樣的話：「如自己未甚熟識，應請教牧師、傳道師、或熱心的長老。」<br><br>——而那三件事，今天就可以開始。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經裡有一節，講的正是「換一個方式活」：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">從前偷竊的，不要再偷；總要勞力，親手做正經事，就可有餘分給那缺少的人
+        </p>
+        <p class="scripture-ref">以弗所書 四章二十八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的結構，有三段</strong>
+        <strong>停止</strong>——「不要再偷」。<br><br><strong>替代</strong>——「總要勞力，親手做正經事」。<br><br><strong>目的</strong>——「就可有餘<strong>分給那缺少的人</strong>」。<br><br>——注意第三段。<br><br>那個人本來是<strong>拿別人東西</strong>的。<br><br>而那節說：他要變成<strong>給別人東西</strong>的。<br><br>——那是一個完整的轉向。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而撒該那一天，也是這樣。<br><br>他沒有說「我不當稅吏了」。<br><br>他說的是：<br><br>「主啊，我把所有的<strong>一半</strong>給窮人；我若訛詐了誰，就<strong>還他四倍</strong>。」（路十九 8）<br><br>——先處理過去（還四倍），再改變將來（分一半）。<br><br>而主的回應是：「<strong>今天救恩到了這家。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而還有一件事，很值得說：<strong>聖經對「一般的工作」，評價很高。</strong></p>
+
+      <div class="highlight">
+        <strong>因為有一種誤解，會讓人以為只有「服事」才算數</strong>
+        而保羅自己是<strong>織帳棚</strong>的（徒十八 3）。<br><br>而他說：「我這兩隻手<strong>常供給我和同人的需用</strong>。」（徒二十 34）<br><br>而歌羅西書那節，把每一份工作都放進了那個範圍：<br><br>「<strong>無論做甚麼</strong>，都要從心裡做，<strong>像是給主做的，不是給人做的</strong>。」（西三 23）<br><br>——而那句話，原本是對<strong>作僕人的</strong>說的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔨</span>
+        而主自己，三十歲之前是做木工的。<br><br>「這不是那木匠嗎？」（可六 3）——那是拿撒勒人對祂的稱呼。<br><br>——所以那三十年，祂在做的是一般人的工作。<br><br>而那些年，並不是浪費掉的。
+      </div>
+
+      <div class="highlight">
+        <strong>而帖撒羅尼迦前書那一節，把日常工作講成了一種見證</strong>
+        「要立志作安靜人，辦自己的事，<strong>親手做工</strong>……<br><br>叫你們<strong>可以向外人行事端正，自己也就沒有甚麼缺乏了</strong>。」（帖前四 11～12）<br><br>——「向外人行事端正」。<br><br>所以一份好好做的工作，本身就是第一六九題說的那盞燈。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「主的道大大興旺，而且得勝」</h2>
+      <p class="card-hook">那是燒掉五萬塊之後的下一節</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在以弗所那件事上。</p>
+
+      <div class="highlight">
+        <strong>因為那一段的順序，是有意思的</strong>
+        先是那些人<strong>把書燒了</strong>——那是一筆很大的損失。<br><br>然後下一節寫的是：<br><br>「<strong>主的道大大興旺，而且得勝。</strong>」（徒十九 20）<br><br>——那兩件事被接在一起。<br><br>而那個「興旺」，是在<strong>有人付了代價之後</strong>發生的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        而那五萬塊，沒有一個人補償給他們。<br><br>——聖經沒有記他們後來發了財。<br><br>而它記下了那個數字。<br><br>所以那筆帳，是<strong>被算在別的地方</strong>的。<br><br>而主說過：「<strong>你們要先求他的國和他的義，這些東西都要加給你們了。</strong>」
+      </div>
+
+      <div class="big-quote">
+        主的道大大興旺，<br>而且得勝
+        <cite>— 使徒行傳 十九章二十節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個飯碗的問題。</p>
+
+      <p>那個問題是真的，而且很重。</p>
+
+      <p>——而我想留下的，不是一句「要有信心」。</p>
+
+      <p>是那三個可以今天就做的動作：</p>
+
+      <p><strong>把方向定下來。求主開路。找人商量。</strong></p>
+
+      <p>而那位曾經是木匠的主，是知道工作是什麼滋味的。</p>
+
+      <p>祂知道要交件，要收錢，要應付難搞的客人。</p>
+
+      <p>——而祂說過一句話，正好是給這種處境的：</p>
+
+      <p>「你們需用的這一切東西，<strong>你們的天父是知道的</strong>。」</p>
+
+      <p>而那個撒該，那一天沒有失去什麼。</p>
+
+      <p>他把一半的家產給了窮人。</p>
+
+      <p>而主說的是：<strong>「今天救恩到了這家。」</strong></p>
+
+      <p>願你在那個決定上，不是一個人。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  甚麼職業對聖徒不合 · Threads Series
+</footer>
+
+</body>
+</html>

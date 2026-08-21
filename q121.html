@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖禮是甚麼 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>主吩咐的<span>那些儀節</span></h1>
+  <p class="subtitle">聖禮是甚麼？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">有些事，一定要用身體做</h2>
+      <p class="card-hook">說一說，是不夠的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我一直覺得很奇怪：既然信仰是心裡的事，為什麼還要那些儀式？</p>
+
+      <div class="highlight">
+        <strong>心裡信了，不就好了嗎</strong>
+        為什麼還要下到水裡？<br>為什麼還要吃那一小塊餅、喝那一小口杯？<br><br>——如果神看的是內心，那些動作有什麼用？<br><br>而我那時心裡想的是：<strong>那大概是給人看的形式吧。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💍</span>
+        後來我想到婚戒。<br><br>兩個人相愛，是心裡的事。<br><br>那為什麼要戴一個環？為什麼要在人面前說那幾句話？<br><br>——因為<strong>有些事，光在心裡是不完整的。</strong><br><br>它需要一個時刻、一個動作、一個可以指著說「就是那一天」的東西。<br><br>而那個環不會產生愛。<br><br><strong>但它是那份愛真的發生過的憑據。</strong>
+      </div>
+
+      <p>而聖禮，性質相近——只是它的分量更重。</p>
+
+      <p>因為它不是我們發明的。</p>
+
+      <p>接下來這幾篇，我想陪你看那兩件事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">兩次「你們要」</h2>
+      <p class="card-hook">而說話的，是同一位</p>
+    </div>
+    <div class="card-body">
+
+      <p>新約裡，有兩件事是主親口吩咐、要教會一直做下去的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">所以，你們要去，使萬民作我的門徒，奉父、子、聖靈的名給他們施洗
+        </p>
+        <p class="scripture-ref">馬太福音 二十八章十九節</p>
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">你們也應當如此行，為的是記念我
+        </p>
+        <p class="scripture-ref">路加福音 二十二章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而這兩句話的時間點，值得注意</strong>
+        第二句，是<strong>被賣的那一夜</strong>說的。<br><br>第一句，是<strong>復活之後、升天之前</strong>說的。<br><br>——一句在最後的晚餐上，一句在山上的最後交代。<br><br>那是祂在地上最重要的兩個時刻。<br><br>而在那兩個時刻，祂各留下了一件<strong>要一直做下去</strong>的事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        我想到一個人要遠行之前，會交代什麼。<br><br>他不會交代小事。<br><br>他交代的，是<strong>他走了以後，希望這個家繼續做的那幾件</strong>。<br><br>——而主留下的，是這兩件。
+      </div>
+
+      <p>下一篇，我們把定義說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">聖禮是甚麼</h2>
+      <p class="card-hook">三個要素，缺一不可</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">聖禮的定義</span>
+          聖禮是<strong>教會</strong>遵照<strong>主的吩咐</strong>所行的<strong>儀節</strong>，<br><br>就是<strong>受洗</strong>和<strong>聖餐（主的晚餐）</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這個定義裡，有三個要素。每一個都在排除某種誤解：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>要素</th>
+            <th>在排除什麼</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>教會</strong>所行</td>
+            <td>排除「私人的、隨意的宗教行為」——這是<strong>群體</strong>的事</td>
+          </tr>
+          <tr>
+            <td class="src">遵照<strong>主的吩咐</strong></td>
+            <td>排除「人所訂的規矩」——根據不在傳統，在<strong>主親口說的話</strong></td>
+          </tr>
+          <tr>
+            <td class="src">所行的<strong>儀節</strong></td>
+            <td>排除「只在心裡想想」——這是<strong>真的要做的動作</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而中間那一項，是分量最重的</strong>
+        「<strong>遵照主的吩咐</strong>」——這句話決定了聖禮只有這兩件。<br><br>不是因為別的事不重要，是因為<strong>只有這兩件，是主親口設立、並吩咐一直行下去的</strong>。<br><br>——所以聖禮不能增加，也不能減少。<br><br>那不是教會的權柄範圍。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而兩件聖禮，各自的位置不同：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>受洗</th>
+            <th>聖餐</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">次數</td>
+            <td><strong>一次</strong></td>
+            <td><strong>常常</strong></td>
+          </tr>
+          <tr>
+            <td class="src">關乎</td>
+            <td><strong>進入</strong>——歸入主的死與復活</td>
+            <td><strong>持續</strong>——記念主的死，展望主的再臨</td>
+          </tr>
+          <tr>
+            <td class="src">主吩咐的話</td>
+            <td>「使萬民作我的門徒，……給他們施洗」</td>
+            <td>「你們也應當如此行，為的是記念我」</td>
+          </tr>
+          <tr>
+            <td class="src">設立時</td>
+            <td>復活之後、升天之前</td>
+            <td>被賣的那一夜</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        一個是<strong>門</strong>，一個是<strong>飯桌</strong>。<br><br>門只要進一次。<br><br>而飯桌，是一家人一直回來的地方。
+      </div>
+
+      <p>下一篇，我們看聖經怎麼看這種「看得見的記號」。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">神一向用看得見的記號</h2>
+      <p class="card-hook">而那不是遷就人的軟弱</p>
+    </div>
+    <div class="card-body">
+
+      <p>如果覺得「儀節」很奇怪，那可以看看舊約。</p>
+
+      <p>神從一開始，就一直在用<strong>看得見的東西</strong>來承載祂的話。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>記號</th>
+            <th>承載的話</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>虹</strong>（創九 13）</td>
+            <td>「我把虹放在雲彩中，這就可作我與地立約的記號。」</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>割禮</strong>（創十七 11）</td>
+            <td>「這是我與你們立約的證據。」</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>逾越節的血</strong>（出十二 13）</td>
+            <td>「這血要在你們所住的房屋上作記號。」</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>安息日</strong>（出卅一 13）</td>
+            <td>「這是你我之間世世代代的證據。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        四個記號，四種形式：一道光、一個身體的印記、一次塗抹、一段時間。<br><br>——而它們的功能是一樣的：<strong>把一句話，變成看得見、摸得到、記得住的東西。</strong><br><br>而神為什麼要這樣做？<br><br>因為人會忘。<br><br>而更根本的原因是：<strong>人是有身體的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌈</span>
+        虹那個例子最有意思。<br><br>神說：「<strong>我看見</strong>，就要記念我與地上各樣有血肉的活物所立的永約。」<br><br>——注意那個主詞。<br><br>那個記號，是給<strong>神</strong>看的。<br><br>而神當然不會忘。<br><br>所以那句話是說給人聽的：<strong>你抬頭看見的時候，要知道那個約還在。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而新約裡的兩件聖禮，同樣是「話」加上「動作」：</p>
+
+      <div class="highlight">
+        <strong>受洗：一個動作，帶著一句話</strong>
+        動作是<strong>下到水裡</strong>。<br>話是<strong>「奉父、子、聖靈的名」</strong>。<br><br>而保羅解釋那個動作的意義：<br><br>「豈不知我們這受洗歸入基督耶穌的人是受洗歸入他的死嗎？所以，我們藉著洗禮歸入死，和他一同埋葬，<strong>原是叫我們一舉一動有新生的樣式，像基督藉著父的榮耀從死裡復活一樣</strong>。」（羅六 3～4）
+      </div>
+
+      <div class="highlight">
+        <strong>聖餐：一個動作，帶著一句話</strong>
+        動作是<strong>擘餅、遞杯</strong>。<br>話是<strong>「這是我的身體，為你們捨的」</strong>、<strong>「這杯是用我血所立的新約」</strong>。<br><br>而保羅解釋那個動作的意義：<br><br>「你們每逢吃這餅，喝這杯，是<strong>表明主的死，直等到他來</strong>。」（林前十一 26）
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而兩處的解釋，指向的是同一件事：<br><br><strong>基督的死與復活。</strong><br><br>受洗——歸入他的死，一同埋葬，一同復活。<br>聖餐——表明主的死，直等到他來。<br><br>——所以兩件聖禮不是兩個主題。<br><br><strong>是同一件事的兩個角度：一個是進去，一個是常常回到那裡。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">兩種相反的偏差</h2>
+      <p class="card-hook">一種把儀節看得太輕，一種看得太重</p>
+    </div>
+    <div class="card-body">
+
+      <p>而人對聖禮，常常會滑向兩邊。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">偏差一：看得太輕</span>
+          「反正心裡有就好，形式不重要。」<br><br>——而這種說法的問題是：<strong>主吩咐了。</strong><br><br>祂沒有說「你們心裡記念我就好」。<br>祂說的是：「<strong>你們也應當如此行</strong>。」
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">偏差二：看得太重</span>
+          把儀節本身當成有法力的東西——只要做了，就自動生效，不管心裡怎麼樣。<br><br>——而這種想法，聖經直接處理過。<br><br>而處理得最重的地方，正好也是講聖餐的那一章。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>哥林多前書十一章，是對第二種偏差的警告</strong>
+        那間教會照樣在守聖餐。儀式沒有少。<br><br>而保羅說：「你們聚會不是受益，乃是招損。」<br><br>原因是：「你們聚會的時候，彼此<strong>分門別類</strong>」、「各人先吃自己的飯，甚至這個<strong>飢餓</strong>，那個<strong>酒醉</strong>」。<br><br>——儀式做完了，而<strong>那件事的意思被作廢了</strong>。<br><br>所以他說：「<strong>不按理吃主的餅，喝主的杯，就是干犯主的身、主的血了。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而那兩種偏差，其實是同一個錯誤的兩面。<br><br>第一種說：<strong>外面的不重要，只要裡面對。</strong><br><br>第二種說：<strong>裡面不重要，只要外面做了。</strong><br><br>——而聖禮的性質，正是<strong>兩者都要</strong>。<br><br>一個看得見的動作，配上一顆真的心。<br><br>缺了動作，是不順從。<br>缺了心，是空殼。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而舊約有一段話，把這個張力講得最清楚。</p>
+
+      <div class="highlight">
+        <strong>撒母耳對掃羅說的話</strong>
+        掃羅沒有照吩咐做，卻留下了牛羊要獻祭。<br><br>而撒母耳說：<br><br>「<strong>耶和華喜悅燔祭和平安祭，豈如喜悅人聽從他的話呢？聽命勝於獻祭；順從勝於公羊的脂油。</strong>」（撒上十五 22）<br><br>——注意那句話並沒有廢掉獻祭。<br><br>它說的是<strong>次序</strong>：獻祭若不是出於聽命，就失去了意義。<br><br>而反過來說也成立：真的聽命的人，<strong>會去獻祭</strong>。因為那正是吩咐的內容。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪟</span>
+        我想到窗戶。<br><br>窗戶本身不是風景。<br><br>而如果把窗戶漆成一幅畫，你就看不見外面了。<br><br>——那是第二種偏差。<br><br>而如果因為「重要的是外面的風景」就把牆拆了，那也不會更好看。<br><br>——那是第一種偏差。<br><br>窗戶的用處是：<strong>透過它，看見那一位。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「為的是記念我」</h2>
+      <p class="card-hook">而那句話，是在被賣的那一夜說的</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那一夜。</p>
+
+      <div class="highlight">
+        <strong>那個時間點，怎麼想都不尋常</strong>
+        「主耶穌<strong>被賣的那一夜</strong>，拿起餅來，祝謝了，就擘開，說：這是我的身體，為你們捨的，你們應當如此行，為的是記念我。」（林前十一 23～24）<br><br>——那一夜，賣祂的人就在桌上。<br><br>那一夜，最愛說話的門徒，幾小時後會三次不認祂。<br><br>那一夜，所有的人都會逃走。<br><br>而祂在那一夜，把餅遞給他們。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        而祂說的是「<strong>記念我</strong>」。<br><br>不是「記得你們自己那天做了什麼」。<br><br>——那一夜他們做的事，沒有一件值得記念。<br><br>而祂設立的那個記號，是要他們<strong>每一次都回到那張桌子</strong>。<br><br>回到那個明明知道會被離棄、卻還是把餅遞出去的時刻。
+      </div>
+
+      <div class="big-quote">
+        你們也應當如此行，<br>為的是記念我
+        <cite>— 路加福音 二十二章十九節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個問題：既然是心裡的事，為什麼要有儀式？</p>
+
+      <p>我後來的答案是：<strong>因為心會忘，而身體記得。</strong></p>
+
+      <p>心裡的感動會過去。想法會變。熱度會退。</p>
+
+      <p>而那一天你下到水裡，是一件<strong>發生過的事</strong>。</p>
+
+      <p>那不是你的感覺，那是一個日期，一個地點，一群見證人。</p>
+
+      <p>——所以在你懷疑自己的日子，你可以指著那一天說：那件事發生過。</p>
+
+      <p>而每一次的聖餐，也是同一個作用。</p>
+
+      <p>它把你從今天的心情裡，帶回到那一夜。</p>
+
+      <p>——帶回到那雙遞餅的手。</p>
+
+      <p>願你下一次領受的時候，記得那是誰吩咐的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖禮是甚麼 · Threads Series
+</footer>
+
+</body>
+</html>

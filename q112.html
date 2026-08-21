@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>謬解與強解 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>謬解與<span>強解</span></h1>
+  <p class="subtitle">兩種必須避免的錯誤，而其中一種特別常見</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個講解，我當下覺得很精彩</h2>
+      <p class="card-hook">而回家之後，我想不起它的根據</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一次聽一個信息，講得非常精彩。</p>
+
+      <p>那位講員把一段舊約的細節，拆解得極細——每個數字有意義，每種材質有對應，每個方位有講究。整段講完，全場都很受感動。</p>
+
+      <div class="highlight">
+        <strong>而回家的路上，我心裡有一個說不上來的不安</strong>
+        我試著回想那些對應的<strong>根據</strong>是什麼。<br><br>而我想不起來。<br><br>不是我忘了——是那整套解釋裡，好像沒有一個地方說「因為聖經另一處這樣說」。<br><br>——它是<strong>自成一套</strong>的。<br><br>而它之所以有說服力，是因為那套系統<strong>內部很完整</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏗️</span>
+        我後來想到一個比方。<br><br>一棟很漂亮的建築，如果地基不在地上，而是架在另一棟想像出來的建築上——<br><br>它可以蓋得很高、很精緻、很吸引人。<br><br><strong>而它遲早會塌。</strong><br><br>——而問題是：在它塌之前，住在裡面的人不會知道。
+      </div>
+
+      <p>而聖經對這件事，有兩個很明確的警告。</p>
+
+      <p>接下來這幾篇，我想陪你看那兩種錯誤，以及一個很實際的防範方法。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">曠野裡，魔鬼也引用了聖經</h2>
+      <p class="card-hook">而牠引得一字不差</p>
+    </div>
+    <div class="card-body">
+
+      <p>主耶穌受試探那一段，第二次試探最值得研究。</p>
+
+      <p>因為那一次，<strong>魔鬼引用了聖經。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">你若是神的兒子，可以跳下去，因為經上記著說：主要為你吩咐他的使者用手托著你，免得你的腳碰在石頭上
+        </p>
+        <p class="scripture-ref">馬太福音 四章六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那段引文，出自詩篇九十一篇——而且沒有引錯字</strong>
+        所以問題不在於「引錯了」。<br><br>問題在於：<strong>牠拿掉了上下文，並且把那節經文用在一個神從未應許的處境上。</strong><br><br>詩篇九十一篇講的是：<strong>神保守那些投靠祂的人</strong>。<br><br>而那不是一張「可以主動跳下去測試看看」的保證書。<br><br>——那正是<strong>謬解</strong>：<strong>文字沒錯，用法錯了。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚠️</span>
+        而這一段給了我們一個很重要的提醒：<br><br><strong>「有引經文」不等於「合乎聖經」。</strong><br><br>幾乎所有的偏差教導，都會引用聖經。<br><br>——事實上，<strong>引得越多，聽起來越可信。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主的回應方式，正是防範的方法：</p>
+
+      <div class="highlight">
+        <strong>祂用另一節經文來修正</strong>
+        「耶穌對他說：『經上<strong>又</strong>記著說：不可試探主你的神。』」<br><br>——注意那個「<strong>又</strong>」。<br><br>祂沒有說「你引錯了」，也沒有否定詩篇九十一篇。<br><br>祂做的是：<strong>把另一節放進來，讓整幅圖恢復平衡。</strong><br><br>而這件事只有一種人做得到：<strong>知道整本書怎麼說的人。</strong>
+      </div>
+
+      <p>那麼，那兩種錯誤是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩種錯誤，一個防範</h2>
+      <p class="card-hook">而其中一種，是信徒常有的</p>
+    </div>
+    <div class="card-body">
+
+      <p>對於聖經，信徒應當避免兩種錯誤：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、謬解</span>
+          就是<strong>錯誤地解釋</strong>——文字可能沒錯，而意思被扭了。<br>（太四 6——魔鬼引詩篇；參耶廿三 36）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、強解</span>
+          「其中有些難明白的，那無學問、不堅固的人<strong>強解</strong>，如強解別的經書一樣，就自取沉淪。」（彼後三 16）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這兩者的分佈，很不一樣</strong>
+        <strong>信徒多數不敢強解聖經</strong>——因為那需要一種近乎大膽的態度。<br><br>而<strong>謬解聖經，卻是常有的錯誤。</strong><br><br>——因為謬解不需要膽量。<br><br>它常常是無心的：讀漏了上下文、套用了自己的處境、或者只是把聽來的說法接受下來。
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這件事的後果，教材說得很明確：</p>
+
+      <div class="big-quote">
+        許多異端的產生，<br>多是由於謬解或強解聖經而來。
+      </div>
+
+      <div class="highlight">
+        <strong>而這一點，值得停下來想</strong>
+        因為它指出了一件事：<strong>大部分異端，不是「不用聖經」，是「用錯了聖經」。</strong><br><br>——他們有經文，有系統，有解釋，而且往往解釋得比一般人更「精彩」。<br><br>而彼得那句話，把後果講得很重：<strong>「就自取沉淪。」</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>那麼，要怎麼避免？教材給了一個很具體的方法，分成三步：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 必須親自追求學習聖經的真理</span>
+          ——第一步是<strong>自己讀</strong>。<br><br>一個只靠聽的人，沒有辦法分辨。因為他手上沒有比對的材料。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 若發現有新奇的解釋法，不可輕易接受</span>
+          ——注意那個判準：<strong>「新奇」。</strong><br><br>而這是一個非常實用的警示燈。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 應與熱心愛主而又明白真理的人共同研讀</span>
+          ——不要一個人決定。<br><br>而那個條件有兩項：<strong>熱心愛主</strong>，而且<strong>明白真理</strong>。兩者缺一不可。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第二步那個「新奇」，我想多說一句</strong>
+        因為新奇本身，正是那些解釋最吸引人的地方。<br><br>「這一段其實是在講……」<br>「大家都讀錯了，真正的意思是……」<br>「我發現了一個從來沒有人注意到的……」<br><br>——那種「我知道別人不知道的」的感覺，很有吸引力。<br><br>而聖經的核心真理，兩千年來被無數人讀過。<br><br><strong>如果一個關乎信仰根基的解釋，是最近才被「發現」的——那本身就值得警覺。</strong>
+      </div>
+
+      <p>下一篇，我們看那兩種錯誤的原文，以及幾種常見的形式。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「強解」原文是「扭轉」</h2>
+      <p class="card-hook">那個字，用在拷問架上</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Streblóō<br>強解</div>
+        <div class="term-desc">彼得後書三章十六節用的字。<br><br>字面是「<strong>扭轉、扭曲</strong>」——而它的字源，與<strong>絞盤、拷問架</strong>有關：把東西架上去，然後轉緊，直到它變形或斷裂。<br><br>所以「強解」的畫面是：<strong>把經文架上去，用力扭，直到它說出你要它說的話。</strong></div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔧</span>
+        而那個意象，把「強解」與「誤解」的差別說清楚了：<br><br><strong>誤解</strong>是無心的——你以為它是那個意思。<br><strong>強解</strong>是使力的——你要它變成那個意思。<br><br>——所以彼得用「無學問、<strong>不堅固</strong>的人」來形容那些人。<br><br>「不堅固」（astēriktos）字面是「<strong>站不穩的</strong>」。<br><br>而一個站不穩的人，會抓住任何看起來像扶手的東西。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而彼得那節的上下文，也很有意思。他講的是<strong>保羅的書信</strong>：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他一切的信上也都是講論這事。信中有些難明白的，那無學問、不堅固的人強解，如強解別的經書一樣，就自取沉淪
+        </p>
+        <p class="scripture-ref">彼得後書 三章十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        兩個觀察：<br><br><strong>第一，彼得承認有「難明白的」。</strong><br>——聖經自己就說了：有些地方是難的。<br>所以讀不懂某些段落，是正常的，不是失格。<br><br><strong>第二，彼得把保羅的書信與「別的經書」並列。</strong><br>——「如強解<strong>別的經書</strong>一樣」。<br>那意味著在彼得寫這封信的時候，保羅的書信已經被當作聖經看待了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「謬解」的常見形式，我整理成幾類。這些不是理論，是實際會遇到的：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>形式</th>
+            <th>樣子</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">抽離上下文</td>
+            <td>單獨拿一節出來用，而那一節的前後正好在講相反的事。<br>——魔鬼在曠野做的，正是這一種。</td>
+          </tr>
+          <tr>
+            <td class="src">把「記載」當成「認可」</td>
+            <td>聖經記了大衛的罪、雅各的欺騙、拉麥的多妻。<strong>記載不等於贊同。</strong></td>
+          </tr>
+          <tr>
+            <td class="src">把特定的應許普遍化</td>
+            <td>某些應許是對某個人、在某個處境下說的。<br>——而那不表示它可以直接套在任何人身上。</td>
+          </tr>
+          <tr>
+            <td class="src">忽略文體</td>
+            <td>拿讀律法的方式讀詩歌；拿讀敘事的方式讀啟示錄的象徵。</td>
+          </tr>
+          <tr>
+            <td class="src">靠一節建立教義</td>
+            <td>一個關乎根基的教導，如果<strong>只有一節經文支持</strong>，而且需要特別的讀法——那要非常小心。</td>
+          </tr>
+          <tr>
+            <td class="src">過度的靈意化</td>
+            <td>把每一個數字、每一種材質、每一個方位，都對應成一套象徵。<br>——而那些對應，往往沒有經文的根據。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而最後一項，正是我開頭那次聽道的感覺。<br><br>那種講法之所以危險，不在於它一定錯——<strong>而在於它無法被檢驗。</strong><br><br>因為那套對應是自成一套的：你沒有辦法用聖經去驗證它，因為它的根據不在聖經裡。<br><br>而<strong>一個無法被檢驗的解釋，就沒有辦法被糾正。</strong><br><br>——而那正是庇哩亞人做的相反的事：他們<strong>天天考查聖經，要曉得這道是與不是。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「與人共同研讀」——為什麼這一項這麼重要</h2>
+      <p class="card-hook">因為人看不見自己的盲點</p>
+    </div>
+    <div class="card-body">
+
+      <p>那三個防範步驟裡，第三項最容易被略過：<strong>與熱心愛主而又明白真理的人共同研讀。</strong></p>
+
+      <div class="highlight">
+        <strong>而它之所以重要，理由很簡單</strong>
+        <strong>盲點的定義，就是自己看不見。</strong><br><br>——如果你看得見，那就不叫盲點了。<br><br>而我們談過的那三個通病（頭腦、字句、成見），全部是<strong>當事人不容易自己察覺</strong>的。<br><br>特別是成見：一個帶著成見讀經的人，<strong>讀起來感覺非常好。</strong><br><br>所以那件事，需要別人的眼睛。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👥</span>
+        而聖經自己的做法，一貫是群體性的。<br><br><strong>庇哩亞人</strong>——「天天考查聖經」，那是一群人在查。<br><strong>耶路撒冷會議</strong>——面對爭議，他們召集眾人，辯論、引經、然後才作決定。<br><strong>教會的恩賜</strong>——「他所賜的，有使徒，有先知，有傳福音的，<strong>有牧師和教師</strong>。」<br><br>——教師是恩賜之一。<br><br>所以「自己讀」與「一起讀」，不是二選一。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那個條件——「<strong>熱心愛主而又明白真理</strong>」——兩項缺一不可，值得說明。</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>只有一項會怎樣</th>
+            <th>問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">熱心愛主，<br>而不明白真理</td>
+            <td>動機很好，方向可能錯。<br>——保羅說以色列人「向神有熱心，<strong>但不是按著真知識</strong>」（羅十 2）。<br>而他說這話時，講的是那些非常虔誠的人。</td>
+          </tr>
+          <tr>
+            <td class="src">明白真理，<br>而不熱心愛主</td>
+            <td>知識可能是對的，而那份知識會變成別的東西。<br>——「知識是叫人自高自大，惟有愛心能造就人。」（林前八 1）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而保羅那句「向神有熱心，但不是按著真知識」，語氣其實很痛</strong>
+        因為他接著說：「我可以證明他們向神有熱心。」<br><br>——他不是在貶低他們。他自己就曾經是那樣的人。<br><br>而他前一節說的是：「弟兄們，我心裡所願的，向神所求的，是要以色列人得救。」<br><br>——所以那不是輕蔑。<strong>那是一種很深的惋惜。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想把整套防範，收成幾個可以實際用的問題。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 這個解釋的根據，在哪一節？</span>
+          ——而那一節的<strong>上下文</strong>，是不是在講同一件事？<br><br>如果一個解釋說不出根據，或者根據需要繞很遠——那要小心。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 聖經其他地方，有沒有講同樣的事？</span>
+          ——重要的真理，聖經通常會說很多次。<br><br>而一個只有單一出處、又需要特別讀法的教導，<strong>不足以承載信仰的重量</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 這個解釋，把誰高舉了？</span>
+          ——「他要<strong>榮耀我</strong>。」<br><br>如果結果是某個人、某個團體、某種特殊知識被高舉——那方向不對。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 它是不是「新奇」的？</span>
+          ——這是那個最實用的警示燈。<br><br>不是說新的觀察一定錯。<strong>而是關乎根基的事，不會是最近才被發現的。</strong>
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 我有沒有拿去問過人？</span>
+          ——而且是問<strong>熱心愛主又明白真理</strong>的人。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而第一項，其實就是主在曠野示範的方法</strong>
+        魔鬼引了一節。而主的回應是：「經上<strong>又</strong>記著說。」<br><br>——用聖經校正對聖經的解釋。<br><br>這是最基本、也最可靠的方法。<br><br>而它需要一個前提：<strong>你得知道那個「又」是什麼。</strong><br><br>——所以第一步，永遠是「親自追求學習聖經的真理」。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">而這不是要你變得多疑</h2>
+      <p class="card-hook">寫給那個開始不敢相信任何講解的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>談完謬解與強解，有一個副作用要處理：<strong>變得什麼都不敢信。</strong></p>
+
+      <div class="highlight">
+        <strong>而那不是這一題的用意</strong>
+        因為庇哩亞人那個範例，是<strong>兩邊都有</strong>的：<br><br>「<strong>甘心領受</strong>這道，<strong>天天考查</strong>聖經。」<br><br>——如果只有後半句，那會變成一種永遠的懷疑。<br><br>而經文說他們的結果是：「所以他們中間<strong>多有相信的</strong>。」<br><br><strong>查證的目的，是為了能安心地信。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        我想到驗屋。<br><br>一個人買房子時仔細檢查結構、管線、漏水——<strong>不是因為他不想住進去。</strong><br><br>恰恰相反：<strong>正是因為他要住很久，所以要查清楚。</strong><br><br>而查完了，他會住得很安心。<br><br>——那才是查驗的目的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下三件事。</p>
+
+      <p><strong>第一，「難明白的」是正常的。</strong></p>
+
+      <div class="highlight">
+        <strong>彼得自己就說了：保羅的信「有些難明白的」</strong>
+        ——那是使徒說的，講的是另一位使徒的書信。<br><br>所以你讀不懂某些段落，不是你的問題。<br><br>而正確的反應是：<strong>承認不懂，繼續讀，去問人。</strong><br><br>而錯誤的反應是：<strong>硬給它一個解釋。</strong>——那正是「強解」。
+      </div>
+
+      <p><strong>第二，防範的第一步，是自己讀。</strong></p>
+
+      <p>因為分辨力不是靠警戒心得來的，是靠<strong>熟悉真的</strong>得來的。</p>
+
+      <p>——就像我們談過的：銀行行員辨認偽鈔的方法，是把真鈔摸熟。</p>
+
+      <p><strong>第三，不要一個人決定。</strong></p>
+
+      <div class="highlight">
+        <strong>而這一項，同時是保護與祝福</strong>
+        「與熱心愛主而又明白真理的人共同研讀」——<br><br>那不只是為了防錯。<br><br>那也是讀經最好的方式之一：<strong>別人看見的，往往正是你漏掉的。</strong><br><br>而以馬忤斯那兩個門徒，正是<strong>兩個人一起走</strong>的。
+      </div>
+
+      <div class="big-quote">
+        甘心領受這道，天天考查聖經，<br>要曉得這道是與不是
+        <cite>— 使徒行傳 十七章十一節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那次聽道。</p>
+
+      <p>我後來去查了。而查的過程，比那場信息本身更有收穫——因為我為了驗證那些說法，讀了好幾段我原本不會去讀的經文。</p>
+
+      <p>而結論是：那套解釋，大部分是講員自己拼出來的。</p>
+
+      <p>而我沒有因此不再聽道。</p>
+
+      <p>我只是多了一個習慣：<strong>回家之後，去查一下。</strong></p>
+
+      <p>——而那個習慣，是聖經自己稱讚過的。</p>
+
+      <p>願你也做那樣的人：<strong>甘心領受，而且天天考查。</strong></p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  謬解與強解 · Threads Series
+</footer>
+
+</body>
+</html>

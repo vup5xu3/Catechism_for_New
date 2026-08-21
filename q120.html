@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>執事的責任 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>管<span>事務</span>的人</h1>
+  <p class="subtitle">執事的責任是甚麼？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">教會裡最不被看見的那一份工作</h2>
+      <p class="card-hook">而它出問題的時候，全教會都會知道</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有一種工作，做得好的時候沒有人注意，做不好的時候人人都知道。</p>
+
+      <div class="highlight">
+        <strong>那份工作大概長這樣</strong>
+        誰家有困難，需要幫補。<br>奉獻的錢收了，要記帳、要保管、要用在對的地方。<br>聚會要用的東西，要有人準備。<br>有人生病住院，要有人去看。<br><br>——這些事，沒有一件會被寫在週報的頭條。<br><br>而只要有一件出錯，整個教會都會有感覺。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔧</span>
+        我想到房子裡的水電。<br><br>水一直是熱的、燈一直是亮的時候，沒有人想到那些管線。<br><br>——而那不代表它們不重要。<br><br>那代表<strong>有人做好了</strong>。
+      </div>
+
+      <p>而這一題講的，就是那份工作。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">從那七個人開始</h2>
+      <p class="card-hook">而那件事的起點，是有人被漏掉了</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第六章，是這個職份的起點。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">那時，門徒增多，有說希臘話的猶太人向希伯來人發怨言，因為在天天的供給上忽略了他們的寡婦
+        </p>
+        <p class="scripture-ref">使徒行傳 六章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那件事的三個要素</strong>
+        <strong>一、是真的事</strong>——不是誤會，那些寡婦確實被漏掉了。<br><br><strong>二、涉及族群</strong>——被漏掉的是說希臘話的那一群，是教會裡的少數。<br><br><strong>三、關乎生存</strong>——那是「天天的供給」，是吃飯的事。<br><br>——三件加起來，是一個會裂開的裂縫。
+      </div>
+
+      <p>而使徒的處理，是設立七個人專責這件事。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">當從你們中間選出七個有好名聲、被聖靈充滿、智慧充足的人，我們就派他們管理這事
+        </p>
+        <p class="scripture-ref">使徒行傳 六章三節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍲</span>
+        而請注意那個結果。<br><br>那一章的結尾是：<br><br>「<strong>神的道興旺起來；在耶路撒冷門徒數目加增的甚多，也有許多祭司信從了這道。</strong>」（徒六 7）<br><br>——教會大幅增長的前一句話，是「他們把分食物的事處理好了」。<br><br>那兩件事，被放在同一段裡。
+      </div>
+
+      <p>下一篇，我們把責任講清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">執事的責任</h2>
+      <p class="card-hook">救濟、款項、以及一切屬於「事務」的工作</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">執事的責任</span>
+          管理<strong>救濟事務</strong>，<br><strong>收發款項</strong>，<br>以及其他屬於<strong>「事務」</strong>的工作。<br><br>（徒六 1～6）
+        </div>
+      </div>
+
+      <p>〔註：執事的資格，載於提前三 8～13；徒六 1～6。〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「執事」這個字，在新約裡本來的意思很樸素：<strong>服事的人</strong>。</p>
+
+      <div class="highlight">
+        <strong>它原本是描述一個動作，不是一個頭銜</strong>
+        同一個字根，在福音書裡被用來說<strong>席上服事的人</strong>。<br><br>而使徒行傳六章二節那句「管理飯食」，用的正是這個字的動詞形態。<br><br>——所以「執事」的字面意思，就是<strong>「在桌邊服事的人」</strong>。<br><br>而更值得注意的是：主自己用過這個字說祂自己——<br><br>「人子來，<strong>不是要受人的服事，乃是要服事人</strong>。」（太廿 28）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而三項責任，可以這樣理解：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>責任</th>
+            <th>具體是什麼</th>
+            <th>為什麼要有人專責</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>救濟事務</strong></td>
+            <td>照顧教會中有困難、有缺乏的人</td>
+            <td>因為需要是<strong>持續</strong>的，臨時處理會漏人</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>收發款項</strong></td>
+            <td>奉獻的收取、保管、支出、記錄</td>
+            <td>因為錢的事<strong>必須清楚</strong>，才不會生疑</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>其他事務</strong></td>
+            <td>聚會場地、器物、庶務、行政</td>
+            <td>因為<strong>有人做，別人才做得成別的事</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而三項的共同性質是：都很具體</strong>
+        不是理念，是<strong>錢、物、人的實際需要</strong>。<br><br>——而正因為具體，所以最容易被說成「不屬靈」。<br><br>而聖經的態度，正好相反：<br><br>做這些事的人，要<strong>被聖靈充滿</strong>。
+      </div>
+
+      <p>下一篇，我們看那份資格清單。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">為什麼資格訂得那麼嚴</h2>
+      <p class="card-hook">因為這份工作，經手的是別人的信任</p>
+    </div>
+    <div class="card-body">
+
+      <div class="highlight">
+        <strong>作執事的資格（提前三 8～13）</strong>
+        <strong>端莊</strong>；<br><strong>不一口兩舌</strong>；<br><strong>不好喝酒</strong>；<br><strong>不貪不義之財</strong>；<br><strong>要存清潔的良心，固守真道的奧祕</strong>；<br><strong>要先受試驗</strong>，若沒有可責之處，然後叫他們作執事；<br>作女執事的也是如此：端莊，不說讒言，有節制，<strong>凡事忠心</strong>；<br>只作一個婦人的丈夫，<strong>好好管理兒女和自己的家</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💰</span>
+        而其中兩項，直接對著這份工作的性質：<br><br><strong>「不一口兩舌」</strong>——因為救濟的工作會知道很多人的難處。<br><br>誰家有困難、誰欠了債、誰生了什麼病——那些事，是在服事中知道的。<br><br>而如果那些話會流出去，沒有人敢再求助。<br><br><strong>「不貪不義之財」</strong>——因為經手的是別人奉獻的錢。<br><br>而那筆錢是別人在神面前擺上的。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「<strong>要先受試驗</strong>」那一句，很有意思。<br><br>不是先給位置，再看表現。<br><br>是<strong>先看表現，再給位置</strong>。<br><br>——而使徒行傳六章的做法一樣：那七個人是<strong>從眾人中選出來的</strong>，選的標準是「<strong>有好名聲</strong>」。<br><br>「有好名聲」的意思是：<strong>大家已經看過他很久了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而保羅在處理捐款這件事上，做過一個很細的安排，正好說明這份工作的標準：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這就免得有人因我們收的捐銀很多，就挑我們的不是。我們留心行光明的事，不但在主面前，就在人面前也是這樣
+        </p>
+        <p class="scripture-ref">哥林多後書 八章二十至二十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>不但在主面前，就在人面前也是這樣</strong>」——那是兩層標準。<br><br>在主面前清白，是最低要求。<br><br>而保羅加了第二層：<strong>還要讓人看得出來是清白的。</strong><br><br>——所以他刻意讓那筆錢<strong>多人同行、可被檢查</strong>。<br><br>那不是因為他不信任自己。<br><br>是因為<strong>錢的事，必須連被誤會的空間都拿掉</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那份資格的最後一節，給了一個很重的應許：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為善作執事的，自己就得到美好的地步，並且在基督耶穌裡的真道上大有膽量
+        </p>
+        <p class="scripture-ref">提摩太前書 三章十三節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        「<strong>大有膽量</strong>」——這是一個屬靈的結果。<br><br>而它是從<strong>管錢、管事、照顧人</strong>裡長出來的。<br><br>——那不是理所當然的連結。<br><br>而聖經說：就是這樣長的。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">司提反與腓利，後來去了哪裡</h2>
+      <p class="card-hook">那七個人裡，我們知道兩個人的下文</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳六章那七個人，聖經後來追蹤了其中兩位。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">司提反</span>
+          第六章末：「司提反<strong>滿得恩惠、能力</strong>，在民間行了大奇事和神蹟。」<br><br>第七章：在公會前講了使徒行傳<strong>最長的一篇道</strong>——從亞伯拉罕一路講到所羅門。<br><br>然後他成了教會<strong>第一位殉道者</strong>。<br><br>而他斷氣前說的是：「<strong>主啊，不要將這罪歸於他們。</strong>」
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">腓利</span>
+          第八章：在撒瑪利亞傳道，「<strong>那城裡就大有歡喜</strong>」。<br><br>然後被差去曠野的路上，向埃提阿伯的太監講解以賽亞書五十三章，替他施洗。<br><br>而到了第二十一章，他已經被稱為「<strong>傳福音的腓利</strong>」——聖經直接給了他這個稱呼。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那兩個人的起點，是同一件事</strong>
+        <strong>他們是去管飯食的。</strong><br><br>——不是先講道、後來去服事。<br><br>是<strong>先服事，然後被主用在更遠的地方</strong>。<br><br>而那不是巧合。主自己說過那個原則：<br><br>「<strong>人在最小的事上忠心，在大事上也忠心。</strong>」（路十六 10）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而使徒行傳六章那個決定，其實還有一層更深的作用。</p>
+
+      <div class="highlight">
+        <strong>它同時保住了兩件事</strong>
+        <strong>第一，寡婦有飯吃。</strong><br><br><strong>第二，使徒能專心以祈禱、傳道為事。</strong><br><br>——如果沒有設立那七個人，會怎樣？<br><br>要嘛寡婦繼續被漏掉，要嘛使徒被事務淹沒。<br><br>而事實上，兩件事都會發生。<br><br>所以那個安排，不是「把雜事丟給別人」。<br><br><strong>是讓兩件事都有人專心做。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        我想到摩西的岳父葉忒羅講過的話。<br><br>那時摩西從早到晚一個人審理百姓的案子。<br><br>而葉忒羅說：「<strong>你這做的不好。你和這些百姓必都疲憊；因為這事太重，你獨自一人辦理不了。</strong>」（出十八 17～18）<br><br>——然後他建議設立千夫長、百夫長、五十夫長、十夫長。<br><br>而那句評語值得記住：<strong>「你和這些百姓必都疲憊。」</strong><br><br>不分工的結果，是<strong>兩邊都累</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而有一段經文，把這種服事的價值講到了最高。</p>
+
+      <div class="highlight">
+        <strong>馬太福音二十五章</strong>
+        「我餓了，你們給我吃；渴了，你們給我喝；我作客旅，你們留我住；我赤身露體，你們給我穿；我病了，你們看顧我；我在監裡，你們來看我。」<br><br>而那些人問：主啊，我們什麼時候做過這些？<br><br>回答是：<br><br>「<strong>這些事你們既做在我這弟兄中一個最小的身上，就是做在我身上了。</strong>」<br><br>——而那份清單裡的每一項，都是<strong>事務性的</strong>。<br><br>給吃、給喝、給住、給穿、探病、探監。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「我在你們中間如同服事人的」</h2>
+      <p class="card-hook">寫給那些默默做事的人</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那個字上。</p>
+
+      <div class="highlight">
+        <strong>「執事」的字面意思，是「服事的人」</strong>
+        而主用同一個字說過自己：<br><br>「人子來，<strong>不是要受人的服事，乃是要服事人</strong>，並且要捨命，作多人的贖價。」<br><br>——所以這份工作的名字，跟主形容自己的字，是同一個。<br><br>而那一夜，祂做的事是：<strong>拿一條手巾束腰，替他們洗腳。</strong>
+      </div>
+
+      <div class="big-quote">
+        我在你們中間<br>如同服事人的
+        <cite>— 路加福音 二十二章二十七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你就是那個在教會裡默默做事的人——</p>
+
+      <p>那個提早到、最晚走的人。</p>
+
+      <p>那個記帳、對帳、跑銀行的人。</p>
+
+      <p>那個知道誰家有困難、然後悄悄去看的人。</p>
+
+      <p>那個把椅子排好、把東西收好、從來沒有被謝過的人。</p>
+
+      <div class="highlight">
+        <strong>我想留下三句話</strong>
+        <strong>第一</strong>——那七個人的工作，是分食物。而主把他們的名字寫進了聖經。<br><br><strong>第二</strong>——「善作執事的，自己就得到美好的地步，並且在基督耶穌裡的真道上<strong>大有膽量</strong>。」<br><br><strong>第三</strong>——「這些事你們既做在我這弟兄中<strong>一個最小的</strong>身上，<strong>就是做在我身上了</strong>。」
+      </div>
+
+      <p>回到我開頭那個比喻。</p>
+
+      <p>水一直是熱的，燈一直是亮的，所以沒有人想到那些管線。</p>
+
+      <p>而我後來明白：那不是被忽略。</p>
+
+      <p>那是<strong>被倚靠</strong>。</p>
+
+      <p>而有一位，把每一件都記得很清楚。</p>
+
+      <p>願你今天，知道那些沒有人看見的，祂全看見了。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  執事的責任 · Threads Series
+</footer>
+
+</body>
+</html>

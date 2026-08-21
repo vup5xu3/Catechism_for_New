@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖經教訓我們怎樣禱告 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>五個<span>怎樣</span></h1>
+  <p class="subtitle">聖經教訓我們怎樣禱告？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">那個半夜敲門的人</h2>
+      <p class="card-hook">主用他來說明「該怎麼禱告」</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>主教禱告的時候，講了一個有點好笑的比喻。</p>
+
+      <div class="highlight">
+        <strong>那個場景</strong>
+        半夜，有個朋友遠道而來，家裡沒有東西可以招待。<br><br>於是這個人跑去敲隔壁的門：<br><br>「朋友！請借給我三個餅。」<br><br>而屋裡的人回答：「<strong>不要攪擾我，門已經關閉，孩子們也同我在床上了，我不能起來給你。</strong>」<br><br>——那是一個很真實的回答。半夜被吵醒，誰都會這樣講。
+      </div>
+
+      <p>而主的結論，才是重點：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">雖不因他是朋友起來給他，但因他情詞迫切地直求，就必起來照他所需用的給他
+        </p>
+        <p class="scripture-ref">路加福音 十一章八節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而「<strong>情詞迫切地直求</strong>」那幾個字，原文的意思其實更直白：<br><br><strong>「不要臉地一直求。」</strong><br><br>——那不是一個很屬靈的形容詞。<br><br>而主用它來教禱告。
+      </div>
+
+      <p>而這一題，講的正是那五種姿態。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">還有一個寡婦，和一個不義的官</h2>
+      <p class="card-hook">而主講那個比喻的目的，聖經直接寫出來了</p>
+    </div>
+    <div class="card-body">
+
+      <p>路加福音十八章，主又講了一個類似的比喻。而這一次，聖經直接說出了目的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">耶穌設一個比喻，是要人常常禱告，不可灰心
+        </p>
+        <p class="scripture-ref">路加福音 十八章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個比喻，主角很不討喜</strong>
+        某城裡有一個官，「<strong>不懼怕神，也不尊重世人</strong>」。<br><br>而那城裡有個寡婦，常到他那裡，說：「我有一個對頭，求你給我伸冤。」<br><br>——那個官「<strong>多日不准</strong>」。<br><br>而後來他心裡說：<br><br>「我雖不懼怕神，也不尊重世人，只因這寡婦煩擾我，<strong>我就給她伸冤吧，免得她常來纏磨我！</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而主的推論，用的是<strong>「何況」</strong>的方式：<br><br>「你們聽這不義之官所說的話。<strong>神的選民晝夜呼籲他，他縱然為他們忍了多時，豈不終久給他們伸冤嗎？</strong>」<br><br>——注意那個對比有多強烈：<br><br>那個官<strong>不懼怕神，也不尊重人</strong>，是被<strong>煩</strong>到才動。<br><br>——而我們的對象，不是那樣的一位。
+      </div>
+
+      <div class="highlight">
+        <strong>而這兩個比喻的共同點，是「持續」</strong>
+        半夜敲門的那個——<strong>一直敲</strong>。<br><br>那個寡婦——<strong>常到他那裡</strong>。<br><br>——所以主教禱告的時候，特別強調的不是技巧。<br><br>是<strong>不要停</strong>。
+      </div>
+
+      <p>下一篇，我們把五項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">五種禱告</h2>
+      <p class="card-hook">加上一個很重要的註</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、奉主的名禱告</span>
+          （約十四 13；十六 23～24）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、迫切禱告</span>
+          （羅十二 12；路十一 5～8）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、常常禱告</span>
+          （路廿一 36）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、儆醒禱告</span>
+          （太廿六 41；彼前四 7）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">五、不住禱告</span>
+          （帖前五 17）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而禱告的方式</strong>
+        以上的禱告，<strong>以方言禱告為主，悟性的禱告為輔</strong>（林前十四 15）。
+      </div>
+
+      <div class="highlight">
+        <strong>〔註〕</strong>
+        <strong>奉主的名禱告，是向父禱告的</strong>，<strong>父是我們禱告的對象</strong>；<br><br>有人禱告說：「奉你自己的名祈求」，<strong>與主的話不合</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而後面那四項，其實是同一件事的四個面向：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>講的是</th>
+            <th>對治的是</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>迫切</strong></td>
+            <td>禱告的<strong>力度</strong></td>
+            <td>敷衍、隨口說說</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>常常</strong></td>
+            <td>禱告的<strong>頻率</strong></td>
+            <td>久久才想到一次</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>儆醒</strong></td>
+            <td>禱告的<strong>狀態</strong></td>
+            <td>心不在焉、打瞌睡</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>不住</strong></td>
+            <td>禱告的<strong>連續性</strong></td>
+            <td>把禱告切成一段一段的活動</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「常常」與「不住」的分別，值得說清楚</strong>
+        <strong>常常</strong>——是<strong>次數多</strong>：一天好幾次。<br><br><strong>不住</strong>——是<strong>不中斷</strong>：像一條沒有關掉的線。<br><br>——那不是要人一天到晚出聲禱告。<br><br>那是說：<strong>那個連線，一直開著。</strong><br><br>所以隨時可以說一句，而不需要重新撥號。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而那個註，處理的是一個很具體的錯誤。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">📍</span>
+        因為「奉主的名」這句話，預設了<strong>兩個位置</strong>：<br><br><strong>求的對象</strong>——父。<br><strong>所奉的名</strong>——主耶穌。<br><br>——所以那句話的完整意思是：<strong>「我用主耶穌的名義，向父求。」</strong><br><br>而如果對象也是主自己，那句話就變成「奉你自己的名，向你求」——<br><br>那個結構就<strong>塌掉了</strong>。<br><br>而主自己的話很清楚：<br><br>「你們若<strong>向父</strong>求甚麼，他必將我的名賜給你們。」（約十六 23）
+      </div>
+
+      <p>下一篇，我們一項一項看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">那五個詞，原文各有畫面</h2>
+      <p class="card-hook">而「迫切」那個字最有意思</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">προσκαρτερέω <span style="font-size:0.8em;opacity:0.75">proskartereō</span></div>
+        <div class="term-desc">
+          羅馬書十二章十二節「禱告要<strong>恆切</strong>」用的是這個字。<br><br>它由「<strong>朝向</strong>」加上「<strong>有力氣、堅強</strong>」組成，意思是<strong>「持續地緊貼著、堅持不放」</strong>。<br><br>——同一個字，用在使徒行傳二章四十二節：初代教會「<strong>恆心遵守</strong>」使徒的教訓、彼此交接、擘餅、祈禱。<br><br>也用在使徒行傳一章十四節：「這些人<strong>同著幾個婦人</strong>……<strong>都同心合意地恆切禱告</strong>。」<br><br>——那正是五旬節之前的十天。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而路加福音十一章八節那個「<strong>情詞迫切</strong>」，原文用的是另一個字。<br><br>那個字的字面意思是「<strong>沒有羞恥心</strong>」——也就是<strong>臉皮厚、拉不下臉也照求</strong>。<br><br>——而主用這個字來教禱告，本身就是一種鼓勵：<br><br><strong>不必怕自己求得太多、太煩、太不好意思。</strong><br><br>而那個比喻裡，那個人求的是<strong>三個餅</strong>——不是什麼大事。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「儆醒」那一項，彼得前書講得很具體：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">萬物的結局近了。所以，你們要謹慎自守，儆醒禱告
+        </p>
+        <p class="scripture-ref">彼得前書 四章七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「謹慎自守」那個字，本義是「頭腦清醒、不醉」</strong>
+        ——所以「儆醒禱告」不只是「不要睡著」。<br><br>它包括：<strong>頭腦是清楚的，判斷是準的。</strong><br><br>而寫這句話的人，正是那個在客西馬尼園睡著的彼得。<br><br>——所以他知道那是什麼滋味。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「不住禱告」那一節，在原文裡的說法也很有畫面：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">不住地禱告
+        </p>
+        <p class="scripture-ref">帖撒羅尼迦前書 五章十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        那個副詞的意思是<strong>「不間斷地」</strong>——而它的字根，被用來形容<strong>斷斷續續卻從不停止的咳嗽</strong>。<br><br>——那個畫面很有意思。<br><br>因為咳嗽<strong>不是一直在響</strong>，而它<strong>一直沒有停</strong>。<br><br>所以「不住禱告」不是要人二十四小時開口。<br><br>是：<strong>一整天裡，它會一次一次地回來。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔗</span>
+        而那三節經文是連在一起的：<br><br>「要<strong>常常喜樂</strong>，<strong>不住地禱告</strong>，<strong>凡事謝恩</strong>；因為這是神在基督耶穌裡向你們所定的旨意。」（帖前五 16～18）<br><br>——三個短句，全部是「一直」的性質。<br><br>而後面那句話說：<strong>那就是神的旨意。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「向誰求」與「奉誰的名」</h2>
+      <p class="card-hook">那個註要守住的，是一個很重要的結構</p>
+    </div>
+    <div class="card-body">
+
+      <p>那個註，看起來是在計較用詞。而它守住的東西不小。</p>
+
+      <div class="highlight">
+        <strong>因為那是新約禱告的基本結構</strong>
+        <strong>向父</strong>求——「你們禱告要這樣說：<strong>我們在天上的父</strong>。」<br><br><strong>奉子</strong>的名——「你們奉我的名無論求甚麼，我必成就。」<br><br><strong>靠聖靈</strong>——「<strong>靠著聖靈</strong>，隨時多方禱告祈求。」（弗六 18）<br><br>——三個位置，各有各的位分。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎫</span>
+        而「奉某人的名」在當時，是一個很實際的用語。<br><br>那意思是<strong>「以某人的名義、代表某人」</strong>。<br><br>——一個僕人奉主人的名去辦事，別人接待他，是因為<strong>那個主人</strong>。<br><br>所以「奉主耶穌的名祈求」，不是禱告結尾的固定句型。<br><br><strong>那是我進到父面前的憑據。</strong><br><br>——因為我自己沒有資格站在那裡。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而主在最後的晚餐上，講這件事的時候，說了一句很特別的話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">向來你們沒有奉我的名求甚麼，如今你們求就必得著，叫你們的喜樂可以滿足
+        </p>
+        <p class="scripture-ref">約翰福音 十六章二十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「向來你們沒有」——那句話標記了一個新的階段</strong>
+        ——在那之前，門徒是<strong>直接問主</strong>的。祂就在旁邊。<br><br>而祂要走了。<br><br>所以祂告訴他們：<strong>從今以後，你們要向父求，奉我的名。</strong><br><br>而那個安排，其實比「祂在旁邊」更好。<br><br>因為祂接下去說：「我去是<strong>與你們有益的</strong>；我若不去，保惠師就不到你們這裡來。」（約十六 7）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而那句話，是這一段裡最難懂、也最溫柔的一句。<br><br>「<strong>我去是與你們有益的。</strong>」<br><br>——因為祂在地上的時候，只能在一個地方。<br><br>而聖靈來了以後，祂在每一個人裡面。<br><br>所以那個「離開」，換來的是<strong>更近</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這五項合起來，其實描述的是一種<strong>生活的樣子</strong>，不是一套技巧。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">尼希米的例子</span>
+          他站在王面前，王突然問他：「你要求甚麼？」<br><br>而聖經記了一句：<br><br>「<strong>我默禱天上的神</strong>，就對王說……」（尼二 4～5）<br><br>——在王面前，來不及跪下、來不及找地方。<br><br>那是<strong>一瞬間的禱告</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">而他之所以來得及，是因為前面</span>
+          第一章寫的是：他聽見耶路撒冷的消息之後，<br><br>「<strong>坐下哭泣，悲哀幾日，在天上的神面前禁食祈禱。</strong>」（尼一 4）<br><br>——那是<strong>四個月</strong>的禱告。<br><br>所以那個「默禱」不是憑空來的。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那正是「不住禱告」的真正樣子</strong>
+        它讓一個人在<strong>需要的那一秒</strong>，可以馬上接上。<br><br>——因為那條線一直開著。<br><br>而那條線，是靠著那些沒有人看見的時間，一天一天接起來的。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">寫給那個覺得自己不會禱告的你</h2>
+      <p class="card-hook">而門徒也不會，所以他們才問</p>
+    </div>
+    <div class="card-body">
+
+      <p>五項聽下來，可能會覺得標準很高。</p>
+
+      <div class="highlight">
+        <strong>而我想先說一件事</strong>
+        那些跟著主三年的門徒，<strong>也不會禱告。</strong><br><br>——所以他們才說：「<strong>求主教導我們禱告。</strong>」<br><br>而主沒有說「你們跟我這麼久了，這個還不會？」<br><br>祂坐下來，一句一句教。<br><br>然後又講了兩個比喻，鼓勵他們<strong>一直求</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而祂教完那個半夜敲門的比喻之後，接的是這三句：<br><br>「<strong>你們祈求，就給你們；尋找，就尋見；叩門，就給你們開門。</strong>」（路十一 9）<br><br>——三個動詞，一個比一個用力：<br><br>祈求（開口）→ 尋找（起身去找）→ 叩門（站在門口敲）。<br><br>而三句的回應，全部是肯定的。
+      </div>
+
+      <div class="highlight">
+        <strong>而還有一件事，是給那些「連話都說不出來」的人的</strong>
+        「我們本不曉得當怎樣禱告，只是聖靈親自用<strong>說不出來的嘆息</strong>替我們禱告。」（羅八 26）<br><br>——「說不出來的嘆息」。<br><br>所以有些禱告，是沒有句子的。<br><br>而那些照樣算數。
+      </div>
+
+      <div class="big-quote">
+        不住地禱告
+        <cite>— 帖撒羅尼迦前書 五章十七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到那個半夜敲門的人。</p>
+
+      <p>他求的，只是三個餅。</p>
+
+      <p>他的方式，是「不要臉地一直求」。</p>
+
+      <p>——而主用他來教門徒禱告。</p>
+
+      <p>所以這一題最後給的，不是一套高標準。</p>
+
+      <p>是一個很簡單的鼓勵：</p>
+
+      <p><strong>去敲，一直敲，不要停。</strong></p>
+
+      <p>而門那一邊的，不是一個嫌你煩的鄰居。</p>
+
+      <p>也不是那個不懼怕神、也不尊重人的官。</p>
+
+      <p>是<strong>父</strong>。</p>
+
+      <p>願你今天，隨口說一句，就當作禱告。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖經教訓我們怎樣禱告 · Threads Series
+</footer>
+
+</body>
+</html>

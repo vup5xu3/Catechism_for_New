@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信徒幫補之功用 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>幫補的<span>三個原則</span></h1>
+  <p class="subtitle">信徒幫補之功用如何？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">幫助人，是一件很容易做壞的事</h2>
+      <p class="card-hook">因為給的人，總是站在比較高的地方</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我曾經很單純地以為：幫助人，只要有心就好。</p>
+
+      <div class="highlight">
+        <strong>而後來我發現，那件事有很多可以做壞的地方</strong>
+        給的方式不對，人會覺得被施捨。<br><br>給的時候順便說了幾句，人會覺得被說教。<br><br>給了之後，關係會變——一方變成「幫過人的」，一方變成「被幫過的」。<br><br>——而最麻煩的一種是：<br><br>那個人後來每次見到你，都覺得<strong>欠你</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        我想到遞東西給人的姿勢。<br><br>同樣一樣東西，<strong>從上往下丟</strong>，跟<strong>平舉著遞過去</strong>——<br><br>接的人感受完全不同。<br><br>而東西是同一樣。
+      </div>
+
+      <p>而這一題的三項，處理的正是這些。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">拾穗——一套很有尊嚴的救濟制度</h2>
+      <p class="card-hook">而它的設計，處處在保護那個人的臉</p>
+    </div>
+    <div class="card-body">
+
+      <p>舊約有一條律例，我覺得是聖經裡最溫柔的設計之一。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">在你們的地收割莊稼，不可割盡田角，也不可拾取所遺落的。不可摘盡葡萄園的果子，也不可拾取葡萄園所掉的果子；要留給窮人和寄居的
+        </p>
+        <p class="scripture-ref">利未記 十九章九至十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而這個設計，有幾個很細的用心</strong>
+        <strong>第一，那不是施捨，是「留下」。</strong><br>田主不必給，只要<strong>不要割完</strong>。<br><br><strong>第二，窮人要自己去撿。</strong><br>他不是伸手要，他是<strong>去工作</strong>。<br><br><strong>第三，兩邊不必碰面。</strong><br>田主不知道誰來撿，窮人不必向誰道謝。<br><br>——所以那份幫助，<strong>不帶著一張臉</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌾</span>
+        而路得記整卷書，就發生在這條律例上。<br><br>路得對婆婆說：「容我往田間去，我蒙誰的恩，就在誰的身後<strong>拾取麥穗</strong>。」<br><br>而波阿斯做的事，很值得看：<br><br>他沒有直接給她一袋糧食。<br><br>他吩咐僕人：「<strong>從捆裡抽出些來，留在地下任她拾取</strong>，不可叱嚇她。」（得二 16）<br><br>——他讓那份多出來的，看起來像是<strong>她自己撿到的</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而利未記那條律例的結尾，說明了理由</strong>
+        「<strong>我是耶和華你們的神。</strong>」<br><br>——注意那個理由不是「因為你們心腸要好」。<br><br>是<strong>「因為我是耶和華」</strong>。<br><br>而那正好是本題第一項要說的事。
+      </div>
+
+      <p>下一篇，我們把三項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三項</h2>
+      <p class="card-hook">根據、對象、界線</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、根據</span>
+          <strong>賙濟窮人是為神的憐憫</strong>，<br><strong>不單是由於自己的體恤</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、對象</span>
+          鼓勵不足的信徒<strong>納上十一之後</strong>，<br>再以<strong>信徒幫補</strong>補回。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、界線</span>
+          <strong>救濟與傳福音必須分開</strong>，<br>在這事上<strong>須求主賜智慧，不可自作聰明</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第一項那個「不單是」，用字很準。</p>
+
+      <div class="highlight">
+        <strong>它沒有否定「自己的體恤」</strong>
+        它說的是：<strong>不單是</strong>。<br><br>——人的體恤是真的，也是好的。<br><br>而問題在於：<strong>人的體恤會用完。</strong><br><br>它會被消耗，會有偏好，會因為對方不夠感激而收回去。<br><br>——而「為神的憐憫」，是一個<strong>不會被耗盡的來源</strong>。
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>只出於自己的體恤</th>
+            <th>為神的憐憫</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">來源</td>
+            <td>我此刻的心情、餘力</td>
+            <td><strong>神的性情</strong></td>
+          </tr>
+          <tr>
+            <td class="src">對象</td>
+            <td>容易給<strong>我有感覺</strong>的人</td>
+            <td>給<strong>真正需要</strong>的人</td>
+          </tr>
+          <tr>
+            <td class="src">持續性</td>
+            <td>會累、會失望、會停</td>
+            <td><strong>「他的憐憫不至斷絕。」</strong>（哀三 22）</td>
+          </tr>
+          <tr>
+            <td class="src">對方欠誰</td>
+            <td>容易變成<strong>欠我</strong></td>
+            <td>那是<strong>神的憐憫</strong>經過我而已</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項，是一個很細膩的設計，值得慢慢看。</p>
+
+      <div class="highlight">
+        <strong>那個做法是：先納，再補</strong>
+        對一個經濟不足的信徒，不是說「你就別納了」。<br><br>而是：<strong>鼓勵他照樣納上十一，然後教會以信徒的幫補，把那部分補回來。</strong><br><br>——為什麼要繞這一圈？<br><br>因為如果直接免掉，他就失去了<strong>親手獻上</strong>的那一份。<br><br>而那一份，是屬於他的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪙</span>
+        我想到那個投兩個小錢的寡婦。<br><br>那是她「一切養生的」。<br><br>——而如果那天有人攔住她說：「你這麼窮，不用投了。」<br><br>那她就不會出現在聖經裡。<br><br>而主看見的，正是<strong>她投的那一下</strong>。
+      </div>
+
+      <p>下一篇，我們看第三項——那條界線。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「你們找我，是因吃餅得飽」</h2>
+      <p class="card-hook">主自己處理過這條界線</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三項說：<strong>救濟與傳福音必須分開。</strong></p>
+
+      <p>而主自己遇過這個問題，處理得非常直接。</p>
+
+      <div class="highlight">
+        <strong>那個場景</strong>
+        五餅二魚的第二天，群眾又找來了。<br><br>而主說的第一句話是：<br><br>「我實實在在地告訴你們，你們找我，<strong>並不是因見了神蹟，乃是因吃餅得飽</strong>。」（約六 26）<br><br>——那句話很不客氣。<br><br>而那正是這一項要防的：<br><br><strong>人因為好處而來，那個「信」的性質會被弄混。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        而更值得注意的是主接下來做的事：<br><br>祂沒有順著那個熱度往下走。<br><br>祂講了一篇很難懂、很難接受的道——「我就是生命的糧」。<br><br>而結果是：「<strong>從此他門徒中多有退去的，不再和他同行。</strong>」（約六 66）<br><br>——祂寧可讓人走，也不要一群<strong>因為餅而跟隨</strong>的人。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而這一項並不是說「不可以又救濟又傳福音」。<br><br>——聖經裡兩件事一直是並行的。<br><br>它說的是：<strong>兩件事要分開。</strong><br><br>也就是：<strong>幫助不可以附帶條件。</strong><br><br>不可以是「你來聚會，我就幫你」。<br><br>也不可以讓對方覺得：「我如果不來，那份幫助就會停。」<br><br>——因為那樣的話，那個人來不來，就不是他自己的決定了。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而主在教施捨的時候，也講過同一個原則的另一面：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你擺設午飯或晚飯，不要請你的朋友、弟兄、親屬，和富足的鄰舍，恐怕他們也請你，你就得了報答。你擺設筵席，倒要請那貧窮的、殘廢的、瘸腿的、瞎眼的，你就有福了！因為他們沒有甚麼可報答你的
+        </p>
+        <p class="scripture-ref">路加福音 十四章十二至十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>因為他們沒有甚麼可報答你的</strong>」——那句話是理由，也是標準。<br><br>——所以純粹的給予，定義就是：<strong>拿不回任何東西。</strong><br><br>而那也包括：拿不回感謝、拿不回名聲、拿不回一個新來的會友人數。<br><br>而主說：「<strong>到義人復活的時候，你要得著報答。</strong>」<br><br>——報答有，只是不在這裡結算。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而雅各書講了一個很有畫面的反例：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">若是弟兄或是姊妹赤身露體，又缺了日用的飲食，你們中間有人對他們說：平平安安地去吧！願你們穿得暖，吃得飽；卻不給他們身體所需用的，這有甚麼益處呢？
+        </p>
+        <p class="scripture-ref">雅各書 二章十五至十六節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧥</span>
+        「<strong>願你們穿得暖，吃得飽</strong>」——那句話沒有錯。<br><br>那是一句祝福，甚至是一句禱告。<br><br>——而雅各的評語是：「<strong>這有甚麼益處呢？</strong>」<br><br>所以第三項那條界線，切的是<strong>條件</strong>，不是切掉<strong>行動</strong>。<br><br>——不可以拿福音當條件；<br>也不可以拿福音<strong>代替</strong>實際的幫助。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「不可自作聰明」</h2>
+      <p class="card-hook">因為這件事，真的很難判斷</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三項最後那句話，語氣很重：<strong>須求主賜智慧，不可自作聰明。</strong></p>
+
+      <div class="highlight">
+        <strong>而為什麼需要智慧？因為這件事的判斷很難</strong>
+        幫多少？幫多久？<br><br>什麼時候該繼續，什麼時候繼續反而害了他？<br><br>怎麼確定那是真的需要？<br><br>——而這些問題，沒有一條公式可以套。<br><br>而「自作聰明」的意思，是<strong>以為自己看得出來</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而兩邊都有風險：<br><br><strong>幫太少</strong>——那個人真的撐不過去。<br><br><strong>幫太多、幫太久</strong>——他不再需要自己站起來。<br><br>而聖經兩邊都說過：<br><br>「總要<strong>扶助軟弱的人</strong>。」（帖前五 14）<br><br>「若有人不肯做工，就不可吃飯。」（帖後三 10）<br><br>——注意後面那句的措辭是「<strong>不肯</strong>」，不是「不能」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而雅各書給了一個很直接的辦法：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你們中間若有缺少智慧的，應當求那厚賜與眾人、也不斥責人的神，主就必賜給他
+        </p>
+        <p class="scripture-ref">雅各書 一章五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節裡有兩個很體貼的形容詞</strong>
+        <strong>「厚賜與眾人」</strong>——祂不小氣。<br><br><strong>「也不斥責人」</strong>——祂不會說「這個你怎麼還不會」。<br><br>——所以來求智慧的人，不會被嫌棄。<br><br>而這一項要人做的，正是這個：<strong>先求，不要先自己判斷。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「信徒幫補」還有一個功用，是保羅特別提出來的。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">乃要均平，就是要你們的富餘，現在可以補他們的不足，使他們的富餘，將來也可以補你們的不足，這就均平了
+        </p>
+        <p class="scripture-ref">哥林多後書 八章十四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅引了一段舊約來說明</strong>
+        「如經上所記：<strong>多收的也沒有餘，少收的也沒有缺。</strong>」（林後八 15）<br><br>——那是出埃及記裡<strong>收嗎哪</strong>的事。<br><br>當時每個人收的量不一樣，「按著各人的飯量收取」。<br><br>而奇怪的是：「<strong>多收的也沒有餘，少收的也沒有缺。</strong>」（出十六 18）<br><br>——所以那個「均平」，是神做的事。<br><br>而幫補，是人有份參與其中。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔄</span>
+        而保羅那句話裡，有一個很重要的方向：<br><br>「<strong>使他們的富餘，將來也可以補你們的不足。</strong>」<br><br>——那不是單向的。<br><br>今天你有餘，補他的不足；<br>而有一天你不足了，那份會回到你身上。<br><br>——所以「幫補」不是強者對弱者。<br><br><strong>那是同一個身體裡的血液，流到需要的地方。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">寫給正在被幫補的你</h2>
+      <p class="card-hook">那不是欠人情</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題大部分在講給的人。而我想把最後留給領的人。</p>
+
+      <div class="highlight">
+        <strong>因為領受，有時候比給更難</strong>
+        會覺得丟臉。<br>會覺得欠人。<br>會在教會裡不敢抬頭。<br>會想著「等我好起來，一定要還」。<br><br>——而這一題的第一項，正好是給你的：<br><br><strong>「賙濟窮人是為神的憐憫，不單是由於自己的體恤。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💧</span>
+        那句話的意思是：<br><br>那份幫助，<strong>不是某個人的好心</strong>。<br><br>它是<strong>神的憐憫</strong>，經過那個人的手，到了你這裡。<br><br>——所以你不欠那個人。<br><br>那個人也只是<strong>經手</strong>而已。<br><br>就像水管：水流過去了，而水不是水管的。
+      </div>
+
+      <div class="highlight">
+        <strong>而保羅那句話，也是給你的</strong>
+        「使他們的富餘，將來也可以補你們的不足。」<br><br>——這句話有一個沒說出口的假設：<br><br><strong>今天不足的，將來會有富餘。</strong><br><br>而到那一天，你會是那個補別人的人。<br><br>——所以現在領受，不是終點。<br><br>那是<strong>那個循環的一段</strong>。
+      </div>
+
+      <div class="big-quote">
+        多收的也沒有餘，<br>少收的也沒有缺
+        <cite>— 哥林多後書 八章十五節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到路得那片田。</p>
+
+      <p>波阿斯做的事，是叫僕人<strong>從捆裡抽出些來，留在地下</strong>。</p>
+
+      <p>——他讓那份多出來的，看起來像是她自己撿到的。</p>
+
+      <p>而他還特別交代了一句：「<strong>不可叱嚇她。</strong>」</p>
+
+      <p>——連語氣都被顧到了。</p>
+
+      <p>而那卷書的結尾，路得成了大衛的曾祖母。</p>
+
+      <p>那條血脈，一路通到伯利恆的那個馬槽。</p>
+
+      <p>——而那一切的起點，是一片沒有割盡的田角。</p>
+
+      <p>願你今天，無論在給的那一邊還是領的那一邊，心都是輕的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  信徒幫補之功用 · Threads Series
+</footer>
+
+</body>
+</html>

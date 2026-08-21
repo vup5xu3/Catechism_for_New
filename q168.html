@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遷居他埠應注意的事 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>接上<span>那條線</span></h1>
+  <p class="subtitle">遷居他埠時，應注意甚麼事？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">很多人是在搬家之後，慢慢離開的</h2>
+      <p class="card-hook">而沒有人是故意的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>我認識不只一個這樣的人。</p>
+
+      <div class="highlight">
+        <strong>那個過程通常是這樣</strong>
+        搬到新的城市。<br><br>頭幾個月很忙——租房、上班、認路、適應。<br><br>「等安頓好了，再去找教會。」<br><br>——而「安頓好了」那一天，一直沒有到。<br><br>然後半年過去，一年過去。<br><br>而那個人並沒有離開信仰。<br><br><strong>他只是不再在任何一個地方了。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔌</span>
+        我想到搬家的時候拔掉的插頭。<br><br>那台機器沒有壞。<br><br>——它只是<strong>還沒有插上新的插座</strong>。<br><br>而如果一直沒有插上，它就一直不會動。<br><br>而這一題那句話，就是在講<strong>怎麼把插頭接上</strong>。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅寫過一封介紹信，內容只有兩節</h2>
+      <p class="card-hook">而那個被介紹的人，叫非比</p>
+    </div>
+    <div class="card-body">
+
+      <p>羅馬書最後一章，是一長串問安的名單。</p>
+
+      <p>而那一章的開頭，是一封很短的介紹。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我對你們舉薦我們的姊妹非比；她是堅革哩教會中的女執事。請你們為主接待她，合乎聖徒的體統
+        </p>
+        <p class="scripture-ref">羅馬書 十六章一至二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那兩節裡，有一封介紹信該有的全部要素</strong>
+        <strong>她是誰</strong>——「我們的姊妹非比」。<br><br><strong>她從哪裡來</strong>——「堅革哩教會中的女執事」。<br><br><strong>請你們做什麼</strong>——「為主接待她」。<br><br><strong>還有一句</strong>——「她<strong>在何事上要你們幫助，你們就幫助她</strong>。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✉️</span>
+        而那封信最後一句，是保羅特意加的：<br><br>「因她素來幫助許多人，也幫助了我。」<br><br>——所以那不只是一個手續。<br><br>那是<strong>把一個人交到另一群人手上</strong>。<br><br>而那個人，是帶著那封信去的。<br><br>——而事實上，羅馬書這一整卷，很可能就是她帶去的。
+      </div>
+
+      <div class="highlight">
+        <strong>而那樣的介紹，在初代教會是常態</strong>
+        亞波羅要往亞該亞去，「弟兄們就<strong>勉勵他，並寫信請門徒接待他</strong>」。（徒十八 27）<br><br>——而結果是：「他到了那裡，<strong>多幫助那蒙恩信的人</strong>。」<br><br>而保羅也提過那種文書：「我們豈像別人，用<strong>薦信</strong>給你們或用你們的薦信呢？」（林後三 1）
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩個動作，兩個目的</h2>
+      <p class="card-hook">很短，而每一個字都有用</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">動作</span>
+          應當<strong>通知教會負責人</strong>，<br>並<strong>要求介紹新埠教會</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">目的</span>
+          以便<strong>聯絡</strong>，<br>並得<strong>牧者關顧</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那兩個動作，分別解決了兩個很實際的問題：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>動作</th>
+            <th>解決的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>通知教會負責人</strong></td>
+            <td>原本的教會<strong>知道你去了哪裡</strong>——那條線不會斷</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>要求介紹新埠教會</strong></td>
+            <td>你到了那裡<strong>不是陌生人</strong>——有人知道你要來</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「要求」那兩個字，值得注意</strong>
+        ——它是寫給<strong>要搬的那個人</strong>的。<br><br>不是「教會應該主動介紹」。<br><br>是<strong>你去要求</strong>。<br><br>——因為教會不一定知道你要搬。<br><br>而這件事，最清楚的人是你自己。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「聯絡」與「牧者關顧」那兩個目的，也各有分量。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        <strong>聯絡</strong>——那是<strong>被找得到</strong>。<br><br>一個人如果沒有任何一個群體知道他在哪裡，那他出事的時候，沒有人會發現。<br><br><strong>牧者關顧</strong>——那是<strong>有人在看顧你</strong>。<br><br>而希伯來書說：「他們為你們的靈魂<strong>時刻警醒</strong>，好像那將來交帳的人。」（來十三 17）<br><br>——所以那不只是一個聯絡簿上的名字。
+      </div>
+
+      <p>下一篇，我們看聖經裡「被接待」這件事。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">掃羅到耶路撒冷的時候，沒有人敢理他</h2>
+      <p class="card-hook">而有一個人站出來</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第九章，記了一個很尷尬的場面。</p>
+
+      <div class="highlight">
+        <strong>掃羅剛信主不久，來到耶路撒冷</strong>
+        「掃羅到了耶路撒冷，想與門徒結交，<br><br><strong>他們卻都怕他，不信他是門徒。</strong>」（徒九 26）<br><br>——那個處境很難堪。<br><br>因為那些人記得的，是<strong>那個逼迫教會的掃羅</strong>。<br><br>而他沒有人可以證明自己。
+      </div>
+
+      <p>而下一節，是這一段的轉折：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">惟有巴拿巴接待他，領去見使徒，把他在路上怎麼看見主……都述說出來
+        </p>
+        <p class="scripture-ref">使徒行傳 九章二十七節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        「<strong>惟有巴拿巴</strong>」。<br><br>——一個人。<br><br>而他做的事有三個動作：<strong>接待、領去、述說。</strong><br><br>而結果是：「於是掃羅在耶路撒冷和門徒<strong>出入來往</strong>。」（徒九 28）<br><br>——「出入來往」。<br><br>那個門，是<strong>被一個人打開的</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那正是這一題那個「介紹」在做的事。<br><br>——它替你做了巴拿巴做的那一件：<br><br><strong>讓那邊的人知道，你是誰。</strong><br><br>而如果沒有那個介紹，一個新來的人要花很久，才會被真正接進去。<br><br>——甚至可能一直都在門口。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「接待」這件事，聖經給的分量很重：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">羅十二 13</td>
+            <td>「聖徒缺乏要幫補；<strong>客要一味地款待</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">彼前四 9</td>
+            <td>「你們要<strong>互相款待，不發怨言</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">來十三 2</td>
+            <td>「不可忘記用愛心接待客旅；因為<strong>曾有接待客旅的，不知不覺就接待了天使</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">約參 5～8</td>
+            <td>「親愛的兄弟啊，凡你向作客旅之弟兄所行的都是忠心的……<strong>我們應該接待這樣的人，叫我們與他們一同為真理做工。</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而約翰參書那句話，把接待的意義說到了最高：<br><br>「<strong>叫我們與他們一同為真理做工。</strong>」<br><br>——所以接待一個遠來的人，不是「幫他一個忙」。<br><br>是<strong>有份於他所做的工</strong>。<br><br>而那也意味著：<strong>那件事對兩邊都有益。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼「自己找」比較難</h2>
+      <p class="card-hook">因為那需要跨過一個很高的門檻</p>
+    </div>
+    <div class="card-body">
+
+      <p>有人會想：我自己找一間去就好了，何必那麼麻煩？</p>
+
+      <div class="highlight">
+        <strong>而「自己找」的難處，是很具體的</strong>
+        第一次要自己走進一間<strong>完全陌生</strong>的教會。<br><br>不認識任何人。不知道坐哪裡。不知道流程。<br><br>散會之後，沒有人跟你講話——而那很正常，因為大家都不認識你。<br><br>——然後下一週，那個門檻會變得更高一點。<br><br>而第三週，可能就不去了。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        而「有人介紹」改變的，正是那一件事。<br><br>——因為那邊會<strong>有人知道你要來</strong>。<br><br>而那個差別，比想像的大：<br><br>一個等著你的人，和一屋子不認識你的人——<br><br><strong>那是兩種完全不同的第一次。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這一題背後，其實有一個很重要的觀念。</p>
+
+      <div class="highlight">
+        <strong>那就是：教會是一個身體，不是很多間分開的公司</strong>
+        「身子原不是一個肢體，乃是<strong>許多肢體</strong>。」（林前十二 14）<br><br>「<strong>一主，一信，一洗，一神，就是眾人的父。</strong>」（弗四 5～6）<br><br>——所以搬到別的城市，不是<strong>換一個團體</strong>。<br><br>是<strong>同一個身體，換一個位置</strong>。<br><br>而那正是為什麼要有「介紹」——因為那本來就是同一邊的事。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🩸</span>
+        而保羅寫信的時候，那種橫向的連結到處都是：<br><br>他為<strong>耶路撒冷</strong>的窮人，向<strong>馬其頓和亞該亞</strong>的教會募捐。<br><br>他請<strong>歌羅西</strong>的信徒把信念給<strong>老底嘉</strong>的教會聽。<br><br>他在信末，替一大群人問安——名字一個一個列出來。<br><br>——所以那不是一間一間各自運作的。<br><br><strong>那是一個連著的網。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這一題還有一個沒有寫出來、卻很重要的部分：<strong>時間點。</strong></p>
+
+      <div class="highlight">
+        <strong>那件事，要在搬之前做</strong>
+        ——因為搬完之後，你會很忙。<br><br>而那個「等安頓好」的念頭，是最危險的一句。<br><br>而如果在搬之前就通知了、要求了介紹——<br><br>那麼到了那裡，那條線<strong>已經接上了</strong>。<br><br>——你只需要走進去。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📦</span>
+        而我覺得可以把它當成搬家清單上的一項：<br><br>轉地址、轉學、辦水電——<br><br>然後加一行：<strong>通知教會，要一個介紹。</strong><br><br>——那一行，花不了十分鐘。<br><br>而它可能決定你在那個新城市的頭一年，是什麼樣子。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「惟有巴拿巴接待他」</h2>
+      <p class="card-hook">寫給正要搬走的你，也寫給留下來的人</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在那六個字上。</p>
+
+      <div class="big-quote">
+        惟有巴拿巴接待他，<br>領去見使徒
+        <cite>— 使徒行傳 九章二十七節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那件事的後續，很值得想</strong>
+        那個被接待的人，是<strong>掃羅</strong>。<br><br>而他後來寫了新約裡一大半的書信。<br><br>——而在那一天，他只是一個沒有人敢理的陌生人。<br><br>而如果那天沒有巴拿巴——<br><br>那件事會不會不一樣？我們不知道。<br><br>而聖經記下來的是：<strong>「惟有巴拿巴。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫂</span>
+        而如果你是<strong>留下來的那一邊</strong>——<br><br>當有一個新的人走進來，站在後面，不知道要坐哪裡的時候——<br><br>那一刻，你可以是那個巴拿巴。<br><br>——而那件事不需要恩賜。<br><br><strong>只需要走過去。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個插頭。</p>
+
+      <p>那台機器沒有壞。它只是還沒有插上。</p>
+
+      <p>——而這一題那句話，說的就是那件事：</p>
+
+      <p><strong>通知，要一個介紹，然後接上。</strong></p>
+
+      <p>而那句「以便聯絡，並得牧者關顧」——</p>
+
+      <p>我覺得最溫暖的是後面那五個字。</p>
+
+      <p><strong>並得牧者關顧。</strong></p>
+
+      <p>——那意味著：在那個陌生的城市裡，會有人記得你的名字。</p>
+
+      <p>而那件事，是要先開口的。</p>
+
+      <p>願你搬過去之前，先把那條線接上。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  遷居他埠應注意的事 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖靈充滿的表現 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>充滿的<span>表現</span></h1>
+  <p class="subtitle">五旬節之後，那些人身上發生了什麼</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">同一批人，判若兩人</h2>
+      <p class="card-hook">而中間只隔了幾十天</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果你把福音書的結尾和使徒行傳的開頭放在一起讀，會看見一個很難忽略的落差。</p>
+
+      <div class="highlight">
+        <strong>幾十天前的他們</strong>
+        主被抓的那一夜，「<strong>門徒都離開他逃走了</strong>」。<br><br>彼得在一個使女面前三次不認主，最後一次還「發咒起誓」。<br><br>復活那天晚上，他們聚在一起，而經文特別記了一句：「<strong>門都關了</strong>，因怕猶太人。」<br><br>——那是一群害怕、躲藏、四散的人。
+      </div>
+
+      <div class="highlight">
+        <strong>而幾十天後</strong>
+        彼得站在耶路撒冷的人群前，公開指著他們說：「你們……藉著無法之人的手，<strong>把他釘在十字架上殺了</strong>。」<br><br>被公會抓起來、被威嚇，他的回答是：「聽從你們，不聽從神，這在神面前合理不合理，<strong>你們自己酌量吧！</strong>」<br><br>被打了之後，「心裡歡喜，<strong>因被算是配為這名受辱</strong>」。<br><br>——同一批人。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔄</span>
+        而中間發生了什麼？<br><br>經文只記了一件事：<strong>五旬節，他們被聖靈充滿。</strong><br><br>他們沒有受過新的訓練，沒有讀更多的書，處境也沒有變好——<strong>反而更危險了。</strong><br><br>而他們變了。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看聖經所記的那些表現。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">公會的人自己注意到了</h2>
+      <p class="card-hook">「他們原是沒有學問的小民」</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第四章，有一句我覺得極有分量的旁觀者記錄。</p>
+
+      <p>彼得和約翰被抓到公會前。而在他們回答之後，經文記下了那些審問者的反應：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">他們見彼得、約翰的膽量，又看出他們原是沒有學問的小民，就希奇，認明他們是跟過耶穌的
+        </p>
+        <p class="scripture-ref">使徒行傳 四章十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>三個觀察，來自不友善的一方</strong>
+        <strong>「見彼得、約翰的膽量」</strong>——那個膽量，是看得出來的。<br><br><strong>「看出他們原是沒有學問的小民」</strong>——所以那不是學識造成的。<br><br><strong>「就希奇」</strong>——連他們也覺得對不上。<br><br>而最後一句最重：<strong>「認明他們是跟過耶穌的。」</strong><br><br>——那些人不是從言辭認出來的。是從<strong>那個樣子</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👀</span>
+        我覺得這是最強的一種見證：<strong>由反對你的人記錄下來的。</strong><br><br>他們沒有理由誇大。而他們的結論是：<br><br>「這兩個人身上，有一種與他們的出身不相稱的東西。」<br><br>而那個東西，讓人聯想到耶穌。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「膽量」那個字，值得看一下。</p>
+
+      <div class="term-box">
+        <div class="term-original">Parrēsia<br>膽量</div>
+        <div class="term-desc">字面是「<strong>說出全部的話</strong>」（pan 全部 + rhēsis 說話）。<br><br>在當時的希臘城邦裡，這個字帶有<strong>公民自由發言權</strong>的意味——一個有資格在議會中暢所欲言的人。<br><br>所以那不只是「勇敢」。是<strong>「該說的話，一句都不縮」</strong>。<br><br>而那正是他們求的：「求主……叫你僕人<strong>大放膽量</strong>講你的道。」（徒四 29）</div>
+      </div>
+
+      <p>那麼，被聖靈充滿的人，表現有哪些？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">六種表現</h2>
+      <p class="card-hook">五旬節之後，聖經所記的</p>
+    </div>
+    <div class="card-body">
+
+      <p>五旬節聖靈降臨以後，被聖靈充滿的人，他們的表現如下：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 說別國的話</span>
+          「他們就都被聖靈充滿，按著聖靈所賜的口才<strong>說起別國的話</strong>來。」（徒二 4）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 放膽為神說話</span>
+          「那時彼得被聖靈充滿，對他們說……」<br>「他們就都被聖靈充滿，<strong>放膽講論神的道</strong>。」（徒四 8～31）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 看見神的榮耀和主基督</span>
+          「但司提反被聖靈充滿，定睛望天，<strong>看見神的榮耀，又看見耶穌站在神的右邊</strong>。」（徒七 55）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 大有信心</span>
+          「這巴拿巴原是個好人，被聖靈充滿，<strong>大有信心</strong>。」（徒十一 24）
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">⑤ 大有能力</span>
+          禱告之後「聚會的地方震動」，而使徒「大有能力，見證主耶穌復活」。（參徒四 31～33）
+        </div>
+      </div>
+
+      <p>還有第六項：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⑥ 對聖經有更深的認識</span>
+          彼得在五旬節的講道，一連引用了<strong>約珥書、詩篇十六篇、詩篇一一〇篇</strong>，並且把它們與眼前的事實接了起來。（徒二 14～36）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第六項，是最容易被忽略、卻最能說明問題的一項。</p>
+
+      <div class="highlight">
+        <strong>彼得那篇講道，論證極其嚴謹</strong>
+        他先處理質疑：「你們想這些人是醉了，其實不是醉了，因為時候剛到<strong>巳初</strong>。」——那是早上九點，猶太人那個時辰還沒吃飯。<br><br>然後他引<strong>約珥書</strong>，說明這正是所預言的。<br><br>然後他引<strong>詩篇十六篇</strong>，並且做了一個嚴密的論證：大衛的墳墓還在，所以那句「不叫你的聖者見朽壞」不是講他自己。<br><br>然後他引<strong>詩篇一一〇篇</strong>：「耶和華對我主說：你坐在我的右邊。」<br><br>——這是一個「沒有學問的小民」講出來的。<br><br>而幾週前，他連主說「第三日復活」都聽不進去。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">💡</span>
+        而這正好對應主自己的應許：<br><br>「他要將一切的事指教你們，並且要叫你們<strong>想起</strong>我對你們所說的一切話。」<br><br>——「想起」。<br><br>那些經文彼得本來就知道，他從小背過。<br><br>而在那一刻，它們<strong>連起來了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而把六項排在一起，會看見一個結構：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>表現</th>
+            <th>層面</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">說別國的話</td>
+            <td>那是<strong>憑據</strong>——外顯的記號</td>
+          </tr>
+          <tr>
+            <td class="src">放膽說話<br>大有能力</td>
+            <td>那是<strong>行動</strong>——在壓力下的表現</td>
+          </tr>
+          <tr>
+            <td class="src">看見神的榮耀</td>
+            <td>那是<strong>眼光</strong>——看見的東西不一樣了</td>
+          </tr>
+          <tr>
+            <td class="src">大有信心</td>
+            <td>那是<strong>品格</strong>——一種持續的狀態</td>
+          </tr>
+          <tr>
+            <td class="src">對聖經有更深的認識</td>
+            <td>那是<strong>悟性</strong>——理解力被打開</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而這五個層面，涵蓋了一個人的全部</strong>
+        外顯的、行動的、看見的、品格的、理智的。<br><br>——所以「充滿」不是一種局部的現象。<br><br>它會落在<strong>整個人</strong>身上。
+      </div>
+
+      <p>下一篇，我們細看其中兩項——司提反所看見的，和巴拿巴的那份信心。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">司提反與巴拿巴</h2>
+      <p class="card-hook">一個在極端的處境，一個在日常的處境</p>
+    </div>
+    <div class="card-body">
+
+      <p>這六項裡，有兩項各自連著一個人。而那兩個人的處境，剛好是兩個極端。</p>
+
+      <div class="highlight">
+        <strong>司提反——在最極端的處境</strong>
+        「但司提反被聖靈充滿，定睛望天，<strong>看見神的榮耀，又看見耶穌站在神的右邊</strong>。」（徒七 55）<br><br>而那一刻他在哪裡？<br><br>眾人「就極其惱怒，向他<strong>咬牙切齒</strong>」，接著「大聲喊叫，摀著耳朵，齊心擁上前去，把他推到城外，用石頭打他」。<br><br>——他是在被石頭打死的過程中，看見那一幕的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而經文還記了一個更早的細節：在他講道之前，公會的人「定睛看他，見他的面貌，<strong>好像天使的面貌</strong>」。<br><br>——那是在被誣告、被審問的場合。<br><br>而他最後說的兩句話，是：<br><br>「求主耶穌接收我的靈魂！」<br>「<strong>主啊，不要將這罪歸於他們！</strong>」<br><br>而說完這話，「就睡了」。<br><br>——經文用的字是「睡了」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="highlight">
+        <strong>巴拿巴——在日常的處境</strong>
+        「這巴拿巴原是個<strong>好人</strong>，被聖靈充滿，大有信心。」（徒十一 24）<br><br>而巴拿巴做過什麼？經文記的都是很日常的事：<br><br><strong>他賣了田地，把價銀拿來放在使徒腳前。</strong>（徒四 36～37）<br><strong>當眾人都怕掃羅、不敢與他來往時，是巴拿巴接待他，領去見使徒。</strong>（徒九 27）<br><strong>安提阿有了信主的人，他被差去；他去了之後，「勸勉眾人，立定心志，恆久靠主」。</strong>（徒十一 22～23）<br><strong>他去大數找掃羅，帶他到安提阿同工。</strong>（徒十一 25～26）<br><br>——沒有一件是驚天動地的。<br><br>而經文對他的評語是：<strong>「原是個好人。」</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        而「巴拿巴」這個名字，本身就是別人給他的。<br><br>他本名叫約瑟，而使徒稱他為「<strong>巴拿巴</strong>」——經文特別註明：「翻出來就是<strong>勸慰子</strong>。」<br><br>——那個外號，是他的為人掙來的。<br><br>而他做的最重要的一件事，可能是那次「接待掃羅」。<br><br>如果沒有那一次，教會史會很不一樣。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        把這兩個人放在一起，說明了一件事：<br><br><strong>「被聖靈充滿」的樣子，不只有一種。</strong><br><br>有司提反那種——在極端的逼迫中，看見天開了。<br><br>也有巴拿巴那種——被人稱為「好人」，一輩子在做接待、勸勉、把人帶進來的事。<br><br>而聖經對兩者用的是<strong>同一個描述</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二項——<strong>放膽為神說話</strong>——使徒行傳第四章那一段，記下了一個完整的過程：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">被威嚇</span>
+          公會「就把他們叫了來，禁止他們總不可奉耶穌的名講論教訓人」。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">當場回覆</span>
+          「聽從你們，不聽從神，這在神面前合理不合理，你們自己酌量吧！<strong>我們所看見所聽見的，不能不說。</strong>」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">回去禱告</span>
+          而他們求的不是脫離逼迫，是：「求主……叫你僕人<strong>大放膽量</strong>講你的道。」
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">當場得著</span>
+          「禱告完了，聚會的地方震動，他們就都被聖靈充滿，<strong>放膽講論神的道</strong>。」
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>我們所看見所聽見的，不能不說。</strong>」<br><br>——這句話，是那份「膽量」最好的定義。<br><br>那不是天生的性格，也不是硬撐出來的勇敢。<br><br>是<strong>一種「憋不住」的狀態</strong>。<br><br>而耶利米也用過同樣的說法：「我若說：我不再提耶和華，也不再奉他的名講論，我便心裡覺得<strong>似乎有燒著的火閉塞在我骨中，我就含忍不住，不能自禁</strong>。」
+      </div>
+
+      <p>下一篇，我們談一個很實際的問題：這些表現，是不是每一項都要有？</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">現象與品格，兩者都在清單上</h2>
+      <p class="card-hook">而聖經沒有把它們對立起來</p>
+    </div>
+    <div class="card-body">
+
+      <p>那六項表現裡，有一個值得注意的組合。</p>
+
+      <div class="highlight">
+        <strong>它同時包含了「現象」與「品格」</strong>
+        <strong>現象</strong>：說別國的話、看見神的榮耀、大有能力。<br><strong>品格</strong>：大有信心、放膽說話、對聖經有更深的認識。<br><br>——而聖經把它們列在同一份清單上。<br><br>沒有把現象貶低，也沒有把品格看輕。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而這件事很值得注意，因為人的傾向常常是<strong>偏一邊</strong>：<br><br>有人只看現象——那容易變成追求體驗。<br>有人只看品格——那容易變成一種道德努力。<br><br>而聖經的記載，兩邊都有。<br><br>五旬節那天，有火焰的形狀、有響聲、有別國的話——<strong>那些都是真的發生的。</strong><br><br>而司提反被稱讚的，是「大有信心」；巴拿巴被稱讚的，是「原是個好人」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而揀選執事那一段，提供了一個很實際的印證。</p>
+
+      <div class="highlight">
+        <strong>徒六章的條件，是三項並列的</strong>
+        「當從你們中間選出七個<strong>有好名聲、被聖靈充滿、智慧充足</strong>的人。」（徒六 3）<br><br>——三項：<strong>好名聲、被聖靈充滿、智慧充足。</strong><br><br>而「好名聲」是<strong>別人給的評價</strong>；「智慧充足」是<strong>做事的能力</strong>。<br><br>所以在教會實際選人的時候，「被聖靈充滿」是與這兩項並列的，而不是取代它們。<br><br>——而那份工作是什麼？<strong>管理飯食。</strong><br><br>選管飯的人，條件之一是「被聖靈充滿」。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        我覺得這個細節很有意思。<br><br>那不是選講員，不是選帶敬拜的。<br><br>是<strong>選管飯的</strong>——因為有人抱怨，說希臘話的寡婦在天天的供給上被忽略了。<br><br>而條件是：好名聲、被聖靈充滿、智慧充足。<br><br>——所以那份充滿，是要落在<strong>很日常的事</strong>上的。<br><br>而被選上的七個人裡，第一位就是司提反。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想留下一個很實際的觀察。</p>
+
+      <div class="highlight">
+        <strong>那六項裡，有幾項是「在需要的時候才出現」的</strong>
+        彼得的膽量，是在<strong>公會面前</strong>出現的。<br>司提反看見天開，是在<strong>被打死的時候</strong>。<br>使徒的「不能不說」，是在<strong>被禁止之後</strong>。<br><br>——所以那些表現，多半不是在平靜的日子裡被展示的。<br><br>而這對我們是一個安慰：<br><br><strong>如果你今天沒有感覺自己「大有能力」，那可能只是因為今天不需要。</strong><br><br>而主自己說過：「因為正在<strong>那時候</strong>，聖靈要指教你們當說的話。」（路十二 12）<br><br>——「正在那時候」。<strong>不是提前給。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⏱️</span>
+        我覺得這一點很釋放。<br><br>因為很多人會焦慮：<strong>「如果那天真的來了，我做得到嗎？」</strong><br><br>而主的應許是：那份供應，是<strong>在那個時候</strong>給的。<br><br>不是現在。所以現在感覺不到，是正常的。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「原是個好人」</h2>
+      <p class="card-hook">寫給那個覺得自己沒什麼特別的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>六項表現看完，我想把最後這一篇，留給巴拿巴。</p>
+
+      <div class="highlight">
+        <strong>因為聖經給他的評語，樸實得幾乎不像稱讚</strong>
+        「這巴拿巴<strong>原是個好人</strong>，被聖靈充滿，大有信心。」<br><br>——「原是個好人」。<br><br>在一卷充滿神蹟、醫治、審判、逼迫的書裡，路加對這個人的形容是：<strong>好人。</strong><br><br>而他被放在「被聖靈充滿」的旁邊。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而巴拿巴做的事，如果列出來，沒有一件會被寫進見證集：<br><br>賣了一塊田，把錢拿出來。<br>在大家都害怕的時候，接待了一個名聲很壞的人。<br>去了一趟大數，把那個人找回來一起同工。<br>勸勉一群新信的人「立定心志，恆久靠主」。<br><br>——而那個被他接待的人，後來寫了大半本新約。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻覺得自己「沒什麼特別」——沒有司提反那種看見，沒有彼得那種講道——</p>
+
+      <div class="highlight">
+        <strong>我想把那份清單，重新放回你手上</strong>
+        <strong>「大有信心」</strong>——那不是一場表演，是一種在日子裡的堅持。<br><br><strong>「對聖經有更深的認識」</strong>——那是慢慢累積的。<br><br><strong>「放膽為神說話」</strong>——而那句「不能不說」，可能只是你在某個場合，把該說的一句話說了。<br><br><strong>「原是個好人」</strong>——而這一項，別人看得出來。
+      </div>
+
+      <div class="big-quote">
+        他們見彼得、約翰的膽量，<br>又看出他們原是沒有學問的小民，<br>就希奇，認明他們是跟過耶穌的
+        <cite>— 使徒行傳 四章十三節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句「認明他們是跟過耶穌的」，我覺得是最好的一種見證</strong>
+        不是因為他們說了什麼漂亮的話。<br><br>是因為他們身上有<strong>那個樣子</strong>。<br><br>而那個樣子，連反對他們的人都認得出來。<br><br>——那大概就是「被聖靈充滿」在日常裡最實際的證明。
+      </div>
+
+      <p>而那六項的源頭，只有一個。</p>
+
+      <p>那不是他們變厲害了。是有一位，住進來了。</p>
+
+      <p>願今天有人在你身上，也認出那一位。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖靈充滿的表現 · Threads Series
+</footer>
+
+</body>
+</html>

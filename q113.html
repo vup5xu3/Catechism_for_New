@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>到啟示錄為止 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>到<span>啟示錄</span>為止</h1>
+  <p class="subtitle">六十六卷所啟示的，已經十分完全</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「我們還有另一本經書」</h2>
+      <p class="card-hook">而這句話，是很多偏差的起點</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果你留意過那些敲門傳教的團體，會發現一個共同的模式。</p>
+
+      <div class="highlight">
+        <strong>他們幾乎都有「另一本」</strong>
+        有的說：聖經是好的，<strong>但不完整</strong>，而我們有補足的那一部分。<br><br>有的說：聖經被翻譯壞了，<strong>而我們有正確的版本</strong>。<br><br>有的說：聖經是給那個時代的，<strong>而神在這個時代另有新的啟示</strong>。<br><br>——說法不同，結構一樣：<strong>在六十六卷之外，再加一個權威。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📕</span>
+        而那個結構之所以有效，是因為它<strong>不直接否定聖經</strong>。<br><br>它甚至常常很推崇聖經。<br><br>它只是說：<strong>還有更多。</strong><br><br>——而「更多」這件事，本身很有吸引力。誰不想知道別人不知道的？<br><br>而一旦那個「另一本」被接受了，接下來的事就會很快：<strong>當兩者衝突時，誰說了算？</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看這個問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅說過一句非常重的話</h2>
+      <p class="card-hook">而他把自己也包括在內</p>
+    </div>
+    <div class="card-body">
+
+      <p>加拉太書第一章，保羅寫了一句語氣極重的話。而那句話最值得注意的地方是：<strong>他把自己也算了進去。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">但無論是我們，是天上來的使者，若傳福音給你們，與我們所傳給你們的不同，他就應當被咒詛
+        </p>
+        <p class="scripture-ref">加拉太書 一章八節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「無論是<span style="font-size:inherit;">我們</span>，是<span style="font-size:inherit;">天上來的使者</span>」</strong>
+        ——他列了兩個最高的可能來源：<br><br><strong>使徒自己</strong>，和<strong>天使</strong>。<br><br>而他說：就算是這兩者，若傳的與原來的不同——<strong>也不可接受。</strong><br><br>而下一節他又說了一次：「我現在又說，若有人傳福音給你們，與你們所領受的不同，他就應當被咒詛。」<br><br>——同一句話，說了兩次。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🛡️</span>
+        而這件事的意義是：<strong>那個標準，高過任何人的權威——包括宣稱者本身的權威。</strong><br><br>所以「我是使徒」、「我見過異象」、「有天使向我顯現」——<strong>這些都不能推翻那個已經傳下來的。</strong><br><br>而保羅把自己放進去，等於是說：<strong>連我也要受這個標準檢驗。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而聖經的最後一卷，最後一章，也有一段類似的警告：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我向一切聽見這書上預言的作見證，若有人在這預言上加添甚麼，神必將寫在這書上的災禍加在他身上；這書上的預言，若有人刪去甚麼，神必從這書上所寫的生命樹和聖城刪去他的分
+        </p>
+        <p class="scripture-ref">啟示錄 二十二章十八至十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>兩個方向，都被封住了</strong>
+        <strong>加添</strong>——不可以多。<br><strong>刪去</strong>——不可以少。<br><br>而類似的警告，摩西也說過：「所吩咐你們的話，你們<strong>不可加添，也不可刪減</strong>。」（申四 2）<br><br>——首尾兩處，同一個原則。
+      </div>
+
+      <p>那麼，這一題的答案是什麼？下一篇，我們說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">寫作到啟示錄為止</h2>
+      <p class="card-hook">而這也是「不該有」的</p>
+    </div>
+    <div class="card-body">
+
+      <p>除了六十六卷新舊約聖經之外，神還默示人寫聖經沒有？</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 聖經的寫作，到啟示錄為止</span>
+          此後歷代教會，<strong>未曾發現另有神所默示的經書</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 而這也是不該有的</span>
+          因為<strong>六十六卷的聖經，所啟示的，已經十分完全。</strong>
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第二點裡的「<strong>十分完全</strong>」，是這一題的核心。它值得說明。</p>
+
+      <div class="highlight">
+        <strong>「完全」的意思，是「該有的都有了」</strong>
+        提摩太後書那節，正好說明了這一點：<br><br>「聖經都是神所默示的，於教訓、督責、使人歸正、教導人學義都是有益的，<strong>叫屬神的人得以完全，預備行各樣的善事。</strong>」（提後三 16～17）<br><br>——「<strong>得以完全</strong>」、「<strong>預備行各樣的善事</strong>」。<br><br>而那個「各樣」，涵蓋了全部。<br><br>所以如果聖經能讓人「預備行各樣的善事」——<strong>那就沒有一項是缺的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧰</span>
+        而「完全」不等於「詳盡」。<br><br>聖經沒有告訴你該選哪份工作、該住哪個城市、該不該做那個手術。<br><br>——那不是缺漏。<strong>那本來就不是它的用途。</strong><br><br>就像一套完整的工具箱，不會因為裡面沒有廚具而算不完整。<br><br>而聖經自己說明了它的用途：<strong>「叫你因信基督耶穌有得救的智慧。」</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而彼得後書也有一句，說明了同樣的事：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">神的神能已將一切關乎生命和虔敬的事賜給我們，皆因我們認識那用自己榮耀和美德召我們的主
+        </p>
+        <p class="scripture-ref">彼得後書 一章三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>「<span style="font-size:inherit;">一切</span>關乎生命和虔敬的事」</strong>
+        ——「已將……賜給我們」。過去完成式。<br><br>所以那不是「還在陸續給」。<br><br>而猶大書也用了一個很明確的說法：<br><br>「我想必須寫信勸你們，要為<strong>從前一次交付聖徒的真道</strong>竭力地爭辯。」（猶 3）<br><br>——「<strong>從前一次交付</strong>」。<br><br>那個「一次」（hapax）在原文中帶有「<strong>一次而永遠，不再重複</strong>」的意味。
+      </div>
+
+      <p>下一篇，我們看那個「完全」在聖經結構上的證據。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">首尾相合的那個結構</h2>
+      <p class="card-hook">創世記開的每一個口，啟示錄都收了</p>
+    </div>
+    <div class="card-body">
+
+      <p>「已經十分完全」這件事，有一個很強的結構性證據：<strong>整本書首尾是收攏的。</strong></p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>創世記（開）</th>
+            <th>啟示錄（收）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">「起初神創造<strong>天地</strong>」</td>
+            <td>「我又看見一個<strong>新天新地</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">罪進入世界</td>
+            <td>「<strong>不再有咒詛</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">死亡進入世界</td>
+            <td>「<strong>不再有死亡</strong>，也不再有悲哀、哭號、疼痛」</td>
+          </tr>
+          <tr>
+            <td class="src">人被趕出園子，<strong>生命樹</strong>的路被把守</td>
+            <td>「在河這邊與那邊有<strong>生命樹</strong>」——路開了</td>
+          </tr>
+          <tr>
+            <td class="src">神與人同行的關係被打斷</td>
+            <td>「<strong>神的帳幕在人間。他要與人同住</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">「女人的<strong>後裔</strong>要傷你的頭」</td>
+            <td>那條蛇「就是古蛇，名叫魔鬼」，被扔在火湖裡</td>
+          </tr>
+          <tr>
+            <td class="src">夜與晝分開</td>
+            <td>「<strong>不再有黑夜</strong>；他們也不用燈光、日光，因為主神要光照他們」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        創世記第三章開的每一個口，啟示錄最後兩章都收了。<br><br>——那是一個<strong>閉合的結構</strong>。<br><br>而一個閉合的結構，意味著：<strong>故事講完了。</strong><br><br>如果還缺一卷，那些線就會有一條懸在那裡。<br><br>而實際上沒有。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔄</span>
+        我覺得這件事本身，就是一個很有力的回答。<br><br>因為那些主張「還有另一本」的說法，很少能指出<strong>聖經到底缺了什麼</strong>。<br><br>——它們通常說的是「有更多細節」、「有更深的奧祕」。<br><br>而那不是「缺」。<strong>那是「多」。</strong><br><br>而啟示錄那句警告，處理的正是「多」：<strong>「若有人在這預言上加添甚麼。」</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而希伯來書開頭那句話，也說明了一件事：<strong>啟示是有階段、而且有終點的。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">神既在古時藉著眾先知多次多方地曉諭列祖，就在這末世藉著他兒子曉諭我們
+        </p>
+        <p class="scripture-ref">希伯來書 一章一至二節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>多次多方</strong>」——舊約的啟示是<strong>分段的、漸進的</strong>。<br><br>「<strong>在這末世藉著他兒子</strong>」——而這一次不同。<br><br>因為「兒子」是最終的那一位——<strong>不可能有比祂更完整的啟示了。</strong><br><br>而作者接著說：祂是「神榮耀所發的光輝，是神本體的<strong>真像</strong>」。<br><br>——既然那位已經來了，並且被完整地記載下來了——<strong>還能再加什麼？</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「不再有新的經書」，不等於「神不再說話」</h2>
+      <p class="card-hook">而這個分辨，非常要緊</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題最容易產生的誤解是：<strong>那神現在不說話了嗎？</strong></p>
+
+      <p>而這需要一個清楚的分辨。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">「經書」——已經完成</span>
+          那是<strong>成文的、規範性的、對所有時代所有信徒有普遍權柄</strong>的啟示。<br><br>而這一項，到啟示錄為止。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">而神仍然對祂的兒女說話</span>
+          聖靈仍然教導、提醒、引導、責備。<br><br>「他要將一切的事指教你們，並且要叫你們<strong>想起</strong>我對你們所說的一切話。」<br><br>——而那些，<strong>不是新的經書</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而兩者的分別，在於「權柄的性質」</strong>
+        聖經：<strong>對所有人、所有時代，具有規範性的權柄。</strong>它是判準本身。<br><br>而聖靈今日的引導：<strong>是在那個判準之下運作的。</strong><br><br>——所以主稱祂為「<strong>真理</strong>的靈」，而且說祂「不是憑自己說的」。<br><br>換句話說：<strong>聖靈不會說與聖經相反的話。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        我覺得可以這樣理解：<br><br>聖經像是<strong>那張地圖</strong>——它畫定了地形、道路、懸崖的位置。而它是完成的。<br><br>而聖靈的引導，像是<strong>在那張地圖上，帶你走今天這一段</strong>。<br><br>——祂會告訴你「今天往這邊」。<br><br>而祂<strong>不會</strong>告訴你「其實那個懸崖不在那裡」。<br><br>因為地圖是祂畫的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這個分辨，正好給了一個很實用的檢查方式。</p>
+
+      <div class="highlight">
+        <strong>那個檢查是：它宣稱的「地位」是什麼？</strong>
+        如果一件事宣稱的是：<strong>「這是神對我的提醒/引導」</strong>——那在正常範圍內，而且應當按聖經察驗。<br><br>而如果它宣稱的是：<strong>「這是新的真理，是聖經沒有的，而且大家都應該接受」</strong>——那就跨線了。<br><br>——差別不在於「神有沒有說話」。<br><br><strong>差別在於它有沒有要求取得聖經那樣的地位。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而保羅那句話，正好是這個檢查的最終版本：<br><br>「無論是<strong>我們</strong>，是<strong>天上來的使者</strong>，若傳福音給你們，與我們所傳給你們的<strong>不同</strong>——」<br><br>——注意那個判準：<strong>「與……不同」。</strong><br><br>不是「新不新」，不是「精不精彩」，不是「有沒有能力印證」。<br><br>是<strong>「一不一樣」</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而我想留下一個很實際的觀察：<strong>「加添」造成的傷害，往往不是加了什麼，是它取代了什麼。</strong></p>
+
+      <div class="highlight">
+        <strong>因為一旦有了「另一本」，聖經的地位就會慢慢下降</strong>
+        通常的過程是這樣的：<br><br>起初：「聖經很好，而我們有<strong>補充</strong>。」<br>接著：「有些地方，那本解釋得<strong>更清楚</strong>。」<br>後來：「當兩者不一致時，以那本<strong>為準</strong>。」<br>最後：聖經被<strong>放在旁邊</strong>了。<br><br>——而每一步看起來都不大。<br><br>而這正是為什麼那道防線，必須設在最前面：<strong>不可加添。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">而「完全」的意思是：你手上的，夠了</h2>
+      <p class="card-hook">寫給那個總覺得自己還缺什麼的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收在一個正面的角度上。</p>
+
+      <div class="highlight">
+        <strong>因為「已經十分完全」這句話，其實是一個安慰</strong>
+        它的意思是：<strong>你手上那一本，夠了。</strong><br><br>你不需要去找那個「更深的奧祕」。<br>你不需要擔心自己漏掉了某個關鍵的祕傳。<br>你不需要焦慮某個團體握有你沒有的東西。<br><br>——因為「叫屬神的人<strong>得以完全</strong>，預備行<strong>各樣</strong>的善事」。<br><br>那是一個已經完成的供應。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍞</span>
+        而我覺得那種「總覺得還缺什麼」的感覺，本身就值得注意。<br><br>因為它常常不是真的缺。<br><br>是<strong>還沒有把手上的吃完。</strong><br><br>——而希伯來書對那些一直在找新東西的人，說過一句很直接的話：<br><br>「看你們學習的工夫，本該作師傅，誰知還得有人將神聖言小學的開端另教導你們……<strong>因為凡只能吃奶的都不熟練仁義的道理。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下三件事。</p>
+
+      <p><strong>第一，那道防線很簡單：不加添，不刪減。</strong></p>
+
+      <p>而聖經首尾兩處都說了——申命記四章，啟示錄二十二章。</p>
+
+      <p><strong>第二，判準不是「新不新」，是「一不一樣」。</strong></p>
+
+      <p>而那個判準，保羅連自己和天使都放進去了。</p>
+
+      <p><strong>第三，神仍然說話——而祂說的，不會與祂寫過的相反。</strong></p>
+
+      <div class="highlight">
+        <strong>因為那位引導你的，正是那位默示聖經的</strong>
+        「因為預言從來沒有出於人意的，乃是人被<strong>聖靈</strong>感動，說出神的話來。」<br><br>而主說：真理的聖靈「<strong>不是憑自己說的</strong>」，並且「他要榮耀我」。<br><br>——所以聖靈的引導與聖經的話，永遠是同一個方向。<br><br>它們出自同一位。
+      </div>
+
+      <div class="big-quote">
+        叫屬神的人得以完全，<br>預備行各樣的善事
+        <cite>— 提摩太後書 三章十七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那些敲門的人。</p>
+
+      <p>我後來學會問一個很簡單的問題：</p>
+
+      <p><strong>「當那本跟聖經不一樣的時候，你們聽哪一本？」</strong></p>
+
+      <p>——那個問題，通常一問就清楚了。</p>
+
+      <p>而問完之後，我心裡是安的。</p>
+
+      <p>因為我知道我手上這一本，已經夠了。</p>
+
+      <p>願你也安心地，把手上這一本讀完。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  到啟示錄為止 · Threads Series
+</footer>
+
+</body>
+</html>

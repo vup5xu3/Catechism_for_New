@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖徒對家庭的本分 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>至於我和<span>我家</span></h1>
+  <p class="subtitle">聖徒對家庭，應盡甚麼本分？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">家裡最難的，不是規矩，是氣氛</h2>
+      <p class="card-hook">而氣氛是一天一天養出來的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>一個家裡最真實的東西，不是掛在牆上的那句經文。</p>
+
+      <div class="highlight">
+        <strong>是那些沒有人特別注意的日常</strong>
+        遇到事情，家裡的人第一句話是什麼。<br><br>談到錢的時候，語氣是什麼。<br><br>吵完架之後，怎麼收尾。<br><br>——那些東西，孩子沒有在學，而他們全部都收下了。<br><br>而那才是一個家真正在教的內容。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        我想到土壤。<br><br>沒有人會蹲下來教一棵樹要怎麼長。<br><br>——而那棵樹長成什麼樣子，土壤幾乎決定了一半。<br><br>而家庭就是那片土。<br><br>而這一題三項裡的第二項，用的正是這個詞：<strong>以身作則。</strong>
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那三項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">約書亞在最後一次集會上，說了一句話</h2>
+      <p class="card-hook">而他先把選擇權交出去</p>
+    </div>
+    <div class="card-body">
+
+      <p>約書亞記最後一章，是約書亞臨終前的那一場大會。</p>
+
+      <div class="highlight">
+        <strong>而他說的話，是先給選擇</strong>
+        「若是你們以事奉耶和華為不好，<strong>今日就可以選擇所要事奉的</strong>：<br><br>是你們列祖在大河那邊所事奉的神呢？是你們所住這地的亞摩利人的神呢？」<br><br>——他沒有勉強任何人。<br><br>而接下去那一句，是他自己的決定：
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">至於我和我家，我們必定事奉耶和華
+        </p>
+        <p class="scripture-ref">約書亞記 二十四章十五節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏠</span>
+        而那句話裡，最值得注意的是那四個字：<br><br><strong>「我和我家。」</strong><br><br>——他沒有說「至於我」。<br><br>他把整個家算了進去。<br><br>而那意味著：他認為<strong>這件事是一家的事</strong>，不是個人的宗教偏好。
+      </div>
+
+      <div class="highlight">
+        <strong>而那一整章的背景，正是第一項要處理的事</strong>
+        因為約書亞在那之前說的是：<br><br>「你們要<strong>除掉</strong>你們列祖在大河那邊和在埃及所事奉的神，去事奉耶和華。」（書廿四 14）<br><br>——「<strong>除掉</strong>」。<br><br>那是一個很具體的動作。<br><br>而那正是這一題第一項：<strong>力除邪風陋俗。</strong>
+      </div>
+
+      <p>下一篇，我們把三項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三項本分</h2>
+      <p class="card-hook">除、立、守</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、力除邪風陋俗</span>
+          （書廿四 15；徒十五 28～29）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、實行靈性教育，以身作則</span>
+          （伯一 5；徒十六 31～34）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、注意教育家庭的婚姻問題</span>
+          （申七 1～6；太十九 1～12；林前七章）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三項，其實是三個不同的時間軸：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>處理的是</th>
+            <th>時間</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>一、力除邪風陋俗</strong></td>
+            <td>從<strong>過去</strong>帶進來的東西</td>
+            <td>往回<strong>清</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>二、靈性教育，以身作則</strong></td>
+            <td><strong>現在</strong>每一天的生活</td>
+            <td>當下<strong>立</strong></td>
+          </tr>
+          <tr>
+            <td class="src"><strong>三、婚姻問題</strong></td>
+            <td>下一代要<strong>往哪裡去</strong></td>
+            <td>向前<strong>守</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第一項那個「力」字，用得很重</strong>
+        「<strong>力</strong>除」——那意味著它不容易。<br><br>因為「邪風陋俗」的特點是：<strong>它是全家、甚至全族一起做的事。</strong><br><br>——所以要除，往往會得罪人，會被說成不孝、不合群、太過分。<br><br>而約書亞用的字也是這個：<strong>「除掉」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第二項裡那四個字——<strong>以身作則</strong>——是三項裡最不能取巧的一項。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">👣</span>
+        因為家裡的人，看的不是你說什麼。<br><br>——是你<strong>在最累的時候</strong>怎麼反應。<br><br>是你<strong>吃虧的時候</strong>說什麼。<br><br>是你<strong>對外人和對家人</strong>是不是同一個樣子。<br><br>而那些，孩子全部看得見。<br><br>——所以「靈性教育」與「以身作則」被寫在同一項裡，是有道理的。<br><br><strong>後面那四個字，是前面那四個字的內容。</strong>
+      </div>
+
+      <p>下一篇，我們看那幾處經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">約伯的「常常這樣行」</h2>
+      <p class="card-hook">而那是一句描述習慣的話</p>
+    </div>
+    <div class="card-body">
+
+      <p>第二項引的第一處，是約伯記第一章。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">約伯打發人去叫他們自潔。他清早起來，按著他們眾人的數目獻燔祭；因為他說：恐怕我兒子犯了罪，心中棄掉神。約伯常常這樣行
+        </p>
+        <p class="scripture-ref">約伯記 一章五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那一節裡，有幾個細節值得看</strong>
+        <strong>「清早起來」</strong>——那是他一天的第一件事。<br><br><strong>「按著他們眾人的數目」</strong>——一個一個算，沒有漏掉誰。<br><br><strong>「恐怕我兒子犯了罪，心中棄掉神」</strong>——他擔心的不是外面的事，是<strong>他們心裡的事</strong>。<br><br><strong>「約伯常常這樣行」</strong>——那不是一次。<strong>那是習慣。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌄</span>
+        而那件事發生的時候，他的兒女<strong>已經長大了</strong>。<br><br>——經文說他們「在各人的家裡設擺筵宴」。<br><br>所以他們不住在一起，各自有各自的生活。<br><br>而那個父親，還是每天清早起來，一個一個地為他們獻祭。<br><br>——那是一種<strong>看不見的看顧</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而申命記那段最有名的家庭教育經文，講的正是同一件事：<br><br>「我今日所吩咐你的話都要記在心上，也要<strong>殷勤教訓你的兒女</strong>。<br><br>無論你<strong>坐在家裡，行在路上，躺下，起來</strong>，都要談論。」（申六 6～7）<br><br>——四個場合：坐、行、躺、起。<br><br>那不是「安排一堂課」。<br><br><strong>那是一整天的生活裡都在講。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二處經文，是腓立比的禁卒——那一夜的事：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">徒十六 31</td>
+            <td>「當信主耶穌，<strong>你和你一家都必得救</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒十六 32</td>
+            <td>「他們就把主的道講給他<strong>和他全家的人</strong>聽。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒十六 33</td>
+            <td>「他和屬乎他的人<strong>立時都受了洗</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">徒十六 34</td>
+            <td>「於是禁卒領他們上自己家裡去，給他們擺上飯。<strong>他和全家，因為信了神，都很喜樂。</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那四節裡，「<strong>全家</strong>」出現了好幾次。<br><br>——那個人本來要自殺。<br><br>而那一夜結束的時候，他做的事是：<strong>把人領回家，擺上飯。</strong><br><br>而那句「他和全家，因為信了神，<strong>都很喜樂</strong>」——<br><br>是使徒行傳裡我最喜歡的句子之一。<br><br>——因為那一夜的開頭，是地震、是鎖鏈鬆開、是一個人要拔刀。<br><br>而結尾，是<strong>一家人一起吃飯</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第一項另一處經文，是耶路撒冷會議的決議：</p>
+
+      <div class="highlight">
+        <strong>使徒行傳十五章二十八至二十九節</strong>
+        「因為聖靈和我們定意不將別的重擔放在你們身上，惟有幾件事是不可少的，<br><br>就是<strong>禁戒祭偶像的物</strong>和<strong>血</strong>，並<strong>勒死的牲畜</strong>和<strong>姦淫</strong>。」<br><br>——四件，全部與當時外邦人的<strong>風俗</strong>直接相關。<br><br>而那正是第一項要處理的：<strong>從舊生活帶進來的東西。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">第三項，其實是在保護下一代</h2>
+      <p class="card-hook">而申命記給的理由，講得很直白</p>
+    </div>
+    <div class="card-body">
+
+      <p>第三項——注意教育家庭的婚姻問題——引的第一處是申命記第七章。</p>
+
+      <div class="highlight">
+        <strong>而那一段給的理由，非常直接</strong>
+        「不可與他們結親。不可將你的女兒嫁他們的兒子，也不可叫你的兒子娶他們的女兒；<br><br><strong>因為他必使你兒子轉離不跟從主，去事奉別神</strong>，以致耶和華的怒氣向你們發作。」（申七 3～4）<br><br>——注意那個理由：<br><br>不是「他們比較差」。<br><br>是<strong>「他必使你兒子轉離不跟從主」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        而聖經裡，有一個最有名的例子。<br><br>所羅門——那個求智慧的王，那個建了聖殿的王。<br><br>而列王紀是這樣寫他晚年的：<br><br>「所羅門年老的時候，<strong>他的妃嬪誘惑他的心去隨從別神</strong>，不效法他父親大衛誠誠實實地順服耶和華——他的神。」（王上十一 4）<br><br>——「<strong>年老的時候</strong>」。<br><br>那不是一夕之間的事。<br><br><strong>那是幾十年慢慢挪過去的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第三項引的另外兩處，是主與保羅對婚姻的教導。</p>
+
+      <div class="highlight">
+        <strong>馬太福音十九章</strong>
+        法利賽人問主：「人無論甚麼緣故都可以休妻嗎？」<br><br>而主的回答，是把問題帶回<strong>起初</strong>：<br><br>「那起初造人的，是造男造女，並且說：<strong>因此，人要離開父母，與妻子連合，二人成為一體。</strong><br><br>既然如此，夫妻不再是兩個人，乃是一體的了。<strong>所以，神配合的，人不可分開。</strong>」（太十九 4～6）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌿</span>
+        而祂用的方法很有意思：<br><br>他們問的是<strong>「什麼情況可以離」</strong>。<br><br>而祂回答的是<strong>「本來是怎麼合的」</strong>。<br><br>——所以那個對話，重心被整個搬走了。<br><br>而祂引的那句話，是創世記第二章——<strong>在墮落之前</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而哥林多前書第七章，處理的是各種實際的情況</strong>
+        已婚的、未婚的、守寡的、夫妻一信一未信的。<br><br>——而那一章有一個很體貼的特點：<br><br>保羅一再區分<strong>「這是主說的」</strong>與<strong>「這是我說的」</strong>（林前七 10、12、25）。<br><br>而他給未婚者的建議之後，還加了一句：<br><br>「我說這話是為你們的<strong>益處</strong>，<strong>不是要牢籠你們</strong>。」（林前七 35）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這一題整體有一個很重要的態度，值得說出來。</p>
+
+      <div class="highlight">
+        <strong>它談的是「本分」，不是「成果」</strong>
+        ——你可以除去邪風陋俗，可以以身作則，可以好好教。<br><br>而<strong>那個人信不信，是他自己的事。</strong><br><br>而那正是約書亞的做法：<br><br>他先說：「<strong>今日就可以選擇所要事奉的。</strong>」<br><br>然後才說：「至於我和我家，我們必定事奉耶和華。」<br><br>——他沒有替別人決定。<br><br><strong>他先決定了自己那一邊。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而如果你家裡還有人沒有信——<br><br>彼得前書那一段是給你的：<br><br>「他們<strong>雖然不聽道</strong>，也可以<strong>因妻子的品行被感化過來</strong>；<br><br>這正是因看見你們有<strong>貞潔的品行和敬畏的心</strong>。」（彼前三 1～2）<br><br>——「雖然不聽道」。<br><br>那時候剩下的，正是<strong>以身作則</strong>那一項。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「約伯常常這樣行」</h2>
+      <p class="card-hook">寫給那個覺得自己家很難的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在約伯那句話上。</p>
+
+      <div class="big-quote">
+        約伯常常這樣行
+        <cite>— 約伯記 一章五節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那五個字，是很有安慰的</strong>
+        因為它沒有講什麼壯舉。<br><br>——就是<strong>清早起來，一個一個地為他們求</strong>。<br><br>而那件事，他做了很多年。<br><br>沒有人為他鼓掌。他的兒女大概也不知道。<br><br>——而聖經把它記下來了。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌄</span>
+        而「以身作則」這件事，最讓人放心的地方是：<br><br><strong>它不需要你很會講。</strong><br><br>孩子不是靠聽道理長大的。<br><br>他們是<strong>看著一個人怎麼過日子</strong>長大的。<br><br>——所以你不必先變成一個很懂聖經的人。<br><br>你只需要<strong>常常這樣行</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你家裡的情況很難——</p>
+
+      <p>有些老規矩你動不了。</p>
+
+      <p>有人不信，而且反對得很厲害。</p>
+
+      <p>有些話你說了很多年，都沒有用。</p>
+
+      <p>——那我想把約書亞那句話留給你。</p>
+
+      <p>他說那句話的時候，全場的人還沒有表態。</p>
+
+      <p>他不知道有多少人會跟。</p>
+
+      <p>而他先說了：</p>
+
+      <p><strong>「至於我和我家，我們必定事奉耶和華。」</strong></p>
+
+      <p>——那句話的重心，在前四個字：<strong>至於我</strong>。</p>
+
+      <p>而那一部分，是你可以決定的。</p>
+
+      <p>而那個腓立比的禁卒，那一夜之前，也不知道會怎樣。</p>
+
+      <p>而那一夜的結尾是：<strong>「他和全家，因為信了神，都很喜樂。」</strong></p>
+
+      <p>願你今天，清早起來的時候，為家裡的人叫一次名字。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖徒對家庭的本分 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>為甚麼沒有「守安息日」 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>七日的<span>第一日</span></h1>
+  <p class="subtitle">為甚麼我們的教會沒有「守安息日」？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">四個理由，一個一個排</h2>
+      <p class="card-hook">而它們不是同一種理由</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>這一題的答案，給了四個理由。</p>
+
+      <div class="highlight">
+        <strong>而那四個，性質各不相同</strong>
+        <strong>第一個</strong>——從<strong>對象</strong>來看：那個記號是給誰的。<br><br><strong>第二個</strong>——從<strong>性質</strong>來看：那是影兒還是形體。<br><br><strong>第三個</strong>——從<strong>使徒的決議</strong>來看：他們交給外邦教會的條規裡有沒有。<br><br><strong>第四個</strong>——從<strong>歷史與經文的記載</strong>來看：初代教會是哪一天聚會的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧩</span>
+        而四個角度合起來，是一個很完整的檢查：<br><br><strong>對象、性質、決議、實際的做法。</strong><br><br>——而它們不是靠推論串起來的。<br><br>每一項，都指著具體的經文。
+      </div>
+
+      <p>接下來這幾篇，我想陪你一項一項看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">耶路撒冷那場會議，是為了一個很實際的問題</h2>
+      <p class="card-hook">「外邦人要守多少舊約的規矩？」</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第十五章，記了教會歷史上第一次的正式會議。</p>
+
+      <div class="highlight">
+        <strong>那個問題</strong>
+        「有幾個人從猶太下來，教訓弟兄們說：<br><br><strong>你們若不按摩西的規條受割禮，不能得救。</strong>」（徒十五 1）<br><br>——而保羅和巴拿巴「與他們大大地紛爭辯論」。<br><br>於是教會派他們上耶路撒冷，去見使徒和長老。
+      </div>
+
+      <p>而彼得在會中站起來，說了一段話：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">現在為甚麼試探神，要把我們祖宗和我們所不能負的軛放在門徒的頸項上呢？我們得救乃是因主耶穌的恩，和他們一樣，這是我們所信的
+        </p>
+        <p class="scripture-ref">使徒行傳 十五章十至十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而最後的決議，內容很短</strong>
+        「<strong>惟有幾件事是不可少的</strong>，就是禁戒祭偶像的物和血，並勒死的牲畜和姦淫。<br><br>這幾件你們若能自己禁戒不犯就好了。」（徒十五 28～29）<br><br>——四件。<br><br>而信上還寫了一句話：<br><br>「<strong>因為聖靈和我們定意不將別的重擔放在你們身上。</strong>」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        而那封信，後來被送到各教會去。<br><br>「他們經過各城，把耶路撒冷使徒和長老所定的條規交給門徒遵守。」（徒十六 4）<br><br>——所以那是一份<strong>正式的、被送達的文件</strong>。<br><br>而這一題的第三項，指的正是這件事。
+      </div>
+
+      <p>下一篇，我們把四項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四個理由</h2>
+      <p class="card-hook">對象、性質、決議、做法</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、那是神與以色列人中間的證據</span>
+          因為安息日是<strong>神與以色列人中間的證據</strong>（結廿 20）。<br><br>在聖經中神<strong>多次責備以色列人干犯安息日</strong>，<br>卻<strong>未曾一次責備外邦人不守安息日</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、安息日是基督的影兒</span>
+          （西二 16～17；參來四 9）<br><br>另一個安息日——<strong>主日</strong>，是為<strong>新約之教會</strong>而設立。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、使徒的決議中沒有提到</span>
+          使徒們和長老們聚會商議，<br>交給外邦教會遵守的條規，<br><strong>並未提到安息日問題</strong><br>（徒十五 22～29；十六 4），<br><br>而是<strong>七日的第一日</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、初代教會的實際做法</span>
+          古教父的著作，證明新約教會以<strong>七日的第一日</strong>為休息集會之日，<br><strong>並非由天主教教皇開始</strong>。<br><br>而且聖經上也記載有此習慣（徒廿 5～12；林前十六 2）。<br><br>新約聖經<strong>未言以主日代替安息日</strong>，也<strong>未曾勸告外邦信徒謹守安息日</strong>；<br><br>顯見基督徒對主日的態度，<strong>並不是以律法為根據的</strong>。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第四項所說的「古教父的著作」，原註列了六項證據：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>出處</th>
+            <th>所記的內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>巴拿巴</strong></td>
+            <td>「我們遵守<strong>第八日</strong>為歡樂日，在那一天耶穌曾復活，顯現以後就升天。」</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>使徒遺訓</strong></td>
+            <td>第十四段有：「既然<strong>在主日聚集</strong>，就擘餅、祝謝……」等語</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>遮斯丁</strong></td>
+            <td>曾論到<strong>日曜日的會集及禮拜秩序</strong>；在他的對話錄中，也曾表揚第八日</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>米利透</strong></td>
+            <td>主後一七〇年後，撒狄的監督米利透，曾著<strong>《主日論》</strong>一書</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>丟尼修</strong></td>
+            <td>主後一七一年，哥林多的丟尼修<strong>稱日曜日為主日</strong>，以後這名詞就極其通行了</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>特土良</strong></td>
+            <td>是第一個<strong>提及主日休息</strong>的作者</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而那六項的時間，值得排一下</strong>
+        巴拿巴書信與使徒遺訓，一般繫年在<strong>第一世紀末至第二世紀初</strong>。<br><br>遮斯丁，第二世紀中葉。<br><br>米利透（主後一七〇年後）、丟尼修（主後一七一年）、特土良（第二世紀末至第三世紀初）。<br><br>——所以那條線，是從<strong>使徒剛過去的那一代</strong>就開始的。<br><br>而這正是第四項要說明的：<strong>並非由天主教教皇開始。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第四項最後那一句，是整題的收束，也是最容易被讀過去的一句。</p>
+
+      <div class="highlight">
+        <strong>「並不是以律法為根據的」</strong>
+        ——注意它同時說了兩件事：<br><br>新約<strong>沒有</strong>說「用主日代替安息日」。<br><br>新約<strong>也沒有</strong>勸外邦信徒守安息日。<br><br>——所以結論是：<strong>基督徒對主日的態度，不是律法性質的。</strong><br><br>而那正好接上前一題的分寸：<br><br>那不是<strong>另立一條律法</strong>來取代舊的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第一項那個觀察，方法很有意思：<strong>它是從「神責備誰」來看的。</strong></p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔍</span>
+        ——舊約裡，神因為安息日責備以色列人的地方非常多：<br><br>耶利米書、以西結書、尼希米記，都有。<br><br>而這一項指出的是：<strong>從來沒有一次，是責備外邦人不守安息日的。</strong><br><br>——那是一個<strong>從缺席推論</strong>的觀察。<br><br>而它與第一項前半句是連著的：<br><br>那個記號，是<strong>「神與以色列人中間的證據」</strong>。
+      </div>
+
+      <p>下一篇，我們看那幾處經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「證據」——那個字，是立約的記號</h2>
+      <p class="card-hook">而聖經自己這樣說了好幾次</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">且以我的安息日為聖。這日在我與你們中間為證據，使你們知道我是耶和華你們的神
+        </p>
+        <p class="scripture-ref">以西結書 二十章二十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而同樣的說法，出埃及記也有</strong>
+        「故此，你要對以色列人說：你們務要守我的安息日；因為這是<strong>你我之間世世代代的證據</strong>，使你們知道我——耶和華是叫你們成為聖的。」（出卅一 13）<br><br>「這是我和以色列人<strong>永遠的證據</strong>。」（出卅一 17）<br><br>——三處，用的都是同一個詞：<strong>證據</strong>。
+      </div>
+
+      <div class="term-box">
+        <div class="term-original">אוֹת <span style="font-size:0.8em;opacity:0.75">'oth</span></div>
+        <div class="term-desc">
+          譯作「<strong>證據</strong>」的這個希伯來字，意思是<strong>「記號、標誌、憑據」</strong>。<br><br>——而聖經用它的地方，全部是<strong>立約的記號</strong>：<br><br><strong>虹</strong>——「這就可作我與地立約的<strong>記號</strong>。」（創九 13）<br><strong>割禮</strong>——「這是我與你們立約的<strong>證據</strong>。」（創十七 11）<br><strong>逾越節的血</strong>——「這血要在你們所住的房屋上作<strong>記號</strong>。」（出十二 13）<br><strong>安息日</strong>——「這是你我之間世世代代的<strong>證據</strong>。」（出卅一 13）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而記號的性質是：<strong>它屬於某一個約，也屬於立約的那些人。</strong><br><br>——虹是與地立的約；割禮是與亞伯拉罕的後裔立的；<br><br>而出埃及記說得很清楚：「這是<strong>我和以色列人</strong>永遠的證據。」<br><br>——而這一題第一項引的，正是這個。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第四項所引的兩處經文，記的是初代教會的實際做法：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">徒二十 7</td>
+            <td>「<strong>七日的第一日</strong>，我們聚會擘餅的時候，保羅因為要次日起行，就與他們講論，<strong>直講到半夜</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">林前十六 2</td>
+            <td>「<strong>每逢七日的第一日</strong>，各人要照自己的進項抽出來留著，免得我來的時候現湊。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而使徒行傳二十章那一段，正是猶推古從三樓掉下去的那一夜。<br><br>——那段記載寫得很細：<strong>「有好些燈燭」</strong>、<strong>「講了多時」</strong>、<strong>「直到天亮」</strong>。<br><br>而那是一段<strong>順帶提到</strong>的敘述——保羅是路過，正要起行。<br><br>——所以那個「七日的第一日聚會擘餅」，在敘述裡是<strong>被當作常態</strong>寫下來的。<br><br>而哥林多前書那節的「<strong>每逢</strong>」二字，也是同一個性質：<strong>那是固定的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「七日的第一日」在福音書裡，本身就是一個特別的日子：</p>
+
+      <div class="highlight">
+        <strong>四卷福音書，都用了這個說法</strong>
+        「<strong>七日的第一日</strong>，天將亮的時候，抹大拉的馬利亞和那個馬利亞來看墳墓。」（太廿八 1）<br><br>「<strong>七日的第一日</strong>清早……她們來到墳墓那裡。」（可十六 2）<br><br>「<strong>七日的第一日</strong>，黎明的時候，那些婦女……來到墳墓前。」（路廿四 1）<br><br>「<strong>七日的第一日</strong>清早，天還黑的時候，抹大拉的馬利亞來到墳墓那裡。」（約二十 1）<br><br>——而那一天，是<strong>復活的日子</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌅</span>
+        而約翰福音還記了同一天的晚上：<br><br>「那日（就是七日的第一日）晚上，門徒所在的地方，因怕猶太人，門都關了。<strong>耶穌來，站在當中</strong>，對他們說：願你們平安！」（約二十 19）<br><br>——而八天之後，多馬在的那一次，也是門徒聚在一起。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「安息」的內容，比一個日子大</h2>
+      <p class="card-hook">希伯來書用了整整兩章講這件事</p>
+    </div>
+    <div class="card-body">
+
+      <p>第二項引的「來四 9」，出自希伯來書第三、第四章。</p>
+
+      <p>而那兩章，是聖經裡談「安息」最深的一段。</p>
+
+      <div class="highlight">
+        <strong>那一段的推論，是層層往前的</strong>
+        <strong>第一層</strong>——神在第七日<strong>歇了他一切創造的工，就安息了</strong>。（來四 4）<br><br><strong>第二層</strong>——出埃及那一代人，因為<strong>不信</strong>，「<strong>不得進入他的安息</strong>」。（來三 19）<br><br><strong>第三層</strong>——約書亞領他們進了迦南，「<strong>若是約書亞已叫他們享了安息，後來神就不再提別的日子了</strong>」。（來四 8）<br><br><strong>結論</strong>——「這樣看來，<strong>必另有一安息日的安息為神的子民存留</strong>。」（來四 9）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏞️</span>
+        而那個推論的力道，在第三層。<br><br>——因為以色列人<strong>確實</strong>進了迦南地。<br><br>而希伯來書說：如果那就是全部，神後來就不會再提別的日子了。<br><br>——而大衛在很久以後，還在詩篇裡說「<strong>你們今日若聽他的話</strong>」。<br><br>所以那個安息，還在前面。
+      </div>
+
+      <div class="highlight">
+        <strong>而那個安息的內容，下一節說明了</strong>
+        「因為那進入安息的，乃是<strong>歇了自己的工</strong>，正如神歇了他的工一樣。」（來四 10）<br><br>——「歇了<strong>自己的</strong>工」。<br><br>而那與加拉太書的主題，是同一件事：<br><br>「你們既靠聖靈入門，如今還<strong>靠肉身成全</strong>嗎？」（加三 3）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而主自己，對安息日講過幾句很關鍵的話。</p>
+
+      <div class="highlight">
+        <strong>兩句</strong>
+        「<strong>安息日是為人設立的，人不是為安息日設立的。</strong>」（可二 27）<br><br>「所以，<strong>人子也是安息日的主。</strong>」（可二 28）<br><br>——第一句講的是<strong>次序</strong>：那個日子是為人設的。<br><br>第二句講的是<strong>權柄</strong>：那個日子的主，是祂。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌾</span>
+        而祂說那兩句話的場合，很日常。<br><br>門徒在安息日經過麥地，「<strong>掐了麥穗</strong>」吃。<br><br>而法利賽人說：「看哪，他們在安息日為甚麼做不可做的事呢？」<br><br>——而主的回答，先舉了大衛吃陳設餅的例子，然後說了那兩句話。<br><br>而馬太福音那邊，還多記了一句：<br><br>「<strong>我喜愛憐恤，不喜愛祭祀。</strong>」（太十二 7）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第四項最後那句話，其實是這一整組題目最重要的一個平衡。</p>
+
+      <div class="highlight">
+        <strong>「顯見基督徒對主日的態度，並不是以律法為根據的」</strong>
+        ——所以這一題並不是說：<strong>「把律法從安息日搬到主日。」</strong><br><br>而它守住的原則，與前一題是一致的：<br><br>前一題說：把守安息日當成罪與義的分界，那就<strong>越過了</strong>。<br><br>而這一題說：主日<strong>也不是</strong>以律法為根據的。<br><br>——那兩句話，指向同一個地方：<br><br><strong>那個位置，是留給基督的。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        而羅馬書十四章那節，正好是這種態度的樣子：<br><br>「有人看這日比那日強；有人看日日都是一樣。<strong>只是各人心裡要意見堅定。</strong>」<br><br>而下一節說：<br><br>「守日的人是<strong>為主</strong>守的……<strong>因他感謝神</strong>。」（羅十四 6）<br><br>——「為主」、「感謝神」。<br><br>而那個問題的重心，就落回了那個方向上。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「凡勞苦擔重擔的人，可以到我這裡來」</h2>
+      <p class="card-hook">而那句話，用的正是「安息」</p>
+    </div>
+    <div class="card-body">
+
+      <p>談完了日子，我想把最後留給那件事的內容。</p>
+
+      <div class="big-quote">
+        凡勞苦擔重擔的人<br>可以到我這裡來，<br>我就使你們得安息
+        <cite>— 馬太福音 十一章二十八節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話的下一節，加了一個很有意思的比喻</strong>
+        「我心裡柔和謙卑，你們當<strong>負我的軛</strong>，學我的樣式；這樣，你們心裡就<strong>必得享安息</strong>。<br><br>因為<strong>我的軛是容易的，我的擔子是輕省的。</strong>」（太十一 29～30）<br><br>——注意那個組合：<strong>「負軛」與「安息」放在一起。</strong><br><br>那不是「什麼都不做」。<br><br>是<strong>換一個軛</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐂</span>
+        而「軛」是套在兩隻牛身上的。<br><br>——所以那個比喻裡，你不是自己拉。<br><br>而彼得在耶路撒冷會議上說的那句話，用的正是同一個字：<br><br>「為甚麼試探神，要把我們祖宗和我們所不能負的<strong>軛</strong>放在門徒的頸項上呢？」<br><br>——一個「不能負的軛」。<br><br>一個「容易的軛」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到那四個理由。</p>
+
+      <p>對象、性質、決議、做法。</p>
+
+      <p>——而它們共同指向的，其實是同一件事：</p>
+
+      <p><strong>那個日子所預表的，已經來了。</strong></p>
+
+      <p>「這些原是後事的影兒，那形體卻是基督。」</p>
+
+      <p>而「七日的第一日」，是祂從墳墓裡出來的那一天。</p>
+
+      <p>那天晚上，門都關著。</p>
+
+      <p>而聖經記的是：</p>
+
+      <p><strong>「耶穌來，站在當中，對他們說：願你們平安！」</strong></p>
+
+      <p>——所以真正的安息，不是一格時間。</p>
+
+      <p>是<strong>那一位站在當中</strong>。</p>
+
+      <p>願你今天，在祂裡面歇一歇。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  為甚麼沒有「守安息日」 · Threads Series
+</footer>
+
+</body>
+</html>

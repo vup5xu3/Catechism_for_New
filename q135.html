@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖徒當怎樣敬愛天父 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>愛主<span>所愛的</span></h1>
+  <p class="subtitle">聖徒當怎樣敬愛天父？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">你愛一個人，會開始在意他在意的事</h2>
+      <p class="card-hook">而那不是刻意的</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>愛一個人，會有一個很自然的副作用。</p>
+
+      <div class="highlight">
+        <strong>你會開始在意他在意的事</strong>
+        他喜歡的球隊，你會不小心記住比分。<br><br>他常提的那個朋友，你會問一句「他後來怎麼樣了」。<br><br>他討厭的那件事，你會避開。<br><br>——而那不是配合。<br><br>那是<strong>自然發生的</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        我想到指南針。<br><br>你不需要每天提醒它往哪裡指。<br><br>——它會自己轉。<br><br>而如果一個人真的愛神，卻對神所愛的、神所恨惡的完全無感——<br><br>那不是他不夠努力。<br><br><strong>那是指針還沒有真的被吸住。</strong>
+      </div>
+
+      <p>而這一題那一串「愛主所愛的、惡主所惡的」，講的正是這個。</p>
+
+      <p>接下來這幾篇，我想陪你看清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">「盡心、盡性、盡意、盡力」</h2>
+      <p class="card-hook">四個「盡」字，是這一題的第一句</p>
+    </div>
+    <div class="card-body">
+
+      <p>有一個文士問主：「誡命中哪是第一要緊的呢？」</p>
+
+      <div class="scripture">
+        <p class="scripture-text">你要盡心、盡性、盡意、盡力愛主你的神
+        </p>
+        <p class="scripture-ref">馬可福音 十二章三十節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那四個字，是四個面向</strong>
+        <strong>盡心</strong>——情感。<br><strong>盡性</strong>——那個「我」，整個生命。<br><strong>盡意</strong>——思想、理智。<br><strong>盡力</strong>——體力、行動、資源。<br><br>——四個字加起來，涵蓋了一個人的全部。<br><br>而它們前面，都有同一個字：<strong>「盡」。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎯</span>
+        而本題第一句，用的說法是「<strong>集中一切</strong>」愛天父。<br><br>——「集中」。<br><br>那個詞很準。<br><br>因為人的愛，本來是<strong>散開</strong>的：分給很多東西，每一樣一點點。<br><br>而「集中」的意思是：<strong>把散開的收攏起來，指向一個方向。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個文士的回應，很值得注意</strong>
+        他說：「夫子說，神是一位，實在不錯……並且<strong>盡心、盡智、盡力愛他，又愛人如己</strong>，就比一切燔祭和各樣祭祀好的多。」<br><br>而主的評語是：<br><br>「<strong>你離神的國不遠了。</strong>」（可十二 34）
+      </div>
+
+      <p>下一篇，我們把整串列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">與主同一個方向</h2>
+      <p class="card-hook">愛、惡、行、是、非、樂、憂</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">起點</span>
+          聖徒當<strong>集中一切愛天父</strong>，<br>藉以<strong>認識天父</strong>（可十二 30；約十四 21）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">在心上</span>
+          <strong>愛主所愛的，惡主所惡的</strong><br>（約壹五 1；啟二 6）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">在行為上</span>
+          <strong>行主所行的</strong>（約壹二 6）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">在立場上</span>
+          <strong>是主所是的</strong>（林後一 19），<strong>非主所非的</strong>
+        </div>
+        <div class="concentric-ring r5">
+          <span class="ring-label">在情緒上</span>
+          <strong>樂主所樂的，憂主所憂的</strong><br>（太十一 26；林後七 9～11）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>並且——</strong>
+        <strong>也要愛牧師。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那一串，其實是同一件事在五個層面上的展開：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>層面</th>
+            <th>那一項</th>
+            <th>問的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">感情</td>
+            <td>愛主所愛，惡主所惡</td>
+            <td>我心裡珍惜什麼、討厭什麼</td>
+          </tr>
+          <tr>
+            <td class="src">行為</td>
+            <td>行主所行</td>
+            <td>我實際上做什麼</td>
+          </tr>
+          <tr>
+            <td class="src">判斷</td>
+            <td>是主所是，非主所非</td>
+            <td>我認為什麼是對的</td>
+          </tr>
+          <tr>
+            <td class="src">情緒</td>
+            <td>樂主所樂，憂主所憂</td>
+            <td>什麼會讓我高興、什麼會讓我難過</td>
+          </tr>
+          <tr>
+            <td class="src">關係</td>
+            <td>也要愛牧師</td>
+            <td>我怎麼待祂所差的人</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第一句那個「藉以」，是整題的鑰匙</strong>
+        「集中一切愛天父，<strong>藉以</strong>認識天父。」<br><br>——注意那個因果的方向。<br><br>不是「先認識，然後才愛」。<br><br>是<strong>「愛，然後就認識」</strong>。<br><br>而主自己說過同一件事：<br><br>「有了我的命令又遵守的，這人就是愛我的；愛我的必蒙我父愛他，<strong>我也要愛他，並且要向他顯現。</strong>」（約十四 21）
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「惡主所惡的」那一項，今天特別需要說清楚。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚔️</span>
+        因為「恨惡」聽起來很不友善。<br><br>而它的對象，本題引的經文說得很清楚：<strong>啟示錄二章六節。</strong><br><br>那節說的是「<strong>恨惡……的行為</strong>」。<br><br>——是<strong>行為</strong>，不是<strong>人</strong>。<br><br>而聖經的原則從頭到尾一致：<br><br>「你們要愛你們的仇敵。」——對<strong>人</strong>。<br>「惡要厭惡，善要親近。」（羅十二 9）——對<strong>事</strong>。
+      </div>
+
+      <p>下一篇，我們細看那幾項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「愛主所愛的」——那第一個對象是誰</h2>
+      <p class="card-hook">約翰壹書五章一節，給了一個很具體的答案</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">凡信耶穌是基督的，都是從神而生，凡愛生他之神的，也必愛從神生的
+        </p>
+        <p class="scripture-ref">約翰壹書 五章一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那節的邏輯很直接</strong>
+        愛<strong>生他之神</strong>的人，<strong>必</strong>愛<strong>從神生的</strong>。<br><br>——「從神生的」，指的就是<strong>弟兄姊妹</strong>。<br><br>所以「愛主所愛的」，第一個對象不是抽象的。<br><br><strong>就是你旁邊那些人。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">👨‍👩‍👧</span>
+        而那個邏輯，在家裡是很自然的。<br><br>你愛一個人，就會善待他的孩子。<br><br>——你不會說「我很愛你，但我受不了你的小孩」。<br><br>而約翰在同一封信裡，把話說得更重：<br><br>「人若說『我愛神』，卻恨他的弟兄，就是<strong>說謊話</strong>的；不愛他所看見的弟兄，就不能愛沒有看見的神。」（約壹四 20）
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那節的理由，很有意思：<strong>「不愛他所看見的弟兄，就不能愛沒有看見的神。」</strong><br><br>——因為看得見的那個，是比較難愛的。<br><br>沒有看見的神，不會打斷你說話，不會誤會你，不會忘記你的生日。<br><br>而看得見的弟兄會。<br><br>所以約翰的意思是：<strong>如果那件比較容易的事你做不到，那件比較難的事就更不用說了。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「行主所行的」，約翰壹書二章六節說得非常簡短：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">人若說他住在主裡面，就該自己照主所行的去行
+        </p>
+        <p class="scripture-ref">約翰壹書 二章六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「照主所行的去行」，具體是什麼？</strong>
+        同一封信在後面給了說明：<br><br>「主為我們捨命，我們從此就知道何為愛；<strong>我們也當為弟兄捨命。</strong>」（約壹三 16）<br><br>而下一節更具體：<br><br>「凡有世上財物的，看見弟兄窮乏，卻塞住憐恤的心，愛神的心怎能存在他裡面呢？」<br><br>——所以「照主所行的去行」，落到地上是：<strong>看見了，就不要把心關起來。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「是主所是的」，引的是哥林多後書一章十九節：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">在他只有一是
+        </p>
+        <p class="scripture-ref">哥林多後書 一章十九節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>那一段的背景，是保羅被人指責「說話反覆」</strong>
+        他本來說要去哥林多，後來改了行程。<br><br>而有人說他「忽是忽非」。<br><br>而保羅的辯白是：「神的兒子耶穌基督……<strong>在他只有一是</strong>。」<br><br>下一節接著說：「<strong>神的應許，不論有多少，在基督都是是的。</strong>」<br><br>——所以「是主所是的」，講的是<strong>不搖擺</strong>。<br><br>對的就說對，錯的就說錯，不隨著場合改。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而主自己講過同樣的原則：<br><br>「你們的話，<strong>是，就說是；不是，就說不是</strong>；若再多說，就是出於那惡者。」（太五 37）<br><br>——而這一項在今天特別難。<br><br>因為模糊比較安全。含混比較不得罪人。<br><br>而「是主所是的，非主所非的」要求的是：<strong>站在祂站的地方。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「樂主所樂的，憂主所憂的」</h2>
+      <p class="card-hook">而那兩節經文，選得很妙</p>
+    </div>
+    <div class="card-body">
+
+      <p>本題為這兩項各引了一節。而那兩節，一節講喜樂，一節講憂愁。</p>
+
+      <div class="highlight">
+        <strong>樂主所樂的——馬太福音十一章二十六節</strong>
+        「父啊，是的，因為<strong>你的美意本是如此</strong>。」<br><br>——那句話的上文是：<br><br>「父啊，天地的主，我感謝你！因為你將這些事向聰明通達人就藏起來，向<strong>嬰孩</strong>就顯出來。」<br><br>而主的喜樂，是為著<strong>父的美意</strong>。<br><br>——注意那不是「事情順利」的喜樂。<br><br>那是<strong>「父這樣安排」</strong>的喜樂。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌤️</span>
+        而路加福音記同一件事的時候，用了一個很強的詞：<br><br>「正當那時，耶穌被聖靈感動就<strong>歡樂</strong>。」（路十 21）<br><br>——那個字的意思是<strong>「大大地歡喜、雀躍」</strong>。<br><br>而祂歡樂的原因，是父把事情向嬰孩顯明了。<br><br>——所以「樂主所樂的」，是學習<strong>為著祂看重的事情高興</strong>。<br><br>而那正好也是主說過的：「一個罪人悔改，<strong>在天上也要這樣為他歡喜</strong>。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「憂主所憂的」，引的是哥林多後書七章。那一段分辨了兩種憂愁：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">因為依著神的意思憂愁，就生出沒有後悔的懊悔來，以致得救；但世俗的憂愁是叫人死
+        </p>
+        <p class="scripture-ref">哥林多後書 七章十節</p>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>依著神的意思憂愁</th>
+            <th>世俗的憂愁</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">生出什麼</td>
+            <td>沒有後悔的<strong>懊悔</strong></td>
+            <td>——</td>
+          </tr>
+          <tr>
+            <td class="src">結果</td>
+            <td><strong>以致得救</strong></td>
+            <td><strong>叫人死</strong></td>
+          </tr>
+          <tr>
+            <td class="src">方向</td>
+            <td>往前——帶出改變</td>
+            <td>往下——困在裡面</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而下一節，把「依著神的意思憂愁」的果子列了出來</strong>
+        「你看，你們依著神的意思憂愁，從此就生出何等的<strong>殷勤、自訴、自恨、恐懼、想念、熱心、責罰</strong>。」（林後七 11）<br><br>——七樣，全部是<strong>動起來</strong>的東西。<br><br>而世俗的憂愁，特徵正好相反：<strong>不動</strong>。<br><br>——它只是把人壓在原地。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而那個分別，最容易辨認的方式是問一句：<br><br><strong>這份難過，把我帶去哪裡？</strong><br><br>如果它把我帶到神面前，那是第一種。<br><br>如果它把我帶到床上、帶進更深的自責、帶到「反正我就是這樣」——<br><br>那是第二種。<br><br>——而彼得與猶大，正好是這兩種的例子。<br><br>兩個人都難過。而一個出去痛哭，後來回來了；一個出去，就沒有回來。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而最後那一句「<strong>也要愛牧師</strong>」，看起來像附加的，其實不是。</p>
+
+      <div class="highlight">
+        <strong>因為那是把前面所有抽象的，落到一個具體的人身上</strong>
+        前面講的是：愛主所愛的、行主所行的、樂主所樂的。<br><br>——那些都可以停在心裡。<br><br>而「愛牧師」是<strong>可以檢驗的</strong>。<br><br>而聖經對這件事有具體的話：<br><br>「那善於管理教會的長老，當以為<strong>配受加倍的敬奉</strong>；那勞苦傳道教導人的，更當如此。」（提前五 17）<br><br>「你們要依從那些引導你們的，且要順服；因他們為你們的靈魂<strong>時刻警醒</strong>。」（來十三 17）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤲</span>
+        而希伯來書那節的後半句，說得很體貼：<br><br>「<strong>你們要使他們交的時候有快樂，不至憂愁；若憂愁就與你們無益了。</strong>」<br><br>——注意最後那半句：<strong>「就與你們無益了。」</strong><br><br>一個心力交瘁的牧者，最後受損的是<strong>羊</strong>。<br><br>所以愛牧師不只是回報。<br><br><strong>那也是照顧自己的家。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「藉以認識天父」</h2>
+      <p class="card-hook">寫給那個覺得自己不夠愛神的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>這一題如果當成一張檢查表，會很沉重。</p>
+
+      <div class="highlight">
+        <strong>因為每一項，我都做不到</strong>
+        我沒有愛主所愛的那麼多。<br>我沒有惡主所惡的那麼徹底。<br>我行的，離主所行的差很遠。<br>我樂的、憂的，常常跟祂不是同一件事。<br><br>——而如果這一題是評分表，我大概每一項都不及格。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧲</span>
+        而我後來換了一個讀法。<br><br>回到第一句：「集中一切愛天父，<strong>藉以</strong>認識天父。」<br><br>——「藉以」。<br><br>所以後面那一串，不是<strong>入場的條件</strong>。<br><br>那是<strong>沿路會發生的事</strong>。<br><br>就像指南針：你不需要一直用手扳它。<br><br><strong>你只要把它放在磁場裡。</strong>
+      </div>
+
+      <div class="big-quote">
+        你要盡心、盡性、<br>盡意、盡力<br>愛主你的神
+        <cite>— 馬可福音 十二章三十節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那件事。</p>
+
+      <p>你愛一個人，會開始在意他在意的事。</p>
+
+      <p>而那從來不是靠背清單背來的。</p>
+
+      <p>——是因為<strong>你花時間跟他在一起</strong>。</p>
+
+      <p>所以這一題最實際的一步，不是去記那七項。</p>
+
+      <p>是<strong>回到祂面前，多待一會兒</strong>。</p>
+
+      <p>而主說過一句話，可以放在最後：</p>
+
+      <p><strong>「愛我的必蒙我父愛他，我也要愛他，並且要向他顯現。」</strong></p>
+
+      <p>——注意那個方向。</p>
+
+      <p>你愛，然後<strong>祂向你顯現</strong>。</p>
+
+      <p>而顯現之後，你會更愛。</p>
+
+      <p>願你今天，從那一頭開始。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖徒當怎樣敬愛天父 · Threads Series
+</footer>
+
+</body>
+</html>

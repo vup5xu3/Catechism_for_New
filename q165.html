@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聖徒處世的原則 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>四把<span>尺</span></h1>
+  <p class="subtitle">聖徒處世，有甚麼原則？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">大部分的難題，不在「對錯」那一格</h2>
+      <p class="card-hook">而在那一大片灰色裡</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>生活裡真正讓人為難的事，很少是「這件事對不對」。</p>
+
+      <div class="highlight">
+        <strong>因為明顯的事，其實不難決定</strong>
+        不可偷竊、不可作假見證、不可姦淫——那些清楚。<br><br>而難的是這些：<br><br>這場飯局要不要去？<br>公司這個做法，我要不要配合？<br>這筆錢賺得算不算乾淨？<br>這件事沒有明文禁止，而我心裡毛毛的。<br><br>——那些，聖經上找不到一條直接的規定。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📐</span>
+        而這一題給的，不是一份清單。<br><br>是<strong>四把尺</strong>。<br><br>——清單只能列出想得到的事。<br><br>而尺，可以量沒有列出來的事。<br><br>而這四把，正好從四個方向量同一件事。
+      </div>
+
+      <p>接下來這幾篇，我想陪你一把一把看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">保羅遇過一個一模一樣的問題</h2>
+      <p class="card-hook">而他的回答，不是「可以」或「不可以」</p>
+    </div>
+    <div class="card-body">
+
+      <p>哥林多前書第十章，處理的正是一個灰色地帶的問題。</p>
+
+      <div class="highlight">
+        <strong>那個問題是：市場上賣的肉，可以吃嗎？</strong>
+        因為當時市場上很多肉，是<strong>先在廟裡獻過</strong>的。<br><br>——而信徒在那個城市裡，天天要面對這件事。<br><br>買菜、赴宴、鄰居請客。<br><br>而聖經上沒有一條規定說「不可買市場的肉」。
+      </div>
+
+      <p>而保羅的回答，開頭是這樣的：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">凡事都可行，但不都有益處。凡事都可行，但不都造就人
+        </p>
+        <p class="scripture-ref">哥林多前書 十章二十三節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而那句話的結構，很有意思。<br><br>它先承認：<strong>「凡事都可行。」</strong><br><br>——也就是說：這件事本身，並沒有被禁止。<br><br>然後它換了一個問題：<br><br><strong>「有沒有益處？」</strong><br><strong>「能不能造就人？」</strong><br><br>——所以那個判斷的標準，從<strong>「准不准」</strong>換成了<strong>「好不好」</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而下一句，是那一整段的鑰匙</strong>
+        「<strong>無論何人，不要求自己的益處，乃要求別人的益處。</strong>」（林前十 24）<br><br>——而那一整段的結論，是那節很有名的話：<br><br>「所以，你們或吃或喝，無論做甚麼，<strong>都要為榮耀神而行</strong>。」（林前十 31）
+      </div>
+
+      <p>下一篇，我們把四項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四個原則</h2>
+      <p class="card-hook">而它們是四個不同的方向</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、必須榮神益人</span>
+          （林前十 23～31；羅十四 21）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、必須討主喜悅</span>
+          （腓四 6；西三 17）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、必須無礙靈性</span>
+          （帖前五 22；來十二 1～2）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、必須無虧良心</span>
+          （徒廿四 16）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四項，是四個不同的<strong>朝向</strong>：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>那一項</th>
+            <th>朝向</th>
+            <th>要問的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>榮神益人</strong></td>
+            <td><strong>向上，也向外</strong></td>
+            <td>這件事，會讓神得榮耀嗎？會對人有益嗎？</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>討主喜悅</strong></td>
+            <td><strong>向上</strong></td>
+            <td>如果祂就在旁邊，我還會這樣做嗎？</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>無礙靈性</strong></td>
+            <td><strong>向內</strong></td>
+            <td>做了這件事，我會不會離祂遠一點？</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>無虧良心</strong></td>
+            <td><strong>向裡面最深處</strong></td>
+            <td>我心裡真的過得去嗎？</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而四項的順序，也是有意思的</strong>
+        它從<strong>最外面</strong>（別人看得見的果效）開始，<br><br>一路收到<strong>最裡面</strong>（只有你自己知道的那一格）。<br><br>——而最後那一項，是最無法躲的：<br><br>因為前面三項，人還可以說服自己。<br><br>而<strong>良心</strong>那一關，是騙不過去的。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這四把尺的用法，其實是<strong>一起用</strong>的。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        因為一件事可能<strong>通過某一把，卻卡在另一把</strong>。<br><br>——那件事沒有害到別人（第一把過），<br>而我心裡毛毛的（第四把卡住）。<br><br>——那件事我心安理得（第四把過），<br>而它會讓旁邊那個弟兄跌倒（第一把卡住）。<br><br>而只要有一把卡住，那就是<strong>要停下來想的訊號</strong>。
+      </div>
+
+      <p>下一篇，我們看那幾處經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「無論做甚麼，都要奉主耶穌的名」</h2>
+      <p class="card-hook">歌羅西書那節，把範圍拉到了全部</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">無論做甚麼，或說話或行事，都要奉主耶穌的名，藉著他感謝父神
+        </p>
+        <p class="scripture-ref">歌羅西書 三章十七節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節的範圍，大得驚人</strong>
+        「<strong>無論做甚麼</strong>」、「<strong>或說話或行事</strong>」。<br><br>——那涵蓋了一整天的每一件事。<br><br>而它給的判準，是一個很好用的問句：<br><br><strong>「這件事，我可以奉主耶穌的名去做嗎？」</strong><br><br>——因為那句話一加上去，有些事就<strong>自己說不下去了</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏷️</span>
+        而同一章後面，還有一句更具體的：<br><br>「無論做甚麼，都要<strong>從心裡做，像是給主做的，不是給人做的</strong>。」（西三 23）<br><br>——「<strong>像是給主做的</strong>」。<br><br>而那句話原本是對<strong>作僕人的</strong>說的。<br><br>所以它管的是最日常的工作：那些沒有人看見、也沒有人道謝的活。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而第二項另一處經文——腓立比書四章六節——是這樣的：<br><br>「應當<strong>一無掛慮</strong>，只要<strong>凡事藉著禱告、祈求，和感謝，將你們所要的告訴神</strong>。」<br><br>——「<strong>凡事</strong>」。<br><br>所以「討主喜悅」的做法，不是自己揣測。<br><br>是<strong>把那件事拿到祂面前問</strong>。<br><br>而下一節的應許是：「神所賜、出人意外的平安，必在基督耶穌裡<strong>保守你們的心懷意念</strong>。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第三項——無礙靈性——引的兩處，是兩個不同的畫面：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>畫面</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">帖前五 22</td>
+            <td>「<strong>各樣的惡事要禁戒不做。</strong>」——連沾邊的都要避</td>
+          </tr>
+          <tr>
+            <td class="src">來十二 1</td>
+            <td>「就當<strong>放下各樣的重擔，脫去容易纏累我們的罪</strong>，存心忍耐，奔那擺在我們前頭的路程。」</td>
+          </tr>
+          <tr>
+            <td class="src">來十二 2</td>
+            <td>「<strong>仰望為我們信心創始成終的耶穌。</strong>」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而希伯來書那節的比喻，是<strong>賽跑</strong>。<br><br>而它分了兩樣東西：<br><br><strong>「各樣的重擔」</strong>——那些不一定是罪，只是<strong>會拖慢你</strong>的。<br><br><strong>「容易纏累我們的罪」</strong>——那些會絆倒你的。<br><br>——所以「無礙靈性」處理的，正是第一種：<br><br><strong>那件事不是罪，而它會拖住我。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🏃</span>
+        而跑步的人不會穿大衣。<br><br>大衣沒有錯。大衣是好東西。<br><br>——而在跑道上，它是重擔。<br><br>所以那個判準不是「這件事壞不壞」。<br><br>是<strong>「我現在在跑，而這個會不會拖住我」</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「對神對人，常存無虧的良心」</h2>
+      <p class="card-hook">保羅說那句話的時候，正站在被告席上</p>
+    </div>
+    <div class="card-body">
+
+      <p>第四項引的，是使徒行傳二十四章十六節。</p>
+
+      <p>而那句話的處境很特別：<strong>保羅正在受審。</strong></p>
+
+      <div class="scripture">
+        <p class="scripture-text">我因此自己勉勵，對神對人，常存無虧的良心
+        </p>
+        <p class="scripture-ref">使徒行傳 二十四章十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節裡有三個要點</strong>
+        <strong>「自己勉勵」</strong>——那是要花力氣的，不是自然發生的。<br><br><strong>「對神對人」</strong>——兩邊都要。<br><br><strong>「常存」</strong>——不是偶爾檢查一次。<br><br>——而那節的上一句，說明了他為什麼這樣活：<br><br>「並且靠著神，盼望<strong>死人，無論善惡，都要復活</strong>。」（徒廿四 15）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧾</span>
+        ——所以那個「無虧的良心」，是有一個遠景在後面的。<br><br>他不是為了讓自己好過。<br><br>是因為他相信<strong>有一天要交帳</strong>。<br><br>而「對神對人」那四個字，也很實際：<br><br>有些事只有神知道；有些事只有人看見。<br><br><strong>而兩邊都要過得去。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而「良心」這件事，聖經談得比一般人想的細。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">良心會軟弱</span>
+          「但人不都有這等知識。有人到如今因拜慣了偶像，就以為所吃的是祭偶像之物。<br><br>他們的<strong>良心既然軟弱，也就污穢了</strong>。」（林前八 7）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">良心會被燙壞</span>
+          「他們是<strong>良心如同被熱鐵烙慣了一般</strong>。」（提前四 2）<br><br>——被燙壞的皮膚，就<strong>感覺不到</strong>了。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">良心可以被洗淨</span>
+          「何況基督藉著永遠的靈，將自己無瑕無疵獻給神，他的血豈不更能<strong>洗淨你們的心</strong>，除去你們的死行，使你們事奉那永生神嗎？」（來九 14）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">良心要被保守</span>
+          「常存<strong>信心和無虧的良心</strong>。有人丟棄良心，就在真道上如同<strong>船破壞了一般</strong>。」（提前一 19）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而最後那一節，用的比喻很重</strong>
+        「有人<strong>丟棄良心</strong>，就在真道上<strong>如同船破壞了一般</strong>。」<br><br>——那不是說良心是救恩的根據。<br><br>而它說的是：<strong>丟掉良心的人，信仰會出大事。</strong><br><br>因為一個人一旦習慣了「明知不對還是做」，<br><br>那條線就會一次比一次容易越過。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「良心」不是最終的權威——這一點也要說清楚。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🎚️</span>
+        因為良心像一個<strong>感應器</strong>。<br><br>它會提醒你，而它<strong>需要被校準</strong>。<br><br>——而校準的東西，是<strong>神的話</strong>。<br><br>所以保羅說：「我雖不覺得自己有錯，<strong>卻也不能因此得以稱義</strong>；但判斷我的乃是主。」（林前四 4）<br><br>——「我不覺得自己有錯」，不等於「我沒有錯」。<br><br>而那正是為什麼要<strong>四把尺一起用</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而第一項「益人」那一半，有一節很具體的經文</strong>
+        「無論是吃肉是喝酒，是甚麼別的事，<strong>叫弟兄跌倒，一概不做才好。</strong>」（羅十四 21）<br><br>——注意那個範圍：「<strong>是甚麼別的事</strong>」。<br><br>而那個判準，完全不在那件事本身上。<br><br><strong>在旁邊那個人身上。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「都要為榮耀神而行」</h2>
+      <p class="card-hook">而那句話，涵蓋了吃飯喝水</p>
+    </div>
+    <div class="card-body">
+
+      <p>那一整段的結論，是一句很大的話——而它舉的例子很小。</p>
+
+      <div class="big-quote">
+        所以，你們或吃或喝，<br>無論做甚麼，<br>都要為榮耀神而行
+        <cite>— 哥林多前書 十章三十一節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而「或吃或喝」那四個字，是特意選的</strong>
+        ——因為那是一天裡最平常、最不「屬靈」的動作。<br><br>而保羅把它們放進了「榮耀神」的範圍裡。<br><br>那意味著：<strong>沒有一格生活，是在外面的。</strong><br><br>而那也是四把尺真正的用處：<br><br>它們不只量大事。<strong>它們量的是一整天。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        而我很喜歡這一點。<br><br>因為它把「屬靈」從一個特別的時段裡放出來了。<br><br>——不是只有讀經禱告的那半小時算數。<br><br>吃飯、走路、上班、回話、決定一件小事——<br><br><strong>全部都在那個範圍裡。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那片灰色地帶。</p>
+
+      <p>那些沒有明文規定的事，其實才是生活的大部分。</p>
+
+      <p>而這四把尺，可以隨身帶著：</p>
+
+      <p><strong>會不會榮神益人？</strong></p>
+
+      <p><strong>主喜不喜悅？</strong></p>
+
+      <p><strong>會不會妨礙我的靈性？</strong></p>
+
+      <p><strong>我的良心過得去嗎？</strong></p>
+
+      <p>——四個問題，很短。</p>
+
+      <p>而它們最好的地方是：<strong>你不必等到很懂神學才會用。</strong></p>
+
+      <p>而如果四個問題問完，還是不確定——</p>
+
+      <p>那還有一句話可以用：</p>
+
+      <p>「凡事藉著禱告、祈求，和感謝，<strong>將你們所要的告訴神</strong>。」</p>
+
+      <p>願你今天在那些小決定上，心裡是安的。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  聖徒處世的原則 · Threads Series
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法令與神的旨意相背時 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>順從神，<span>不順從人</span></h1>
+  <p class="subtitle">當國家的法令與神的旨意相背時，應當怎樣？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">上一題說要順服，這一題說有例外</h2>
+      <p class="card-hook">而那個例外，範圍很窄</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>上一題的第一項是：<strong>作良好公民。</strong></p>
+
+      <p>「在上有權柄的，人人當順服他。」</p>
+
+      <div class="highlight">
+        <strong>而這一題，處理的是那個例外</strong>
+        ——而它的範圍，寫得很清楚：<br><br><strong>「當國家的法令與神的旨意相背的時候。」</strong><br><br>不是「當我不同意的時候」。<br>不是「當那個政策對我不利的時候」。<br>不是「當我覺得那些人很糟的時候」。<br><br>是<strong>「與神的旨意相背」</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚦</span>
+        而那個範圍為什麼要那麼窄？<br><br>因為如果每一個不同意都算，那「順服」就等於沒有說。<br><br>——而正因為它窄，所以當它真的出現的時候，<strong>那條線是清楚的</strong>。<br><br>而站在那條線上的人，知道自己為什麼站在那裡。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看那三項。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">彼得和約翰站在公會前面</h2>
+      <p class="card-hook">而他們的回答，是一個反問</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第四章，彼得和約翰因為那個瘸腿的人得醫治，被抓了。</p>
+
+      <div class="highlight">
+        <strong>而公會的決定，是一道禁令</strong>
+        「於是叫了他們來，<strong>禁止他們總不可奉耶穌的名講論教訓人。</strong>」（徒四 18）<br><br>——那是當時最高的宗教與司法機關。<br><br>而那道命令的內容，直接對著他們被差去做的那件事。
+      </div>
+
+      <p>而他們的回答，是一個反問：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">聽從你們，不聽從神，這在神面前合理不合理，你們自己酌量吧！我們所看見所聽見的，不能不說
+        </p>
+        <p class="scripture-ref">使徒行傳 四章十九至二十節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而那個反問的方式，很值得注意。<br><br>他們沒有喊口號，也沒有指責那些人。<br><br>他們說的是：<strong>「你們自己酌量吧。」</strong><br><br>——那是把問題<strong>交回給對方的良心</strong>。<br><br>而後半句是一句陳述，不是挑釁：<br><br><strong>「我們所看見所聽見的，不能不說。」</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>而第二次被抓的時候，話說得更短</strong>
+        大祭司問：「我們不是嚴嚴地禁止你們，不可奉這名教訓人嗎？」<br><br>而彼得和眾使徒回答：<br><br>「<strong>順從神，不順從人，是應當的。</strong>」（徒五 29）<br><br>——七個字。<br><br>而他們接下去講的，還是同一篇道：那位被釘、被神高舉的耶穌。
+      </div>
+
+      <p>下一篇，我們把三項列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">三項</h2>
+      <p class="card-hook">禱告、呼籲、以神的旨意為重</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、要迫切為國祈禱</span>
+          （撒上十二 23）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、要發出合理的呼籲</span>
+          （參撒下廿四 3）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、要以神的旨意為重</span>
+          <strong>神的旨意必對國家有益無害</strong>；<br><br><strong>人會做錯事，說錯話，神絕對沒有錯誤</strong><br>（參徒四 19；五 29）。
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那三項的順序，本身就是一種智慧：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>次序</th>
+            <th>那一項</th>
+            <th>為什麼在這個位置</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">一</td>
+            <td><strong>迫切為國祈禱</strong></td>
+            <td>先向<strong>神</strong>說——那會先改變說話的人</td>
+          </tr>
+          <tr>
+            <td class="src">二</td>
+            <td><strong>發出合理的呼籲</strong></td>
+            <td>再向<strong>人</strong>說——而且是「<strong>合理的</strong>」</td>
+          </tr>
+          <tr>
+            <td class="src">三</td>
+            <td><strong>以神的旨意為重</strong></td>
+            <td>如果前兩項都不成——那條線<strong>還是要守</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第二項那三個字——「合理的」——是很重要的限定</strong>
+        ——不是「發出強烈的抗議」。<br><br>不是「上街」，也不是「翻臉」。<br><br>是<strong>合理的呼籲</strong>。<br><br>而它引的例子，正好說明了那是什麼樣子。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第三項那兩句話，是這一整題的地基：</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧭</span>
+        <strong>「神的旨意必對國家有益無害。」</strong><br><br>——那句話回答了一個很自然的疑問：<br><br>「那我這樣做，會不會害了國家？」<br><br>而它說：不會。<strong>神的旨意，對這個國家是好的。</strong><br><br><strong>「人會做錯事，說錯話，神絕對沒有錯誤。」</strong><br><br>——那句話說的是：<strong>兩邊都是「權柄」，而只有一邊不會錯。</strong>
+      </div>
+
+      <p>下一篇，我們看那幾處經文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">撒母耳與約押，各示範了一項</h2>
+      <p class="card-hook">一個是禱告，一個是呼籲</p>
+    </div>
+    <div class="card-body">
+
+      <p>第一項引的是撒母耳記上第十二章。</p>
+
+      <div class="highlight">
+        <strong>而那句話的處境，是很難的</strong>
+        以色列人剛剛做了一件讓撒母耳很傷心的事：<strong>他們要求立王。</strong><br><br>——那等於是拒絕了神親自的治理。<br><br>而神對撒母耳說：「他們不是厭棄你，乃是厭棄我。」<br><br>而在那件事之後，撒母耳說了這句話：
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">至於我，斷不停止為你們禱告，以致得罪耶和華。我必以善道正路指教你們
+        </p>
+        <p class="scripture-ref">撒母耳記上 十二章二十三節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而那節裡，兩件事同時在：<br><br><strong>「斷不停止為你們禱告」</strong>——那是第一項。<br><br><strong>「我必以善道正路指教你們」</strong>——那是第二項的方向。<br><br>——所以那不是「他們錯了，我不管了」。<br><br>而是：<strong>繼續求，也繼續說。</strong><br><br>而他把停止禱告，稱為<strong>「得罪耶和華」</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第二項引的，是撒母耳記下第二十四章——約押對大衛的一段話。</p>
+
+      <div class="highlight">
+        <strong>那個處境</strong>
+        大衛要數點百姓的數目。<br><br>而元帥約押勸他不要。<br><br>那段話是這樣的：<br><br>「無論百姓多少，願耶和華——你的神再加增百倍，使我主我王親眼得見。<br><br><strong>我主我王何必喜悅行這事呢？</strong>」（撒下廿四 3）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🗣️</span>
+        而那段話的說法，很值得學。<br><br>——他<strong>先祝福</strong>：「願耶和華再加增百倍。」<br><br>——他<strong>用問句</strong>，而不是指責：「何必喜悅行這事呢？」<br><br>——他<strong>保持了該有的稱呼</strong>：「我主我王。」<br><br>而那正是「<strong>合理的呼籲</strong>」的樣子：<br><br><strong>把話說清楚，而不失了本分。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那件事的結局，也值得知道。<br><br>王的命令勝過了約押的話，他還是去數了。<br><br>而後來「<strong>大衛數點百姓以後，就心中自責</strong>」（撒下廿四 10）。<br><br>——所以那個呼籲，當下沒有成功。<br><br>而聖經把它記了下來。<br><br>——因為<strong>說了，與沒說，是不一樣的。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而聖經裡，這樣的「合理呼籲」還有幾個例子：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>人</th>
+            <th>怎麼說的</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>但以理</strong></td>
+            <td>「<strong>求太監長容他</strong>不玷污自己」——並且提出替代方案：「求你試試僕人們十天。」（但一 8、12）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>三個少年人</strong></td>
+            <td>「王啊，這件事我們<strong>不必回答你</strong>……即或不然，王啊，你當知道我們決不事奉你的神。」（但三 16～18）</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>保羅在腓立比</strong></td>
+            <td>「我們是羅馬人，<strong>並沒有定罪</strong>，他們就在眾人面前打了我們，又把我們下在監裡……<strong>叫他們自己來領我們出去吧！</strong>」（徒十六 37）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而保羅那個例子，特別有意思</strong>
+        因為他<strong>用了自己的公民權</strong>。<br><br>——他沒有默默走掉。<br><br>他要求那個程序被走正。<br><br>而那不是報復。<br><br>那是為了<strong>讓後面留在腓立比的信徒，不被當成罪犯的同夥</strong>。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「即或不然」</h2>
+      <p class="card-hook">那四個字，是這件事的重量所在</p>
+    </div>
+    <div class="card-body">
+
+      <p>但以理書第三章，三個少年人站在火窯前面。</p>
+
+      <div class="highlight">
+        <strong>而王的問題，是一個最後通牒</strong>
+        「你們再聽見角、笛、琵琶……各樣樂器的聲音，若俯伏敬拜我所造的像，卻還可以；<br><br>若不敬拜，必立時扔在烈火的窯中，<strong>有何神能救你們脫離我手呢？</strong>」（但三 15）
+      </div>
+
+      <p>而他們的回答，分成兩半：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">即便如此，我們所事奉的神能將我們從烈火的窯中救出來。王啊，他也必救我們脫離你的手；即或不然，王啊，你當知道我們決不事奉你的神
+        </p>
+        <p class="scripture-ref">但以理書 三章十七至十八節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔥</span>
+        而「<strong>即或不然</strong>」那四個字，是這一整段的重量所在。<br><br>——前半句是<strong>信心</strong>：祂能救。<br><br>後半句是<strong>忠心</strong>：而就算祂不救，我還是不拜。<br><br>而那兩半合起來，才是完整的。<br><br>因為只有前半句的話，那還是一場<strong>交易</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而他們回答的第一句，也很值得看</strong>
+        「尼布甲尼撒啊，這件事我們<strong>不必回答你</strong>。」（但三 16）<br><br>——那不是無禮。<br><br>那是說：<strong>這件事已經沒有討論的空間了。</strong><br><br>——而那也回到了第一六四題的原則：<strong>不進那個辯論。</strong><br><br>該說的說清楚，然後就是那樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而但以理自己，在第六章裡，示範了另一種樣子。</p>
+
+      <div class="highlight">
+        <strong>那道禁令，是專門為他設的</strong>
+        「三十日內，不拘何人，<strong>若在王以外，或向神或向人求甚麼，就必扔在獅子坑中。</strong>」（但六 7）<br><br>而但以理知道那道禁令蓋了玉璽之後，做的事是：
+      </div>
+
+      <div class="scripture">
+        <p class="scripture-text">但以理知道這禁令蓋了玉璽，就到自己家裡（他樓上的窗戶開向耶路撒冷），一日三次，雙膝跪在他神面前，禱告感謝，與素常一樣
+        </p>
+        <p class="scripture-ref">但以理書 六章十節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪟</span>
+        而那節最後那四個字，是我最喜歡的部分：<br><br><strong>「與素常一樣。」</strong><br><br>——他沒有加強，也沒有減弱。<br><br>沒有把窗戶關上，也沒有故意站到街上去。<br><br><strong>他就照著平常那樣做。</strong><br><br>——所以他的抵抗，不是一個新的動作。<br><br>是<strong>「繼續做本來就在做的事」</strong>。
+      </div>
+
+      <div class="highlight">
+        <strong>而那件事之後，那個下令的王，一夜沒睡</strong>
+        「王回宮，終夜禁食，無人拿樂器到他面前，<strong>並且睡不著覺</strong>。」（但六 18）<br><br>——而天一亮，他就急忙往獅子坑那裡去，「<strong>哀聲呼叫</strong>」。<br><br>而那個下令的人，喊的是：<br><br>「永生神的僕人但以理啊，<strong>你所常事奉的神能救你脫離獅子嗎？</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而這三項合起來，有一個很重要的性質，值得說出來。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">它是「不做」，不是「反擊」</span>
+          三個少年人：<strong>不拜</strong>。<br>但以理：<strong>照常禱告</strong>。<br>使徒：<strong>繼續講</strong>。<br><br>——沒有一個是去攻擊那個政權的。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">它承擔後果，而不逃</span>
+          三個少年人進了火窯。<br>但以理進了獅子坑。<br>使徒被打了，然後「<strong>心裡歡喜</strong>，因被算是配為這名受辱」。（徒五 41）<br><br>——他們沒有反抗那個刑罰。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">而態度始終是恭敬的</span>
+          「<strong>王啊</strong>」——三個少年人一連叫了兩次。<br><br>但以理從坑裡出來的第一句話是：「<strong>願王萬歲！</strong>」（但六 21）<br><br>——而那正是彼得寫的：「<strong>尊敬君王。</strong>」（彼前二 17）
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而那三樣加起來，是一種很特別的姿態</strong>
+        <strong>不順從那一條，而順服那個位分。</strong><br><br>——那不是叛逆。<br><br>叛逆是要<strong>把那個位子拿掉</strong>。<br><br>而這個是：<strong>那個位子我尊重，而這一件我不能做。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「與素常一樣」</h2>
+      <p class="card-hook">而那一天要站得住，靠的是之前那些平常的日子</p>
+    </div>
+    <div class="card-body">
+
+      <p>這是這一系列的最後一題。而我想收在但以理那四個字上。</p>
+
+      <div class="big-quote">
+        一日三次，<br>雙膝跪在他神面前，<br>禱告感謝，與素常一樣
+        <cite>— 但以理書 六章十節</cite>
+      </div>
+
+      <div class="highlight">
+        <strong>而「與素常一樣」那四個字，說明了一件事</strong>
+        ——那一天他能那樣做，不是因為那一天他特別勇敢。<br><br>是因為<strong>在那道禁令之前，他已經那樣做了幾十年</strong>。<br><br>所以那道禁令來的時候，他沒有需要做一個「決定」。<br><br><strong>他只是繼續。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌳</span>
+        我想到一棵樹在風裡。<br><br>它能不能站住，不是那天才決定的。<br><br>——是那些沒有風的日子裡，根扎得多深。<br><br>而這一整本問答走到這裡，講的其實就是那些日子：<br><br>讀經、禱告、聚會、奉獻、服事、家庭、待人、用錢。<br><br>——那些都是<strong>沒有風的日子裡</strong>做的事。<br><br>而它們累積起來，就是<strong>那一天你站的地方</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果那一天真的來了——</p>
+
+      <p>這三項是可以照著做的：</p>
+
+      <p><strong>迫切為國祈禱。</strong>——先向神說。</p>
+
+      <p><strong>發出合理的呼籲。</strong>——像約押那樣，把話說清楚，而不失本分。</p>
+
+      <p><strong>以神的旨意為重。</strong>——如果前兩項都不成，那條線還是要守。</p>
+
+      <p>而支持那條線的，是這一題最後那兩句話：</p>
+
+      <p><strong>「神的旨意必對國家有益無害。」</strong></p>
+
+      <p><strong>「人會做錯事，說錯話，神絕對沒有錯誤。」</strong></p>
+
+      <div class="card-divider"></div>
+
+      <p>而我想用一件事，替這一整段路收尾。</p>
+
+      <p>那三個少年人被扔進火窯之後，王站起來，驚奇地說：</p>
+
+      <p>「我捆起來扔在火裡的不是三個人嗎？……<strong>我見有四個人，並沒有捆綁，在火中遊行，也沒有受傷；那第四個的相貌好像神子。</strong>」（但三 24～25）</p>
+
+      <p>——那第四位。</p>
+
+      <p>而祂沒有把他們從火窯外面救走。</p>
+
+      <p><strong>祂進去，和他們一起在裡面。</strong></p>
+
+      <p>——而那，其實正是整本聖經的樣子。</p>
+
+      <p>那位「與我們同在」的神。</p>
+
+      <p>而祂最後留下的一句話，也是這個：</p>
+
+      <p><strong>「我就常與你們同在，直到世界的末了。」</strong></p>
+
+      <p>願你在每一個「素常」的日子裡，都知道祂在。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  法令與神的旨意相背時 · Threads Series
+</footer>
+
+</body>
+</html>

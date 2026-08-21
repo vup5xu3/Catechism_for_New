@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>應當怎樣讀聖經 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>怎樣<span>讀</span></h1>
+  <p class="subtitle">天天讀、循序讀、精細讀、敬虔讀</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">我讀經最大的問題，不是懶</h2>
+      <p class="card-hook">是沒有方法</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>有很長一段時間，我的讀經是這樣的：</p>
+
+      <p>想到才讀。翻到哪裡讀哪裡。心情好的時候讀很多，心情差的時候一個月不碰。</p>
+
+      <div class="highlight">
+        <strong>而那樣讀了幾年，結果是</strong>
+        某幾卷特別熟——詩篇、約翰福音、腓立比書。<br><br>而某幾卷幾乎沒碰過——歷代志、以西結書、幾卷小先知書。<br><br>而更麻煩的是：<strong>我只讀我喜歡的那些。</strong><br><br>——結果我心裡的那個「神」，慢慢變成了那幾卷書裡的樣子。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🍽️</span>
+        我後來發現，那有點像偏食。<br><br>不是不吃，是<strong>只吃喜歡的那幾樣</strong>。<br><br>而偏食的問題不會馬上出現。它是慢慢累積的。<br><br>——而那些我跳過的部分，往往正是我最需要被說的部分。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看聖經給的方法。</p>
+
+      <p>而那些方法，加起來剛好對付了幾種常見的問題。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">庇哩亞人被稱讚的方式</h2>
+      <p class="card-hook">「甘心領受」加上「天天考查」</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第十七章，有一群人被聖經特別稱讚。而稱讚的理由，正是他們讀經的方式：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這地方的人賢於帖撒羅尼迦的人，甘心領受這道，天天考查聖經，要曉得這道是與不是
+        </p>
+        <p class="scripture-ref">使徒行傳 十七章十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那個描述裡，有兩個看似相反的態度</strong>
+        <strong>「甘心領受」</strong>——那是開放的。他們沒有先入為主地排斥。<br><br><strong>「天天考查」</strong>——那是嚴謹的。他們也沒有照單全收。<br><br>——兩者同時存在。<br><br>而且對象是<strong>保羅</strong>。他們沒有因為說話的是使徒，就跳過查證。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        我覺得這個組合很難得。<br><br>因為人通常會偏一邊：<br><br>太開放的，什麼都接受，容易被帶偏。<br>太嚴謹的，什麼都懷疑，什麼都進不去。<br><br>而庇哩亞人是<strong>兩邊都有</strong>。<br><br>而經文說結果是：「所以他們中間<strong>多有相信的</strong>。」<br><br>——查的結果，是信。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而那句「<strong>天天</strong>考查」，也很值得注意。</p>
+
+      <div class="highlight">
+        <strong>因為那不是一次性的查證</strong>
+        保羅在那裡待了一段時間，而他們<strong>每一天</strong>都在查。<br><br>——而這正好呼應了第一個方法：<strong>天天讀。</strong>
+      </div>
+
+      <p>那麼，聖經給的方法有哪些？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四種讀法，兩個倚靠</h2>
+      <p class="card-hook">方法之外，還有兩件不能少的事</p>
+    </div>
+    <div class="card-body">
+
+      <p>應當怎樣讀聖經？聖經給了四種讀法，加上兩個倚靠：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">① 天天讀</span>
+          「惟喜愛耶和華的律法，<strong>晝夜思想</strong>，這人便為有福！」（詩一 1～2）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">② 循序讀</span>
+          路加說：「這些事我既從起頭都詳細考察了，就定意要<strong>按著次序</strong>寫給你。」（參路一 1～3）
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">③ 精細讀</span>
+          「你們<strong>查考</strong>聖經。」（約五 39）——「查考」有<strong>搜索、發掘</strong>的意思。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">④ 敬虔讀</span>
+          「挪亞因著信，既蒙神指示他未見的事，<strong>動了敬畏的心</strong>，預備了一隻方舟。」（參來十一 7）
+        </div>
+      </div>
+
+      <p>而在方法之外，還有兩件不能少的事：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">⑤ 須求聖靈啟導</span>
+          「他要<strong>引導</strong>你們明白一切的真理。」（約十六 13）<br>「於是<strong>開他們的心竅</strong>，使他們能明白聖經。」（路廿四 45）
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">⑥ 靠主恩惠能力遵行</span>
+          「你們既知道這事，<strong>若是去行就有福了</strong>。」（約十三 17）<br>「我比年老的更明白，因我守了你的訓詞。」（參詩一一九 100）
+        </div>
+      </div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這六項，剛好對付了六種不同的問題：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>方法</th>
+            <th>對付的問題</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">天天讀</td>
+            <td><strong>斷斷續續</strong>——想到才讀，靠心情</td>
+          </tr>
+          <tr>
+            <td class="src">循序讀</td>
+            <td><strong>偏食</strong>——只讀喜歡的那幾卷</td>
+          </tr>
+          <tr>
+            <td class="src">精細讀</td>
+            <td><strong>滑過去</strong>——讀完了，什麼都沒留下</td>
+          </tr>
+          <tr>
+            <td class="src">敬虔讀</td>
+            <td><strong>當成研究</strong>——把它當一份文件在分析</td>
+          </tr>
+          <tr>
+            <td class="src">求聖靈啟導</td>
+            <td><strong>靠自己的理解力</strong>——而有些東西是靠悟性打不開的</td>
+          </tr>
+          <tr>
+            <td class="src">靠主恩惠遵行</td>
+            <td><strong>知道而不行</strong>——這是最大的一項</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而最後一項，是所有方法的目的</strong>
+        主那句話很短，卻很尖銳：<br><br>「你們既<strong>知道</strong>這事，<strong>若是去行</strong>就有福了。」（約十三 17）<br><br>——注意那個結構：<strong>知道</strong>，不等於<strong>有福</strong>。<br><br>中間隔著一個「<strong>若是去行</strong>」。<br><br>而祂說這句話的場合，是<strong>剛替門徒洗完腳</strong>之後。
+      </div>
+
+      <p>下一篇，我們細看那幾個方法的原文。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「思想」與「查考」，兩個很有畫面的字</h2>
+      <p class="card-hook">一個像牛在反芻，一個像人在挖礦</p>
+    </div>
+    <div class="card-body">
+
+      <div class="term-box">
+        <div class="term-original">Hagah<br>思想</div>
+        <div class="term-desc">詩篇第一篇「<strong>晝夜思想</strong>」用的字。<br><br>而這個字的字面，帶有「<strong>低聲咕噥、反覆唸誦</strong>」的意思——同一個字，也用來形容<strong>獅子在獵物上發出的低吼</strong>（賽卅一 4）。<br><br>所以那個畫面不是「安靜地默想」。<br><br>是<strong>反覆地咀嚼、翻來覆去、低聲唸著</strong>。<br><br>——有點像牛在反芻。</div>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🐄</span>
+        而「反芻」這個比方很貼切。<br><br>因為那意味著：<strong>吃進去之後，還要拿出來再嚼一次。</strong><br><br>而詩篇第一篇的下一句是：「他要像一棵樹栽在<strong>溪水旁</strong>，按時候結果子，葉子也不枯乾。」<br><br>——注意那個「按時候」。<br><br>樹不會今天種下去、明天結果。<strong>而它的根一直在水邊。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <div class="term-box">
+        <div class="term-original">Eraunaō<br>查考</div>
+        <div class="term-desc">約翰福音五章三十九節「你們<strong>查考</strong>聖經」用的字。<br><br>這個字帶有<strong>搜索、發掘、追查</strong>的意思——像在礦裡挖東西，或像獵人在追蹤。<br><br>所以「精細讀」的意思，不是把眼睛掃過每一個字。<br><br><strong>是帶著目的去找。</strong></div>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        兩個字合起來，畫出了兩種動作：<br><br><strong>Hagah（思想）</strong>——把已經讀到的，反覆咀嚼。<br><strong>Eraunaō（查考）</strong>——往深處挖，找出還沒看見的。<br><br>——一個是<strong>回頭嚼</strong>，一個是<strong>往下挖</strong>。<br><br>而兩者都不是「快速讀過」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「循序讀」那一項，路加福音的開頭是最好的說明：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">這些事我既從起頭都詳細考察了，就定意要按著次序寫給你，使你知道所學之道都是確實的
+        </p>
+        <p class="scripture-ref">路加福音 一章三至四節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        路加用了三個很嚴謹的詞：<br><br>「<strong>從起頭</strong>」——從源頭開始，不從中間切入。<br>「<strong>詳細考察</strong>」——那是研究的態度。<br>「<strong>按著次序</strong>」——有結構地整理。<br><br>而他的目的是：<strong>「使你知道所學之道都是確實的。」</strong><br><br>——所以「按次序」不是為了整齊。<br><br><strong>是為了讓人站得穩。</strong><br><br>而這正是「循序讀」的價值：<strong>不跳著讀，就不會只拿到片段。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「敬虔讀」那一項，希伯來書用挪亞作例子，很值得注意：</p>
+
+      <div class="highlight">
+        <strong>「動了敬畏的心，預備了一隻方舟」</strong>
+        挪亞聽見的，是「<strong>未見的事</strong>」——當時還沒有下雨，沒有洪水的跡象。<br><br>而他的反應有兩層：<br><br><strong>動了敬畏的心</strong>——那是態度。<br><strong>預備了一隻方舟</strong>——那是行動。<br><br>——所以「敬虔讀」不只是讀的時候心存恭敬。<br><br><strong>它會產生一個動作。</strong><br><br>而那個動作，花了他很多年。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">「開他們的心竅」——那件事需要求</h2>
+      <p class="card-hook">而這一項，方法本身做不到</p>
+    </div>
+    <div class="card-body">
+
+      <p>前四項是<strong>方法</strong>——可以靠紀律做到。</p>
+
+      <p>而第五項不是。</p>
+
+      <div class="scripture">
+        <p class="scripture-text">於是開他們的心竅，使他們能明白聖經</p>
+        <p class="scripture-ref">路加福音 二十四章四十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那句話的處境很值得注意</strong>
+        那是復活那天晚上，對著<strong>門徒</strong>說的。<br><br>——那些人跟了主三年。他們聽過祂親口講解，看過祂行的每一件事。<br><br>而經文說：主要「<strong>開他們的心竅</strong>」，他們才能明白。<br><br>所以那件事，不是資歷可以解決的，也不是熟悉度可以解決的。<br><br><strong>它需要被打開。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔓</span>
+        「開心竅」那個動詞（dianoigō），字面是「<strong>徹底打開</strong>」。<br><br>而同一個字，在同一章稍早出現過：兩個門徒在擘餅時「<strong>他們的眼睛明亮了</strong>」——那個「明亮」是同一個字。<br><br>而在使徒行傳，那個字也用在呂底亞身上：「主就<strong>開導</strong>她的心，叫她留心聽保羅所講的話。」<br><br>——所以那是一個<strong>從外面打開</strong>的動作。<br><br>門把在另一邊。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而這一項，帶出一個很實際的做法：<strong>讀之前，先求。</strong></p>
+
+      <div class="highlight">
+        <strong>而詩篇一一九篇裡，有大量這樣的禱告</strong>
+        「求你<strong>開我的眼睛</strong>，使我看出你律法中的奇妙。」（18 節）<br>「求你<strong>賜我悟性</strong>，我便遵守你的律法。」（34 節）<br>「求你將你的<strong>律例教訓我</strong>。」（33 節）<br>「求你使我明白你的訓詞，我就<strong>思想你的奇事</strong>。」（27 節）<br><br>——那整篇詩，是舊約最長的一篇，主題就是神的話。<br><br>而其中一再出現的，是<strong>祈求</strong>。<br><br>寫那篇詩的人，顯然對神的話極其熟悉。<strong>而他還是在求。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🙏</span>
+        而「求你開我的眼睛，使我<strong>看出</strong>你律法中的<strong>奇妙</strong>」這一句，很有意思。<br><br>——那些奇妙<strong>本來就在那裡</strong>。<br><br>他求的不是「請多放一些奇妙進去」。<br><br>是<strong>「請讓我看得見」</strong>。<br><br>所以問題不在經文，在眼睛。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而第六項——<strong>靠主恩惠能力遵行</strong>——是這六項的終點。</p>
+
+      <div class="highlight">
+        <strong>而主那句話的語氣，值得注意</strong>
+        「你們既<strong>知道</strong>這事，<strong>若是去行</strong>就有福了。」<br><br>——那個「若是」，帶著一點懸念。<br><br>因為知道與去行之間，有一段距離。而那段距離，不會自己消失。<br><br>而雅各用的比喻，正是這件事：<br><br>聽道而不行道的，「就像人對著鏡子看自己本來的面目，<strong>看見，走後，隨即忘了他的相貌如何</strong>」。<br><br>——「看見，走後，隨即忘了」。<br><br>那不是沒看見。<strong>是看見了，然後走開了。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🪞</span>
+        而雅各接著說了正面的版本：<br><br>「惟有詳細察看那全備、使人自由之律法的，<strong>並且時常如此</strong>，這人既不是聽了就忘，乃是實在行出來，就在他所行的事上必然得福。」<br><br>——「<strong>時常如此</strong>」。<br><br>那四個字，把「天天讀」與「去行」接了起來。<br><br>因為<strong>照一次鏡子不夠</strong>。要時常照，而且照了要去洗。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">從很小的份量開始</h2>
+      <p class="card-hook">寫給那個一年讀經計畫又失敗的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>六項方法看完了。而我想在最後說一件很實際的事。</p>
+
+      <div class="highlight">
+        <strong>那六項裡，最難的是「天天」</strong>
+        因為其餘五項，只要那一天你坐下來讀，都有機會做到。<br><br>而「天天」——那是一件<strong>累積型</strong>的事。<br><br>而累積型的事，最大的敵人不是懶，是<strong>訂得太大。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📅</span>
+        「一年讀完整本聖經」的計畫，失敗率很高。<br><br>而失敗的模式通常是：前兩週很順，然後有一天漏掉了，然後補了兩天的份，然後又漏，然後落後太多，然後放棄。<br><br>——而問題不在意志力。<br><br><strong>問題在於那個設計不容許中斷。</strong><br><br>而人生一定會中斷。
+      </div>
+
+      <div class="highlight">
+        <strong>而詩篇第一篇的意象，其實是另一種節奏</strong>
+        「他要像一棵樹栽在<strong>溪水旁</strong>。」<br><br>——樹不會一次把一年的水喝完。<br><br>它只是<strong>一直站在水邊。</strong><br><br>而那個「晝夜思想」（hagah），本來就是<strong>反覆咀嚼</strong>的意思——不是大量吞。<br><br>所以一天讀五節、反覆想一整天，可能比一天衝三章更接近那個字。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而我想留下一個很小的建議：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">份量小到不會失敗</span>
+          小到你在最忙、最累的那一天也做得到。<br>——因為<strong>不中斷</strong>比<strong>讀得多</strong>重要。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">按次序，不跳著讀</span>
+          一卷一卷讀完。<br>——那會逼你讀到那些你不會主動選的部分。<strong>而那些往往是你需要的。</strong>
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">讀之前，先求一句</span>
+          「求你開我的眼睛，使我看出你律法中的奇妙。」<br>——那句話是現成的，詩篇一一九篇十八節。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">讀完，帶走一件可以做的事</span>
+          「你們既知道這事，<strong>若是去行</strong>就有福了。」<br>——一件就好。
+        </div>
+      </div>
+
+      <div class="big-quote">
+        惟喜愛耶和華的律法，晝夜思想，<br>這人便為有福！
+        <cite>— 詩篇 一篇二節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個「偏食」的問題。</p>
+
+      <p>後來我開始按次序讀。而最大的收穫，是那些我原本會跳過的部分。</p>
+
+      <p>因為那些部分，講的往往是我不想聽、卻正好需要聽的事。</p>
+
+      <p>而那棵樹的關鍵，不在於它喝了多少水。</p>
+
+      <p>在於<strong>它一直栽在溪水旁</strong>。</p>
+
+      <p>願你今天，就站回水邊。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  應當怎樣讀聖經 · Threads Series
+</footer>
+
+</body>
+</html>

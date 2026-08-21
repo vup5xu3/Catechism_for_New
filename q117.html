@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教會與社團的分別 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>不是<span>人意的組合</span></h1>
+  <p class="subtitle">教會與社團，有何分別？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">從外面看，兩者很像</h2>
+      <p class="card-hook">而那個相像，正是問題所在</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>如果一個完全不認識信仰的人，來看一次聚會，他會看到什麼？</p>
+
+      <div class="highlight">
+        <strong>他會看到一個運作良好的社團</strong>
+        有固定的聚會時間。<br>有主持人、有講員、有音樂。<br>有幹部、有分工、有財務。<br>有共同的理念，有內部的用語。<br>成員之間互相關心，也會為彼此的事情出力。<br><br>——這些描述，套在任何一個健全的社團上，都成立。<br><br>而那正是這一題要處理的問題：<strong>從外面看，兩者確實很像。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔍</span>
+        而更值得警惕的是：<strong>從裡面看，有時候也很像。</strong><br><br>因為一個教會完全可以用社團的方式運作很多年，而且運作得不錯：<br><br>會員成長、活動豐富、財務健全、氣氛融洽。<br><br>——所以那個分別，不會自動顯出來。<br><br><strong>它需要被說清楚。</strong>
+      </div>
+
+      <p>而聖經給的分別，有四點。</p>
+
+      <p>接下來這幾篇，我想陪你一項一項看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">迦瑪列那句話，把問題問對了</h2>
+      <p class="card-hook">「若是出於神，你們就不能敗壞他們」</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第五章，公會正在商議要把使徒殺了。</p>
+
+      <p>而一位受人尊敬的教法師迦瑪列站起來，說了一段話。</p>
+
+      <div class="highlight">
+        <strong>他先舉了兩個例子</strong>
+        「從前丟大起來，自誇為大，附從他的人約有四百；<strong>他被殺後，附從他的全都散了，歸於無有。</strong>」<br><br>「此後，報名上冊的時候，又有加利利的猶大起來，引誘些百姓跟從他；<strong>他也滅亡，附從他的人也都四散了。</strong>」<br><br>——兩個運動，兩個結局：<strong>領袖一死，就散了。</strong>
+      </div>
+
+      <p>然後他給了那個判準：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">若是出於人，必要敗壞；若是出於神，你們就不能敗壞他們，恐怕你們倒是攻擊神了
+        </p>
+        <p class="scripture-ref">使徒行傳 五章三十八至三十九節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⏳</span>
+        而那個判準的關鍵是：<strong>「出於人」還是「出於神」。</strong><br><br>而檢驗的方式是<strong>時間</strong>。<br><br>——出於人的，會散。<br><br>而迦瑪列說這話的時候，是主後三十幾年。<br><br>那時的教會，是一小群沒有社會地位、剛失去領袖、正在被官方追捕的人。<br><br>而按照他舉的那兩個先例，那個運動應該幾年之內就會消失。
+      </div>
+
+      <div class="highlight">
+        <strong>而這正好對應了第一個分別</strong>
+        <strong>教會的發源地，不是人意的組合，而是神意的招聚。</strong><br><br>——所以它不因為領袖死了而散。<br><br>事實上，那位領袖確實死了。<strong>而那正是整件事的起點，不是終點。</strong>
+      </div>
+
+      <p>那麼，那四個分別是什麼？下一篇，我們排出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四個分別</h2>
+      <p class="card-hook">發源、元首、時效、性質</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、發源地是三合一的神</span>
+          不是人意的組合，而是<strong>神意的招聚</strong>——<br><strong>神呼召，基督救贖，聖靈建立</strong>（彼前二 9～10）。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、以基督為唯一的元首</span>
+          除了基督以外，<strong>所有信徒相互為肢體</strong>，<br><strong>職分雖有分別，地位卻是平等</strong>（弗四 15～16；林前十一 3）。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、教會是永久性的</span>
+          「但願他在教會中，並在基督耶穌裡，得著榮耀，<strong>直到世世代代，永永遠遠</strong>。」（弗三 20～21）
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、是獨一無二的屬靈機體</span>
+          藉著<strong>聖靈的洗</strong>，信徒與基督相連，又與聖徒相通、相連、相交，<strong>合為一個身體</strong>，<br>又是一座<strong>又活、又能生長</strong>的聖殿、靈宮（林前十二 12～13；弗二 19～22；彼前二 5）。
+        </div>
+      </div>
+
+      <p>〔註：以上四點，<strong>不是一種理論或比喻，學者應注意。</strong>〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那個註，值得特別停一下——因為它是這一題最重要的一句。</p>
+
+      <div class="highlight">
+        <strong>「不是一種理論或比喻」</strong>
+        ——這句話在說：那四點，講的是<strong>實情</strong>，不是<strong>形容</strong>。<br><br>「教會是基督的身體」——那不是一個好聽的說法。<br><br>而掃羅在大馬士革路上聽見的那句話，正好證明了這一點：<br><br><strong>「你為甚麼逼迫我？」</strong><br><br>——如果那只是比喻，那個問句就沒有意義。<br><br>而主說的是「<strong>我</strong>」。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而把四點與社團並排來看，分別就清楚了：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>社團</th>
+            <th>教會</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">怎麼開始的</td>
+            <td>有人發起，志同道合的人加入——<strong>人意的組合</strong></td>
+            <td><strong>神呼召，基督救贖，聖靈建立</strong>——神意的招聚</td>
+          </tr>
+          <tr>
+            <td class="src">誰是頭</td>
+            <td>會長、理事長——由人推選，會換人</td>
+            <td><strong>基督，唯一的元首</strong>——不會換</td>
+          </tr>
+          <tr>
+            <td class="src">成員關係</td>
+            <td>有階層、有幹部與一般會員之分</td>
+            <td><strong>相互為肢體；職分有分別，地位平等</strong></td>
+          </tr>
+          <tr>
+            <td class="src">存續</td>
+            <td>會解散、會被時代淘汰</td>
+            <td><strong>永久性的</strong>——「直到世世代代，永永遠遠」</td>
+          </tr>
+          <tr>
+            <td class="src">連結的性質</td>
+            <td>共同的理念、興趣、利益</td>
+            <td><strong>藉著聖靈的洗，與基督相連</strong>——是<strong>屬靈機體</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而最後一行，是那個根本的差別</strong>
+        社團的連結，是<strong>共同點</strong>——大家都喜歡同一件事。<br><br>而共同點是會變的。人的興趣會變，立場會變，處境會變。<br><br>而教會的連結，是<strong>與基督相連，然後彼此相連</strong>。<br><br>——那不是橫向的共同點。<strong>那是先接上同一個源頭，然後彼此才接上。</strong>
+      </div>
+
+      <p>下一篇，我們細看第二點——那個「地位平等」，其實是很激進的。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「職分有分別，地位平等」</h2>
+      <p class="card-hook">而這在當時的世界，是一件激進的事</p>
+    </div>
+    <div class="card-body">
+
+      <p>第二點裡那句「<strong>職分雖有分別，地位卻是平等</strong>」，需要放回當時的處境才看得出分量。</p>
+
+      <div class="highlight">
+        <strong>因為那個世界，是階層森嚴的</strong>
+        羅馬社會有嚴格的階級：公民與非公民、自主的與為奴的、男與女、猶太人與外邦人。<br><br>而在宗教上，也有階層：祭司、利未人、一般百姓、外邦人——連聖殿的院子都是分開的。<br><br>而保羅寫下的是：<br><br>「並不分猶太人、希臘人，自主的、為奴的，或男或女，<strong>因為你們在基督耶穌裡都成為一了。</strong>」（加三 28）
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        而腓利門書那封短信，是這件事最具體的示範。<br><br>那封信是保羅寫給腓利門的，講的是<strong>一個逃跑的奴僕阿尼西母</strong>。<br><br>而保羅請求腓利門收他回去——用的說法是：<br><br>「不再是奴僕，乃是高過奴僕，是<strong>親愛的兄弟</strong>。在我實在是如此，何況在你呢！<strong>這也不拘是按肉體說，是按主說。</strong>」<br><br>——「親愛的兄弟」。<br><br>而保羅還加了一句：「你若以我為同伴，就<strong>收納他，如同收納我一樣</strong>。」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「職分有分別」，同樣是聖經明說的。這兩件事不衝突：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>職分有分別</th>
+            <th>地位卻平等</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">「他所賜的，有使徒，有先知，有傳福音的，有牧師和教師。」（弗四 11）</td>
+            <td>而那些職分的目的是：「<strong>為要成全聖徒，各盡其職，建立基督的身體</strong>。」（弗四 12）</td>
+          </tr>
+          <tr>
+            <td class="src">「豈都是使徒嗎？豈都是先知嗎？」（林前十二 29）——答案是否</td>
+            <td>而「身上肢體人以為軟弱的，<strong>更是不可少的</strong>」（林前十二 22）</td>
+          </tr>
+          <tr>
+            <td class="src">「你們要依從那些引導你們的，且要順服。」（來十三 17）</td>
+            <td>而主說：「<strong>你們都是弟兄</strong>……只有一位是你們的夫子。」（太廿三 8）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而以弗所書四章十二節，把職分的目的講得很清楚：<br><br>「為要<strong>成全聖徒，各盡其職</strong>，建立基督的身體。」<br><br>——注意那個結構：<br><br>那些職分的功能，<strong>不是替聖徒做事</strong>。<br><br>是<strong>裝備聖徒，讓他們各自去做</strong>。<br><br>所以那不是「少數人服事多數人」的架構。<br><br><strong>是「少數人裝備多數人，然後大家一起建造」。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而第三點——<strong>永久性</strong>——以弗所書那節的措辭，值得看：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但願他在教會中，並在基督耶穌裡，得著榮耀，直到世世代代，永永遠遠
+        </p>
+        <p class="scripture-ref">以弗所書 三章二十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        「<strong>在教會中，並在基督耶穌裡</strong>」——這兩者被並列了。<br><br>而「直到世世代代，永永遠遠」——那個時間跨度，是無限的。<br><br>——所以教會不是一個階段性的組織。<br><br>而啟示錄最後的畫面，也印證了這件事：<strong>羔羊的婚筵、聖城新耶路撒冷、神的帳幕在人間。</strong><br><br>那些全部是<strong>群體</strong>的畫面。<br><br>——結局不是一群各自得救的個人。<strong>是那一群。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">當教會用社團的方式運作時</h2>
+      <p class="card-hook">那些症狀，是可以辨認的</p>
+    </div>
+    <div class="card-body">
+
+      <p>那四點如果失守了，會發生什麼？</p>
+
+      <p>我想把症狀列出來——因為它們是可以辨認的。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">若「發源」失守</span>
+          決定事情的方式，會變成<strong>純粹的討論與表決</strong>：可行性、資源、人力。<br><br>而那些都該做——問題是「祂要我們怎麼做」這個問題不見了。<br><br>——而安提阿那一天，聖靈說話的時候，他們正在<strong>敬拜、禁食</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">若「元首」失守</span>
+          會出現<strong>實際上的頭</strong>——某個人的意見成了最終標準。<br><br>而那不一定是有人奪權。往往只是因為<strong>大家都習慣看他</strong>。<br><br>——而哥林多教會的問題正是這個：「我是屬保羅的」、「我是屬亞波羅的」。<br>而保羅的回應是：「<strong>基督是分開的嗎？</strong>」
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">若「平等」失守</span>
+          會出現<strong>階層感</strong>：核心與外圍、重要的人與來聚會的人。<br><br>——而雅各書處理過這件事：有金戒指的人被請去坐好位，窮人被叫「站在那裡」。<br>而雅各的判語是：「<strong>這豈不是你們偏心待人，用惡意斷定人嗎？</strong>」
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">若「屬靈機體」失守</span>
+          連結會變成<strong>橫向的共同點</strong>：年齡相近、背景相似、興趣一致。<br><br>而那樣的連結，會自然形成小圈子——而且會排除掉不像自己的人。<br><br>——而「合為一個身體」的前提，是<strong>先與基督相連</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而這四種症狀有一個共同點：它們都不會馬上出事</strong>
+        一個失去了那四點的教會，<strong>短期內看起來會很正常，甚至更有效率。</strong><br><br>因為社團的運作方式，本來就比較好管理。<br><br>——而問題會在很久以後才顯出來：<br><br>當困難來的時候，那個連結撐不撐得住。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而第四點裡有一個很關鍵的詞：<strong>「藉著聖靈的洗，信徒與基督相連。」</strong></p>
+
+      <div class="highlight">
+        <strong>那個順序，決定了教會的性質</strong>
+        「我們不拘是猶太人，是希臘人，是為奴的，是自主的，都<strong>從一位聖靈受洗，成了一個身體</strong>。」（林前十二 13）<br><br>——注意那個因果：<br><br><strong>先「從一位聖靈受洗」，才「成了一個身體」。</strong><br><br>所以合一不是<strong>努力出來的</strong>，是<strong>已經成立的事實</strong>。<br><br>而以弗所書那句話正好對上：「用和平彼此聯絡，<strong>竭力保守聖靈所賜合而為一的心</strong>。」<br><br>——「<strong>保守</strong>」，不是「製造」。<br><br>那個合一已經有了。我們的責任是不要把它弄破。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕸️</span>
+        我想到輻條與輪軸。<br><br>每一根輻條都連在同一個輪軸上。<br><br>而它們之所以彼此有固定的關係，<strong>不是因為輻條之間互相連接</strong>——<br><br>是因為<strong>它們都連在同一個中心上</strong>。<br><br>而越靠近中心，彼此就越靠近。<br><br>——這正是第四點的結構：<strong>與基督相連，又與聖徒相通、相連、相交。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">兩千年之後，那一群還在</h2>
+      <p class="card-hook">寫給那個對教會感到疲乏的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一切，收回到迦瑪列那句話上。</p>
+
+      <div class="highlight">
+        <strong>「若是出於人，必要敗壞；若是出於神，你們就不能敗壞他們」</strong>
+        他說這話的時候，舉了兩個先例：丟大、加利利的猶大。<br><br>兩個運動，領袖一死，就散了。<br><br>而那時的教會，情況更糟：領袖被公開處決，門徒曾經全部逃走，而現在被官方追捕。<br><br>——按照那兩個先例，它應該幾年之內就消失。<br><br>而兩千年之後，那一群還在。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而中間發生過的事，其實比迦瑪列想像的嚴重得多：<br><br>羅馬的逼迫、內部的分裂、異端的衝擊、腐敗、戰爭、禁令。<br><br>——而每一次「這下應該結束了」的時刻，它都活下來了。<br><br>而主說過：「<strong>陰間的權柄不能勝過他。</strong>」
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而如果你此刻對教會感到疲乏——因為看見了問題、因為被人傷過、因為覺得那裡跟外面沒有兩樣——</p>
+
+      <div class="highlight">
+        <strong>我想留下兩件事</strong>
+        <strong>第一，那些問題是真的。</strong><br>而聖經從來沒有隱瞞——保羅的書信，大半就是在處理教會裡的問題：分黨、爭競、偏心、混亂、道德的問題。<br><br><strong>第二，而那四點，不因為那些問題而失效。</strong><br><br>因為它們的根據不在人身上：<br><br>發源是<strong>神的招聚</strong>；元首是<strong>基督</strong>；存續是<strong>永久的</strong>；連結是<strong>聖靈所立的</strong>。<br><br>——那四項，沒有一項繫於人的表現。
+      </div>
+
+      <div class="big-quote">
+        若是出於神，<br>你們就不能敗壞他們
+        <cite>— 使徒行傳 五章三十九節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個「從外面看很像」的問題。</p>
+
+      <p>而我後來明白：那個相像，本來就是正常的。</p>
+
+      <p>因為教會確實有組織、有分工、有制度——<strong>那些是骨架，是為了讓生命能站起來。</strong></p>
+
+      <p>而分別不在骨架上。</p>
+
+      <p>分別在於：<strong>裡面有沒有那個生命。</strong></p>
+
+      <p>而那個生命，是「神呼召，基督救贖，聖靈建立」的。</p>
+
+      <p>——所以它不是我們維持的。</p>
+
+      <p>願你在疲乏的時候，記得這一件。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  教會與社團的分別 · Threads Series
+</footer>
+
+</body>
+</html>

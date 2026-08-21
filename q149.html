@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>傳福音的方法 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>口傳、文傳、音傳、<span>行傳</span></h1>
+  <p class="subtitle">當用甚麼方法去傳福音？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">「我不會講」——而那只是四種裡的一種</h2>
+      <p class="card-hook">而最後那一種，你每天都在做</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>一提到傳福音，大部分人心裡浮出來的畫面，是<strong>講</strong>。</p>
+
+      <div class="highlight">
+        <strong>然後就卡住了</strong>
+        「我口才不好。」<br>「我怕被問倒。」<br>「我一開口就緊張。」<br><br>——而那個卡住的地方，其實是一個誤會：<br><br><strong>它把「傳福音」等於「口傳」。</strong><br><br>而聖經裡的做法，不只一種。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🧰</span>
+        我想到一個工具箱。<br><br>如果一個工具箱裡只有一把螺絲起子，那很多事都做不成。<br><br>——而這一題打開了那個箱子：<br><br><strong>口傳、文傳、音傳、行傳。</strong><br><br>四種。<br><br>而最後那一種，是每一個人<strong>每天都在做</strong>的——不管你有沒有意識到。
+      </div>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">腓利的那一天，是從一輛車旁邊開始的</h2>
+      <p class="card-hook">而那是一次個人佈道</p>
+    </div>
+    <div class="card-body">
+
+      <p>使徒行傳第八章，腓利本來在撒瑪利亞傳道——那是一場大復興。</p>
+
+      <div class="highlight">
+        <strong>而神把他從那裡調走了</strong>
+        「有主的一個使者對腓利說：起來！向南走，往那從耶路撒冷下迦薩的路上去。<strong>那路是曠野。</strong>」（徒八 26）<br><br>——從一個大有果效的城，被差到<strong>曠野</strong>去。<br><br>而在那條路上，只有<strong>一個人</strong>。
+      </div>
+
+      <p>而接下來的過程，值得一步一步看：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>步驟</th>
+            <th>經文</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">聖靈指示</td>
+            <td>「聖靈對腓利說：<strong>你去！貼近那車走。</strong>」（29 節）</td>
+          </tr>
+          <tr>
+            <td class="src">先聽，再問</td>
+            <td>「腓利就跑到太監那裡，<strong>聽見他念先知以賽亞的書</strong>，便問他說：你所念的，你明白嗎？」（30 節）</td>
+          </tr>
+          <tr>
+            <td class="src">對方開口</td>
+            <td>「他說：<strong>沒有人指教我，怎能明白呢？</strong>」（31 節）</td>
+          </tr>
+          <tr>
+            <td class="src">從他所在的地方開始</td>
+            <td>「腓利就開口<strong>從這經上起</strong>，對他傳講耶穌。」（35 節）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="analogy">
+        <span class="analogy-icon">📜</span>
+        而那個過程裡，有一件事值得注意：<br><br>腓利<strong>先聽</strong>，<strong>再問一個問題</strong>。<br><br>——他沒有一上來就講。<br><br>而他講的內容，是<strong>從對方正在讀的那一段開始</strong>。<br><br>那正是「向甚麼樣的人，就作甚麼樣的人」。
+      </div>
+
+      <div class="highlight">
+        <strong>而這一段，四種方法出現了兩種</strong>
+        <strong>文傳</strong>——那個太監手上拿的，是以賽亞書。<br><br>他在讀。而他讀不懂。<br><br><strong>口傳</strong>——腓利上去，替他講明白。<br><br>——所以那兩種是配合的。<br><br>文字先到，人再到。
+      </div>
+
+      <p>下一篇，我們把四種列出來。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">四種方法，兩種對象</h2>
+      <p class="card-hook">而其中一種，每個人都做得到</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、口傳</span>
+          用口講說。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、文傳</span>
+          用文字——書刊、單張、信件、文章。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">三、音傳</span>
+          用聲音——<strong>無線電廣播</strong>。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">四、行傳</span>
+          用行為——<strong>愛心和聖潔平安的生活</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而對象有兩種</strong>
+        可<strong>向公眾傳</strong>，也可<strong>向個人傳</strong>。<br><br><strong>個人佈道是每個基督徒隨時隨地做得到的</strong>，<br><br>所以應當<strong>盡量做這工作</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那四種，各有各的長處，也各有各的限制：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>方法</th>
+            <th>長處</th>
+            <th>限制</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src"><strong>口傳</strong></td>
+            <td>可以回應對方，當場說清楚</td>
+            <td>需要對方在場、願意聽</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>文傳</strong></td>
+            <td><strong>可以留下來</strong>，可以反覆看，可以到很遠</td>
+            <td>不能回答讀者的問題</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>音傳</strong></td>
+            <td>能到<strong>人去不了的地方</strong></td>
+            <td>不知道誰在聽</td>
+          </tr>
+          <tr>
+            <td class="src"><strong>行傳</strong></td>
+            <td><strong>不需要對方同意</strong>，一直在進行</td>
+            <td>慢，而且需要時間才看得出來</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而第三項「音傳」，寫的是那個時代的形式</strong>
+        「無線電廣播」——那是這段話寫成時，最能跨越距離的工具。<br><br>——而它背後的原則沒有變：<br><br><strong>用當代最能到達人的方式，把福音送過去。</strong><br><br>而保羅正是這樣做的：<br><br>他走的是<strong>羅馬的大道</strong>，用的是<strong>當時的通行語言</strong>，寫的是<strong>當時的書信格式</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「個人佈道」為什麼被特別提出來？</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🫱</span>
+        因為它有一個別的方法都沒有的優勢：<br><strong>關係。</strong><br><br>——一個陌生人講的話，聽的人會先評估「他想做什麼」。<br><br>而一個認識很久的人講的話，聽的人會先想「他為什麼要跟我說這個」。<br><br>而更關鍵的是：<strong>你的生活，他看了很多年。</strong><br><br>所以個人佈道裡，「口傳」和「行傳」是連在一起的。
+      </div>
+
+      <p>下一篇，我們看那四種在聖經裡的樣子。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">「這些事寫下來，是要叫你們信」</h2>
+      <p class="card-hook">文傳，是聖經自己說明過的方法</p>
+    </div>
+    <div class="card-body">
+
+      <p>約翰福音在結尾，說明了自己被寫下來的原因：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">但記這些事要叫你們信耶穌是基督，是神的兒子，並且叫你們信了他，就可以因他的名得生命
+        </p>
+        <p class="scripture-ref">約翰福音 二十章三十一節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那節說明了「文傳」的性質</strong>
+        「<strong>記這些事，要叫你們信</strong>」——所以那卷書本身，就是一份福音文字。<br><br>而路加福音的開頭，也說了同樣的話：<br><br>「這是<strong>要使你知道所學之道都是確實的</strong>。」（路一 4）<br><br>——所以四福音書，本來就是<strong>寫給人讀、好叫人信</strong>的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">📚</span>
+        而文字有一個很特別的能力：<strong>它會活得比人久。</strong><br><br>保羅寫信給腓立比教會的時候，是在監獄裡。<br><br>——他不知道那封信會被讀兩千年。<br><br>而那個太監在曠野的路上讀的以賽亞書，是<strong>七百年前</strong>寫的。<br><br>而它剛好在那一天，被他讀到那一段。
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「文傳」還有一個好處，是這一題沒有明說、卻很實際的：<br><br><strong>它讓對方可以自己讀，不必當場回應。</strong><br><br>——因為口傳有一個壓力：<br><br>對方必須<strong>當著你的面</strong>決定要不要接受。<br><br>而一份留下來的文字，他可以在自己的時間、自己的心情裡看。<br><br>——而人心裡真正的鬆動，常常發生在<strong>沒有人在旁邊</strong>的時候。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「行傳」那一項，聖經給的分量很重：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">太五 16</td>
+            <td>「叫他們<strong>看見你們的好行為</strong>，便將榮耀歸給你們在天上的父。」</td>
+          </tr>
+          <tr>
+            <td class="src">彼前三 1～2</td>
+            <td>「若有不信從道理的丈夫，他們雖然不聽道，也可以<strong>因妻子的品行被感化過來</strong>……這正是因看見你們有<strong>貞潔的品行和敬畏的心</strong>。」</td>
+          </tr>
+          <tr>
+            <td class="src">林後三 2～3</td>
+            <td>「你們就是我們的薦信……<strong>你們明顯是基督的信</strong>……不是用墨寫的，乃是用永生神的靈寫的。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而彼得前書那一段，非常值得注意。<br><br>「他們<strong>雖然不聽道</strong>，也可以因妻子的品行被感化過來。」<br><br>——「<strong>雖然不聽道</strong>」。<br><br>所以那一段處理的，正是最難的情況：<strong>對方根本不想聽。</strong><br><br>而那時候，剩下的方法只有一種：<strong>活給他看。</strong><br><br>而經文說：那是有效的。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">✉️</span>
+        而哥林多後書那個比喻，我很喜歡：<br><br>「<strong>你們明顯是基督的信</strong>……不是用墨寫的。」<br><br>——所以每一個信徒，都是一封信。<br><br>而那封信，別人天天在讀。<br><br>不管你有沒有打算讓他讀。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">個人佈道：「隨時隨地做得到」</h2>
+      <p class="card-hook">而聖經裡最重要的幾次談話，都是一對一的</p>
+    </div>
+    <div class="card-body">
+
+      <p>本題說：<strong>個人佈道是每個基督徒隨時隨地做得到的。</strong></p>
+
+      <p>而福音書裡，主自己就常常這樣做。</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">尼哥底母</span>
+          一個夜裡來找祂的法利賽人。<br><br>——而那次談話裡，出現了整本聖經最有名的一節：約翰福音三章十六節。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">撒瑪利亞的婦人</span>
+          一個中午在井邊打水的女人。<br><br>——那是一次完整的對話：從水，講到活水，講到她的生活，講到敬拜。<br><br>而結果是<strong>一城的人</strong>出來見祂。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">撒該</span>
+          一個爬到樹上的稅吏長。<br><br>——主說：「今天我必住在你家裡。」<br><br>而那一天結束時，撒該說：「我把所有的一半給窮人。」
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">安得烈與彼得</span>
+          「他先找著自己的哥哥西門，對他說：<strong>我們遇見彌賽亞了。</strong>」（約一 41）<br><br>——安得烈在聖經裡出現不多。<br><br>而他每一次出現，幾乎都是<strong>在把人帶到主面前</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而最後那一項，我覺得最值得學</strong>
+        安得烈做的事，是<strong>「找著自己的哥哥」</strong>。<br><br>——不是陌生人，是<strong>家裡人</strong>。<br><br>而他說的話很短：「我們遇見彌賽亞了。」<br><br>然後——「<strong>於是領他去見耶穌。</strong>」<br><br>那就是全部。<br><br>而那個被帶去的哥哥，後來是彼得。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而個人佈道有一個很重要的原則：<strong>不是每一次都要講完。</strong></p>
+
+      <div class="highlight">
+        <strong>保羅講過一段話，把這件事講得很清楚</strong>
+        「我栽種了，亞波羅澆灌了，惟有<strong>神叫他生長</strong>。<br><br>可見<strong>栽種的算不得甚麼，澆灌的也算不得甚麼</strong>；只在那叫他生長的神。」（林前三 6～7）<br><br>——「栽種」與「澆灌」是<strong>兩個人</strong>做的。<br><br>而叫他生長的，是第三位。<br><br>所以你那一次談話，也許只是<strong>澆水</strong>。<br><br>——而那也算數。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🌱</span>
+        而那個觀念，會拿掉很大的壓力。<br><br>因為如果每一次都要「成交」，那每一次沒有成，就是失敗。<br><br>——而如果那是一個接力，那我這一棒只要跑好我的。<br><br>而那個太監，是先讀了以賽亞書，才遇見腓利的。<br><br>誰把那卷書給他的？聖經沒有寫。<br><br><strong>而那個人也有份。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而「隨時隨地」那四個字，其實在講一件很輕的事。</p>
+
+      <div class="highlight">
+        <strong>因為它不需要場合、不需要準備、不需要頭銜</strong>
+        腓利是<strong>在路上</strong>。<br>主是<strong>在井邊</strong>、<strong>在樹下</strong>、<strong>在夜裡</strong>。<br>安得烈是<strong>找他哥哥</strong>。<br>那撒瑪利亞婦人是<strong>跑回城裡</strong>。<br><br>——沒有一個是在會堂裡。<br><br>而彼得的說法是：「<strong>有人問你們心中盼望的緣由，就要常作準備。</strong>」（彼前三 15）<br><br>——「有人<strong>問</strong>你們」。<br><br>所以最自然的開始，往往是<strong>回答一個問題</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕯️</span>
+        而彼得那節後面，還加了兩個字，很多人會漏掉：<br><br>「以<strong>溫柔</strong>、<strong>敬畏</strong>的心回答各人。」<br><br>——溫柔，是對人的態度。<br><br>敬畏，是對神的態度。<br><br>而缺了溫柔的那種傳講，常常把人推得更遠。
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「領他去見耶穌」</h2>
+      <p class="card-hook">寫給那個覺得自己什麼都不會的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>四種方法裡，如果你覺得每一種都做不到——</p>
+
+      <div class="highlight">
+        <strong>我想把安得烈那一句放在這裡</strong>
+        「他先找著自己的哥哥西門，對他說：<strong>我們遇見彌賽亞了。</strong><br><br><strong>於是領他去見耶穌。</strong>」（約一 41～42）<br><br>——兩個動作：<strong>說一句話</strong>，<strong>領他去</strong>。<br><br>而那句話只有八個字。<br><br>——他沒有解釋教義。他沒有回答問題。<br><br>他只是把人<strong>帶到那一位面前</strong>。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🤝</span>
+        而那個瞎子的說法，也是同樣的輕：<br><br>「他是個罪人不是，我不知道；<strong>有一件事我知道，從前我是眼瞎的，如今能看見了。</strong>」（約九 25）<br><br>——「有一件事我知道」。<br><br>所以你不需要知道所有的事。<br><br><strong>你只需要說出你知道的那一件。</strong>
+      </div>
+
+      <div class="big-quote">
+        於是領他去見耶穌
+        <cite>— 約翰福音 一章四十二節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那個工具箱。</p>
+
+      <p>口傳、文傳、音傳、行傳。</p>
+
+      <p>——而如果口傳你真的不行，那還有三種。</p>
+
+      <p>而最後那一種，你已經在做了。</p>
+
+      <p>因為「你們明顯是基督的信」——</p>
+
+      <p>那封信，別人天天在讀。</p>
+
+      <p>而那不代表你要活得完美。</p>
+
+      <p>因為福音的內容，本來就不是「看我多好」。</p>
+
+      <p>是<strong>「有一位，把我這樣的人接了過來」</strong>。</p>
+
+      <p>——而那件事，跌倒過的人講起來，反而更有力量。</p>
+
+      <p>那四個長大痲瘋的人，說的是：「我們去了那裡，那邊有吃的。」</p>
+
+      <p>願你今天，想起一個名字。</p>
+
+      <p>而下一次見面的時候，也許就是那一句話。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  傳福音的方法 · Threads Series
+</footer>
+
+</body>
+</html>

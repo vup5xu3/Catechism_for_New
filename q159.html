@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>病與罪有關時當怎麼做 — Threads 系列</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700;900&family=Noto+Sans+TC:wght@300;400;500&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --gold:            #C9A84C;
+  --gold-light:      #E8D5A3;
+  --gold-dim:        #8B6914;
+  --ink:             #1A1208;
+  --parchment:       #F7F0E3;
+  --parchment-dark:  #EDE3CC;
+  --thread-red:      #8B1A1A;
+  --thread-red-light:#C44040;
+  --smoke:           #6B6355;
+  --cream:           #FAF6EE;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(201,168,76,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(139,26,26,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px),
+    repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(201,168,76,0.015) 80px, rgba(201,168,76,0.015) 81px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.site-header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 80px 24px 60px;
+  border-bottom: 1px solid rgba(201,168,76,0.2);
+}
+.site-header .eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.site-header h1 {
+  font-size: clamp(32px, 6vw, 64px);
+  font-weight: 900;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(201,168,76,0.3);
+}
+.site-header h1 span { color: var(--gold); }
+.site-header .subtitle {
+  font-size: 15px;
+  color: rgba(247,240,227,0.5);
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+.thread-line {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+}
+.thread-line::after {
+  content: '';
+  width: 2px;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(201,168,76,0.6), rgba(139,26,26,0.4));
+  display: block;
+}
+
+.chapter {
+  position: relative;
+  z-index: 5;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--parchment);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.4),
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+}
+.card.gold::before   { background: linear-gradient(to bottom, var(--gold), var(--gold-dim)); }
+.card.red::before    { background: linear-gradient(to bottom, var(--thread-red-light), var(--thread-red)); }
+.card.deep::before   { background: linear-gradient(to bottom, #4A7A5C, #2D5240); }
+.card.blue::before   { background: linear-gradient(to bottom, #4A6A9A, #2D4A7A); }
+.card.purple::before { background: linear-gradient(to bottom, #7A4A9A, #4A2D7A); }
+.card.final::before  { background: linear-gradient(135deg, var(--gold), var(--thread-red-light), var(--gold)); }
+
+.card.final {
+  background: linear-gradient(160deg, #1A1208 0%, #2A1E10 100%);
+}
+.card.final .card-title           { color: var(--gold); }
+.card.final .card-body p          { color: rgba(247,240,227,0.85); }
+.card.final .scripture-text       { color: var(--gold-light); }
+.card.final .scripture-ref        { color: rgba(201,168,76,0.6); }
+.card.final .scripture::before,
+.card.final .scripture::after     { background: rgba(201,168,76,0.15); }
+.card.final .big-quote            { color: var(--gold-light); }
+.card.final .chapter-tag          { color: var(--gold-light); opacity: 0.5; }
+.card.final .highlight            { background: rgba(201,168,76,0.08); color: var(--gold-light); border-color: var(--gold); }
+.card.final .highlight > strong:first-child { color: rgba(201,168,76,0.5); }
+
+.card-header {
+  padding: 32px 36px 24px 44px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  position: relative;
+}
+.chapter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.chapter-tag .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.card.gold   .chapter-tag .num { background: var(--gold-dim); }
+.card.red    .chapter-tag .num { background: var(--thread-red); }
+.card.deep   .chapter-tag .num { background: #2D5240; }
+.card.blue   .chapter-tag .num { background: #2D4A7A; }
+.card.purple .chapter-tag .num { background: #4A2D7A; }
+.card.final  .chapter-tag .num { background: var(--ink); }
+
+.card-title {
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.card-hook {
+  font-size: 14px;
+  color: var(--smoke);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.card-body {
+  padding: 28px 36px 32px 44px;
+}
+.card-body p {
+  font-size: 15px;
+  line-height: 1.95;
+  color: #2A2010;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+.card-body p:last-child { margin-bottom: 0; }
+
+.highlight {
+  background: var(--parchment-dark);
+  border-left: 3px solid;
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #1A1208;
+}
+.card.gold   .highlight { border-color: var(--gold); }
+.card.red    .highlight { border-color: var(--thread-red-light); }
+.card.deep   .highlight { border-color: #4A7A5C; }
+.card.blue   .highlight { border-color: #4A6A9A; }
+.card.purple .highlight { border-color: #7A4A9A; }
+.card.final  .highlight { border-color: var(--gold); }
+
+.highlight > strong:first-child {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.scripture {
+  text-align: center;
+  padding: 20px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+.scripture::before, .scripture::after {
+  content: '';
+  position: absolute;
+  left: 40px; right: 40px;
+  height: 1px;
+  background: rgba(26,18,8,0.12);
+}
+.scripture::before { top: 0; }
+.scripture::after  { bottom: 0; }
+.scripture-text {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.scripture-ref {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--smoke);
+  text-transform: uppercase;
+}
+
+.analogy {
+  background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.03));
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #3A2A10;
+  font-style: italic;
+}
+.analogy-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.big-quote {
+  text-align: center;
+  padding: 28px 20px;
+  font-size: clamp(17px, 3vw, 22px);
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--ink);
+  position: relative;
+}
+.big-quote::before {
+  content: '"';
+  font-size: 80px;
+  color: rgba(201,168,76,0.2);
+  position: absolute;
+  top: -10px; left: 16px;
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+.big-quote cite {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 2px;
+  color: var(--smoke);
+  margin-top: 12px;
+  font-family: 'Cinzel', serif;
+}
+
+.term-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+}
+.term-original {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+.term-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--smoke);
+}
+
+.depth-label {
+  display: inline-block;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.depth-label.deep-tag  { background: rgba(26,18,8,0.08);    color: var(--smoke); }
+.depth-label.plain-tag { background: rgba(201,168,76,0.15); color: var(--gold-dim); }
+
+.concentric { display: flex; flex-direction: column; gap: 4px; margin: 20px 0; }
+.concentric-ring {
+  padding: 12px 16px 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+}
+.concentric-ring .ring-label {
+  font-weight: 700;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 2px;
+}
+.r1 { background: rgba(201,168,76,0.15);  border-left: 4px solid var(--gold); }
+.r2 { background: rgba(139,26,26,0.08);   border-left: 4px solid var(--thread-red-light); }
+.r3 { background: rgba(74,106,154,0.08);  border-left: 4px solid #4A6A9A; }
+.r4 { background: rgba(74,122,92,0.08);   border-left: 4px solid #4A7A5C; }
+.r5 { background: rgba(122,74,154,0.08);  border-left: 4px solid #7A4A9A; }
+
+.card-divider {
+  height: 1px;
+  background: rgba(26,18,8,0.08);
+  margin: 20px 0;
+}
+
+.section-gap { height: 8px; }
+
+.site-footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 60px 24px 80px;
+  color: rgba(247,240,227,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-family: 'Cinzel', serif;
+}
+
+/* 額外元件：對照表（沿用羊皮紙配色） */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.compare-table th {
+  background: rgba(74,106,154,0.12);
+  color: var(--ink);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 10px 10px;
+  text-align: left;
+  border-bottom: 2px solid rgba(74,106,154,0.3);
+}
+.compare-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(26,18,8,0.08);
+  vertical-align: top;
+  color: #2A2010;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table td.src {
+  font-weight: 600;
+  white-space: nowrap;
+  color: #2D4A7A;
+}
+
+@media (max-width: 480px) {
+  .card-header, .card-body { padding-left: 28px; padding-right: 20px; }
+  .compare-table { font-size: 11.5px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="eyebrow">生命散記 · Threads Reflections</div>
+  <h1>認罪，<span>然後請人來</span></h1>
+  <p class="subtitle">假如所患的病與罪惡有關時，信徒應該怎麼做？</p>
+</header>
+
+
+<!-- ══════════════════════════════════
+     第一章：分享（gold）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card gold">
+
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">1</span> Chapter One · 分享</div>
+      <h2 class="card-title">最難的那一步，是開口找人</h2>
+      <p class="card-hook">而聖經吩咐的，正是這一步</p>
+    </div>
+
+    <div class="card-body">
+
+      <p>認罪這件事，如果只是自己跟神講，其實不算太難。</p>
+
+      <div class="highlight">
+        <strong>難的是下一步</strong>
+        <strong>請人來。</strong><br><br>——因為那意味著：<br><br>要有人知道我出了狀況。<br><br>要有人聽見我心裡那件事。<br><br>要在別人面前，承認自己不好。<br><br>而那一步，很多人卡了很多年。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🚪</span>
+        我想到一個人在家裡受了傷。<br><br>他可以自己貼個膠布，撐一撐。<br><br>——而如果傷到某個程度，他必須<strong>打電話</strong>。<br><br>而打那通電話的難度，往往比傷本身還高。<br><br>因為那等於承認：<strong>我一個人處理不了。</strong>
+      </div>
+
+      <p>而這一題吩咐的，就是那通電話。</p>
+
+      <p>接下來這幾篇，我想陪你看。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第二章：引導（red）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card red">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">2</span> Chapter Two · 引導</div>
+      <h2 class="card-title">拿單只講了一個故事</h2>
+      <p class="card-hook">而大衛說了四個字</p>
+    </div>
+    <div class="card-body">
+
+      <p>撒母耳記下第十二章，是聖經裡最有名的一次認罪。</p>
+
+      <div class="highlight">
+        <strong>而在那之前，大衛藏了將近一年</strong>
+        他犯了那件事，又用另一件事把它蓋起來。<br><br>而那一段時間，他照樣作王，照樣治國。<br><br>——而詩篇三十二篇寫的，正是那段日子：<br><br>「我<strong>閉口不認罪</strong>的時候，因終日唉哼而骨頭枯乾。」
+      </div>
+
+      <p>而拿單來了。他沒有指著大衛罵，他講了一個故事：</p>
+
+      <div class="highlight">
+        <strong>那個故事</strong>
+        一個富戶有許多牛羊。一個窮人只有一隻小母羊羔，「<strong>與他兒女一同長大，吃他所吃的，喝他所喝的，睡在他懷中，在他看來如同女兒一樣</strong>」。<br><br>而有客人來到富戶那裡，他捨不得動自己的牛羊，就<strong>取了那窮人的羊羔</strong>。<br><br>——而大衛聽完，「就<strong>甚惱怒</strong>那人」，說：「行這事的人該死！」<br><br>然後拿單說了那句話：<br><br>「<strong>你就是那人！</strong>」
+      </div>
+
+      <p>而大衛的回應，只有四個字：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">我得罪耶和華了
+        </p>
+        <p class="scripture-ref">撒母耳記下 十二章十三節</p>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        ——沒有解釋。沒有辯白。沒有「你不知道當時的情況」。<br><br>四個字。<br><br>而拿單的回答，來得同樣快：<br><br>「<strong>耶和華已經除掉你的罪，你必不至於死。</strong>」<br><br>——所以那一年的重擔，在<strong>四個字</strong>之後就卸下來了。
+      </div>
+
+      <div class="highlight">
+        <strong>而那件事還有一個細節：拿單是被差來的</strong>
+        「耶和華<strong>差遣</strong>拿單去見大衛。」（撒下十二 1）<br><br>——那個轉機，不是大衛自己想通的。<br><br>是<strong>有人來了</strong>。<br><br>而那正是這一題第二半段講的事。
+      </div>
+
+      <p>下一篇，我們把答案說清楚。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第三章：破題（deep）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card deep">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">3</span> Chapter Three · 破題</div>
+      <h2 class="card-title">兩件事</h2>
+      <p class="card-hook">自己做的，和請人一起做的</p>
+    </div>
+    <div class="card-body">
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">一、自己這一邊</span>
+          應當<strong>痛悔認罪，求主赦免</strong>。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">二、請人來</span>
+          也「應該<strong>請教會的長老來</strong>，<br>他們可以<strong>奉主的名，用油抹他，為他禱告</strong>」。<br><br>（雅五 13～16）
+        </div>
+      </div>
+
+      <p>〔註：長老一詞，可參看提前五 17、彼前五 1～3，則知新約教會中的長老，<strong>有時含義比較寬廣</strong>。〕</p>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而那兩件事，缺一不可：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>痛悔認罪</th>
+            <th>請人來</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">方向</td>
+            <td><strong>向神</strong></td>
+            <td><strong>向人</strong>（而他們奉主的名）</td>
+          </tr>
+          <tr>
+            <td class="src">誰能做</td>
+            <td>只有自己</td>
+            <td>需要開口</td>
+          </tr>
+          <tr>
+            <td class="src">難在哪裡</td>
+            <td>難在<strong>承認</strong></td>
+            <td>難在<strong>被知道</strong></td>
+          </tr>
+          <tr>
+            <td class="src">缺了會怎樣</td>
+            <td>那就只是找人幫忙，根沒有處理</td>
+            <td>那就一直是一個人的事</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而「痛悔」那兩個字，用得很準</strong>
+        ——不是「知道錯了」。<br><br>是<strong>心裡真的痛</strong>。<br><br>而詩篇五十一篇——大衛在那件事之後寫的——用的說法是：<br><br>「神所要的祭就是<strong>憂傷的靈</strong>；神啊，<strong>憂傷痛悔的心</strong>，你必不輕看。」（詩五一 17）<br><br>——「<strong>你必不輕看</strong>」。<br><br>那是一句很溫柔的保證。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而那個註，處理了一個很實際的問題。</p>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔎</span>
+        因為有人會想：<strong>「我們這裡沒有『長老』這個職稱怎麼辦？」</strong><br><br>——而那個註說：<br><br>新約教會中的「長老」一詞，<strong>有時含義比較寬廣</strong>。<br><br>而它給了兩處經文去看：<br><br><strong>提前五 17</strong>——「那善於管理教會的<strong>長老</strong>……那勞苦傳道教導人的，更當如此。」<br><br><strong>彼前五 1～3</strong>——「我這作<strong>長老</strong>、作基督受苦的見證……務要牧養在你們中間神的群羊。」<br><br>——所以那個詞指的，是<strong>教會裡負責牧養、屬靈上帶領的人</strong>。
+      </div>
+
+      <p>下一篇，我們看雅各書那一整段。</p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第四章：研究（blue）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card blue">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">4</span> Chapter Four · 研究</div>
+      <h2 class="card-title">雅各書五章，是一份完整的指示</h2>
+      <p class="card-hook">而它把病、罪、禱告，寫在一起</p>
+    </div>
+    <div class="card-body">
+
+      <div class="scripture">
+        <p class="scripture-text">你們中間有病了的呢，他就該請教會的長老來；他們可以奉主的名用油抹他，為他禱告。出於信心的祈禱要救那病人，主必叫他起來；他若犯了罪，也必蒙赦免
+        </p>
+        <p class="scripture-ref">雅各書 五章十四至十五節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而那一段裡，主動的一方是「病人」</strong>
+        「<strong>他就該請</strong>教會的長老來。」<br><br>——不是長老自己發現、自己上門。<br><br>是<strong>病人開口</strong>。<br><br>而那正是這一題最難的一步：<strong>要自己說。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（一）</strong>
+        而「<strong>他若犯了罪，也必蒙赦免</strong>」那句話，措辭很有分寸。<br><br>——「<strong>若</strong>」。<br><br>它沒有斷定每一個病都是罪。<br><br>而它預備好了那個可能：<strong>如果有，那也會被處理。</strong><br><br>——所以那句話同時做了兩件事：<br><br>它<strong>不定罪</strong>，而它<strong>留了出口</strong>。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而下一節，把範圍從「長老」擴大到了「所有人」：</p>
+
+      <div class="scripture">
+        <p class="scripture-text">所以你們要彼此認罪，互相代求，使你們可以得醫治。義人祈禱所發的力量是大有功效的
+        </p>
+        <p class="scripture-ref">雅各書 五章十六節</p>
+      </div>
+
+      <div class="highlight">
+        <strong>而「彼此」與「互相」，是雙向的</strong>
+        ——那不是「病的人向健康的人認罪」。<br><br>是<strong>彼此</strong>。<br><br>所以那個場合裡，沒有一邊是站在高處的。<br><br>而那也說明了：<strong>去的那個人，自己也是需要認罪的人。</strong>
+      </div>
+
+      <div class="highlight">
+        <strong>研究小結（二）</strong>
+        而那段的結尾，雅各舉了以利亞的例子，並且加了一句話：<br><br>「以利亞與我們是<strong>一樣性情的人</strong>。」（雅五 17）<br><br>——那句話是特意加的。<br><br>因為人一聽到「義人祈禱所發的力量是大有功效的」，馬上會想：<strong>那要很屬靈的人才行。</strong><br><br>而雅各把那個念頭堵住了。<br><br>——所以來為你禱告的，不必是完人。<br><br>而那也意味著：<strong>你也可以去為別人禱告。</strong>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>而「用油抹他」那個動作，聖經裡也有前例：</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>經文</th>
+            <th>內容</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="src">可六 13</td>
+            <td>十二門徒出去，「<strong>用油抹了許多病人，治好他們</strong>」。</td>
+          </tr>
+          <tr>
+            <td class="src">路十 34</td>
+            <td>好撒瑪利亞人「<strong>用油和酒倒在他的傷處</strong>，包裹好了」。</td>
+          </tr>
+          <tr>
+            <td class="src">雅五 14</td>
+            <td>「<strong>奉主的名</strong>用油抹他，為他禱告。」</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <strong>而重點在那五個字：「奉主的名」</strong>
+        ——所以那個動作的效力，不在油上面。<br><br>在<strong>那個名字</strong>上面。<br><br>而油在聖經裡，常常帶著<strong>分別為聖、被膏立</strong>的意思。<br><br>——所以那個動作說的是：<strong>這個人，此刻被交在主手裡。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第五章：深論（purple）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card purple">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">5</span> Chapter Five · 深論</div>
+      <h2 class="card-title">為什麼「說出來」這麼重要</h2>
+      <p class="card-hook">因為藏著的東西，會長大</p>
+    </div>
+    <div class="card-body">
+
+      <p>「彼此認罪」——為什麼一定要有人聽見？</p>
+
+      <div class="highlight">
+        <strong>因為罪在暗處，力量是最大的</strong>
+        ——約翰壹書用的比喻，是<strong>光與暗</strong>：<br><br>「我們若在<strong>光明中行</strong>，如同神在光明中，就<strong>彼此相交</strong>，他兒子耶穌的血也洗淨我們一切的罪。」（約壹一 7）<br><br>——注意那個連結：<br><br><strong>在光明中行 → 彼此相交 → 血洗淨。</strong><br><br>三件事，串在一起。
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🔦</span>
+        而我想到一件很簡單的事。<br><br>一件在心裡藏了很久的事，講出來之後，常常會發現：<br><br><strong>它沒有原來想的那麼巨大。</strong><br><br>——不是那件事變小了。<br><br>是它<strong>從暗處被拿到光下面</strong>了。<br><br>而在暗處，一個影子可以看起來像一整面牆。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label deep-tag">📖 深度層次</span>
+      <p>而聖經裡，「說出來」還有一個更深的作用。</p>
+
+      <div class="highlight">
+        <strong>它讓那件事有了「見證人」</strong>
+        ——當有人聽見你認了那件罪，並且為你禱告，<br><br>那個人也就成了<strong>「你已經處理過那件事」的見證</strong>。<br><br>而那在往後的日子很有用。<br><br>因為那控告者的手法，正是<strong>把處理過的事再翻出來</strong>。<br><br>而那時候，你可以指著那一天說：<strong>那件事，我認了，也求了赦免。</strong>
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">⚖️</span>
+        而啟示錄那一節，把兩邊都寫了：<br><br>「因為那<strong>在我們神面前晝夜控告我們弟兄的</strong>，已經被摔下去了。<br><br>弟兄勝過他，是<strong>因羔羊的血</strong>和<strong>自己所見證的道</strong>。」（啟十二 10～11）<br><br>——「羔羊的血」和「自己所見證的道」。<br><br>兩樣。
+      </div>
+
+      <div class="card-divider"></div>
+
+      <span class="depth-label plain-tag">💡 淺白說明</span>
+      <p>而請人來的時候，有幾件事值得先知道：</p>
+
+      <div class="concentric">
+        <div class="concentric-ring r1">
+          <span class="ring-label">你不需要講得很完整</span>
+          大衛只說了四個字：<strong>「我得罪耶和華了。」</strong><br><br>——而那就夠了。
+        </div>
+        <div class="concentric-ring r2">
+          <span class="ring-label">來的人，也是需要恩典的人</span>
+          「以利亞與我們是<strong>一樣性情的人</strong>。」<br><br>——所以那不是被審問，是<strong>兩個罪人一起跪下</strong>。
+        </div>
+        <div class="concentric-ring r3">
+          <span class="ring-label">那不會拖很久</span>
+          拿單的回答，是<strong>緊接著</strong>來的：<br><br>「<strong>耶和華已經除掉你的罪。</strong>」<br><br>——那一年的重擔，在四個字之後就結束了。
+        </div>
+        <div class="concentric-ring r4">
+          <span class="ring-label">而赦免的根據，不在你的表現上</span>
+          「我們若認自己的罪，<strong>神是信實的，是公義的</strong>，必要赦免我們的罪。」（約壹一 9）<br><br>——「信實」與「公義」。<br><br>那兩個詞，形容的是<strong>神</strong>。
+        </div>
+      </div>
+
+      <div class="highlight">
+        <strong>而約翰壹書那節，是整件事最穩的地基</strong>
+        因為它說：赦免是<strong>因為祂信實、祂公義</strong>。<br><br>——不是「因為你認得夠誠懇」。<br><br>而那意味著：<strong>那個結果，是有保證的。</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     第六章：結論與溫馨（final）
+══════════════════════════════════ -->
+<div class="thread-line"></div>
+<div class="section-gap"></div>
+<div class="thread-line"></div>
+
+<div class="chapter">
+  <div class="card final">
+    <div class="card-header">
+      <div class="chapter-tag"><span class="num">6</span> Chapter Six · 結論與溫馨</div>
+      <h2 class="card-title">「憂傷痛悔的心，你必不輕看」</h2>
+      <p class="card-hook">寫給那個已經在心裡繞很久的你</p>
+    </div>
+    <div class="card-body">
+
+      <p>我想把這一題，收在大衛那篇詩上。</p>
+
+      <div class="highlight">
+        <strong>詩篇五十一篇，是他在那件事之後寫的</strong>
+        「神啊，求你按你的慈愛憐恤我！按你豐盛的慈悲塗抹我的過犯！」<br><br>「求你用<strong>牛膝草</strong>潔淨我，我就乾淨；求你洗滌我，我就<strong>比雪更白</strong>。」<br><br>「神啊，求你為我<strong>造清潔的心</strong>，使我裡面重新有正直的靈。」<br><br>——而那篇的最後，他求的是：<br><br>「求你使我仍得救恩之樂，賜我樂意的靈扶持我，<strong>我就把你的道指教有過犯的人</strong>。」
+      </div>
+
+      <div class="analogy">
+        <span class="analogy-icon">🕊️</span>
+        「<strong>我就把你的道指教有過犯的人。</strong>」<br><br>——那是最後那一句。<br><br>而那意味著：<strong>那件事不是終點。</strong><br><br>一個被赦免過的人，後來會成為<strong>幫助別人的人</strong>。<br><br>就像主對彼得說的：<strong>「你回頭以後，要堅固你的弟兄。」</strong>
+      </div>
+
+      <div class="big-quote">
+        神啊，憂傷痛悔的心，<br>你必不輕看
+        <cite>— 詩篇 五十一篇十七節</cite>
+      </div>
+
+      <div class="card-divider"></div>
+
+      <p>回到我開頭那通電話。</p>
+
+      <p>打那通電話，等於承認：我一個人處理不了。</p>
+
+      <p>——而那正是聖經吩咐的。</p>
+
+      <p>雅各書寫得很清楚：<strong>「他就該請教會的長老來。」</strong></p>
+
+      <p>而那句話裡，最溫柔的部分是：</p>
+
+      <p><strong>那不是你要自己撐到好起來。</strong></p>
+
+      <p>那是<strong>有人可以來</strong>。</p>
+
+      <p>而拿單那一天來的時候，大衛已經藏了將近一年。</p>
+
+      <p>而那一年結束的方式，是四個字。</p>
+
+      <p>然後——「<strong>耶和華已經除掉你的罪。</strong>」</p>
+
+      <p>願你今天，打那通電話。</p>
+
+    </div>
+  </div>
+</div>
+
+<div class="thread-line"></div>
+
+
+<footer class="site-footer">
+  病與罪有關時當怎麼做 · Threads Series
+</footer>
+
+</body>
+</html>
