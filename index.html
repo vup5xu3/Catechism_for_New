@@ -353,8 +353,137 @@
         .pg-hint { margin-top: 5px; font-size: 11px; color: var(--smoke); line-height: 1.75; }
         .pg-sec { display: flex; align-items: center; gap: 12px; margin-top: 13px; max-width: 430px; }
 
+
+        /* ── 測驗：入口按鈕 ── */
+        .qz-launch {
+            display: inline-flex; align-items: center; gap: 7px;
+            margin-top: 14px; padding: 9px 18px;
+            font-family: inherit; font-size: 13px; letter-spacing: 1px;
+            border: 1px solid var(--gold); background: var(--gold); color: #fff;
+            cursor: pointer; transition: .18s;
+        }
+        .qz-launch:hover { background: #B8963C; border-color: #B8963C; }
+        .qz-launch[disabled] { opacity: .4; cursor: not-allowed; }
+        .qz-best { margin-left: 10px; font-size: 11.5px; color: var(--smoke); }
+
+        /* ── 測驗：遮罩 ── */
+        .qz-mask {
+            position: fixed; inset: 0; z-index: 900;
+            background: rgba(16,11,4,.82); backdrop-filter: blur(3px);
+            display: none; align-items: flex-start; justify-content: center;
+            overflow-y: auto; padding: 30px 16px 50px;
+        }
+        .qz-mask.on { display: flex; }
+        .qz-box {
+            width: 100%; max-width: 720px; background: var(--parchment);
+            box-shadow: 0 18px 60px rgba(0,0,0,.4); border-top: 4px solid var(--gold);
+        }
+        .qz-head {
+            display: flex; align-items: center; gap: 12px;
+            padding: 18px 24px; border-bottom: 1px solid rgba(26,18,8,.1);
+        }
+        .qz-head h3 { font-size: 16px; font-weight: 900; flex: 1; color: var(--ink); }
+        .qz-x {
+            width: 30px; height: 30px; border: 1px solid rgba(26,18,8,.2);
+            background: transparent; color: var(--smoke); cursor: pointer;
+            font-size: 17px; line-height: 1; border-radius: 50%; flex-shrink: 0;
+        }
+        .qz-x:hover { background: rgba(26,18,8,.07); }
+        .qz-body { padding: 26px 24px 30px; }
+
+        /* ── 測驗：難度選擇 ── */
+        .qz-lv { display: grid; gap: 12px; }
+        .qz-lv-card {
+            text-align: left; background: #fff; border: 1px solid rgba(201,168,76,.35);
+            border-left: 5px solid var(--gold); padding: 16px 18px; cursor: pointer;
+            font-family: inherit; transition: .18s; width: 100%;
+        }
+        .qz-lv-card:hover { transform: translateX(3px); box-shadow: 0 4px 16px rgba(0,0,0,.09); }
+        .qz-lv-name { font-size: 15px; font-weight: 900; color: var(--ink); margin-bottom: 4px; }
+        .qz-lv-name em { font-style: normal; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 3px; color: var(--gold); margin-left: 8px; }
+        .qz-lv-desc { font-size: 12.5px; color: var(--smoke); line-height: 1.75; }
+        .qz-lv-meta { margin-top: 7px; font-size: 11.5px; color: var(--gold); letter-spacing: .5px; }
+        .qz-intro { font-size: 13px; color: var(--smoke); line-height: 1.85; margin-bottom: 18px; }
+
+        /* ── 測驗：作答 ── */
+        .qz-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .qz-step { font-family: 'Cinzel', serif; font-size: 12px; color: var(--smoke); letter-spacing: 1px; }
+        .qz-clock { margin-left: auto; font-family: 'Cinzel', serif; font-size: 13px; color: var(--smoke); font-variant-numeric: tabular-nums; }
+        .qz-tbar { height: 5px; background: rgba(26,18,8,.1); border-radius: 99px; overflow: hidden; margin-bottom: 22px; }
+        .qz-tfill { height: 100%; background: var(--gold); border-radius: 99px; transition: width .25s linear; }
+        .qz-tfill.warn { background: #C0703A; }
+        .qz-tfill.danger { background: #A8342F; }
+        .qz-q {
+            font-size: 17px; font-weight: 700; line-height: 1.7; color: var(--ink);
+            padding: 16px 18px; background: #fff; border-left: 4px solid var(--gold); margin-bottom: 18px;
+        }
+        .qz-q .qz-qn { font-family: 'Cinzel', serif; color: var(--gold); margin-right: 8px; }
+        .qz-opts { display: grid; gap: 9px; }
+        .qz-opt {
+            text-align: left; background: #fff; border: 1px solid rgba(26,18,8,.14);
+            padding: 13px 16px; cursor: pointer; font-family: inherit;
+            font-size: 13.5px; line-height: 1.75; color: #3A3229; transition: .15s; width: 100%;
+        }
+        .qz-opt:hover:not([disabled]) { border-color: var(--gold); background: #FBF7EE; }
+        .qz-opt[disabled] { cursor: default; }
+        .qz-opt.right { border-color: #5E8C4A; background: #F1F7ED; color: #2E4A24; }
+        .qz-opt.wrong { border-color: #A8342F; background: #FBEFEE; color: #7A2420; }
+        .qz-opt .qz-tag { font-family: 'Cinzel', serif; font-size: 11px; color: var(--gold); margin-right: 9px; }
+        .qz-fb { margin-top: 18px; padding: 14px 16px; font-size: 13px; line-height: 1.9; }
+        .qz-fb.ok { background: #F1F7ED; border-left: 3px solid #5E8C4A; color: #2E4A24; }
+        .qz-fb.no { background: #FBEFEE; border-left: 3px solid #A8342F; color: #7A2420; }
+        .qz-fb b { display: block; margin-bottom: 4px; }
+        .qz-ta {
+            width: 100%; min-height: 110px; padding: 13px 15px; font-family: inherit;
+            font-size: 14px; line-height: 1.85; border: 1px solid rgba(26,18,8,.16);
+            background: #fff; color: var(--ink); resize: vertical;
+        }
+        .qz-ta:focus { outline: none; border-color: var(--gold); }
+        .qz-ans {
+            margin-top: 16px; padding: 16px 18px; background: #fff;
+            border-left: 4px solid var(--gold); font-size: 13.5px; line-height: 1.95; color: #3A3229;
+        }
+        .qz-ans .qz-ans-t { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px; color: var(--gold); margin-bottom: 8px; }
+        .qz-acts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+        .qz-btn {
+            font-family: inherit; font-size: 13px; letter-spacing: 1px; padding: 10px 20px;
+            border: 1px solid var(--gold); background: #fff; color: var(--gold); cursor: pointer; transition: .18s;
+        }
+        .qz-btn:hover { background: var(--gold); color: #fff; }
+        .qz-btn.solid { background: var(--gold); color: #fff; }
+        .qz-btn.solid:hover { background: #B8963C; border-color: #B8963C; }
+        .qz-btn.ok { border-color: #5E8C4A; color: #4A7038; }
+        .qz-btn.ok:hover { background: #5E8C4A; color: #fff; }
+        .qz-btn.no { border-color: #B5706C; color: #A8342F; }
+        .qz-btn.no:hover { background: #A8342F; color: #fff; border-color: #A8342F; }
+
+        /* ── 測驗：成績 ── */
+        .qz-score { text-align: center; padding: 8px 0 22px; }
+        .qz-score-n { font-family: 'Cinzel', serif; font-size: 54px; font-weight: 700; color: var(--ink); line-height: 1; }
+        .qz-score-n small { font-size: 20px; color: var(--smoke); font-weight: 400; }
+        .qz-score-pct { font-family: 'Cinzel', serif; font-size: 17px; color: var(--gold); font-weight: 700; margin-top: 8px; }
+        .qz-score-meta { font-size: 12.5px; color: var(--smoke); margin-top: 10px; line-height: 1.9; }
+        .qz-word { margin-top: 14px; font-size: 13.5px; color: var(--ink); line-height: 1.85; }
+        .qz-rev-t { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 3px; color: var(--gold); margin: 24px 0 10px; }
+        .qz-rev { background: #fff; border-left: 4px solid #C7C2B8; padding: 13px 16px; margin-bottom: 8px; font-size: 13px; line-height: 1.85; }
+        .qz-rev.r { border-left-color: #5E8C4A; }
+        .qz-rev.w { border-left-color: #A8342F; }
+        .qz-rev-q { font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+        .qz-rev-q .qz-qn { font-family: 'Cinzel', serif; color: var(--gold); margin-right: 7px; }
+        .qz-rev-a { color: var(--smoke); }
+        .qz-rev-a b { color: #4A7038; }
+        .qz-rev-a i { font-style: normal; color: #A8342F; }
+        .qz-rev-link { display: inline-block; margin-top: 6px; font-size: 11.5px; color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(201,168,76,.4); }
+
         /* ── 手機響應式 ── */
         @media (max-width: 600px) {
+            .qz-mask { padding: 0; }
+            .qz-box { max-width: 100%; min-height: 100vh; }
+            .qz-body { padding: 20px 16px 28px; }
+            .qz-q { font-size: 15.5px; padding: 14px 15px; }
+            .qz-opt { font-size: 13px; padding: 12px 14px; }
+            .qz-score-n { font-size: 44px; }
+
             .pg-panel { padding: 20px 18px; }
             .pg-name { width: auto; flex: 1; font-size: 12px; }
             .pg-big { font-size: 28px; }
@@ -436,6 +565,7 @@
                 <h2 id="current-title"></h2>
                 <p id="current-subtitle"></p>
                 <div id="sec-progress"></div>
+                <div id="quiz-entry"></div>
             </div>
             <div id="post-list"></div>
         </div>
@@ -443,6 +573,17 @@
     </main>
 
     <input type="file" id="import-file" accept="application/json,.json" style="display:none">
+
+    <!-- 測驗遮罩 -->
+    <div class="qz-mask" id="qz-mask">
+        <div class="qz-box">
+            <div class="qz-head">
+                <h3 id="qz-title"></h3>
+                <button class="qz-x" onclick="quizClose()" title="關閉">&times;</button>
+            </div>
+            <div class="qz-body" id="qz-body"></div>
+        </div>
+    </div>
 
     <script>
     // ── 資料結構：章節 → 中主題 → 小主題 ──
@@ -1924,6 +2065,362 @@
     }
 
 
+
+    // ═══════════════ 小主題測驗 ═══════════════
+    var QZ_LEVELS = {
+        easy:   { name: '初級', en: 'RECALL',   opts: 3, sec: 40, self: false,
+                  desc: '看題目，從三個選項中選出正確的答案。干擾選項取自其他主題，差異較大。' },
+        mid:    { name: '中級', en: 'DISCERN',  opts: 5, sec: 25, self: false,
+                  desc: '五個選項，而且干擾選項<b>優先取自同一小主題</b>——內容相近，要讀得仔細。時間也更短。' },
+        hard:   { name: '高級', en: 'RECITE',   opts: 0, sec: 60, self: true,
+                  desc: '不給選項。先自己把答案想出來（可以打字），再翻開標準答案對照，由自己評分——這是背誦要理最真實的考法。' }
+    };
+    var QZ_MAX = 10;               // 每回合最多題數
+    var qz = null;                 // 進行中的測驗狀態
+
+    function qzPlain(html) {
+        return String(html || '')
+            .replace(/<br\s*\/?>/gi, '　')
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+    function qzBrief(html, n) {
+        var t = qzPlain(html);
+        return t.length > n ? t.slice(0, n) + '……' : t;
+    }
+    function qzShuffle(a) {
+        a = a.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+    }
+    function qzPool(exceptKey) {
+        var out = [];
+        Object.keys(posts).forEach(function (k) {
+            if (k === exceptKey) return;
+            (posts[k] || []).forEach(function (p) { if (p.desc) out.push(p); });
+        });
+        return out;
+    }
+    function qzQuestions(key) {
+        return (posts[key] || []).filter(function (p) { return p.desc && qzPlain(p.desc).length > 6; });
+    }
+
+    // ── 入口按鈕 ──
+    function renderQuizEntry(key, title) {
+        var el = document.getElementById('quiz-entry');
+        if (!el) return;
+        var qs = qzQuestions(key);
+        if (qs.length < 2) { el.innerHTML = ''; return; }
+        var best = qzBestLine(key);
+        el.innerHTML = '<button class="qz-launch" onclick="quizOpen()">✎ 開始測驗' +
+                       '<span style="opacity:.8">（' + qs.length + ' 題）</span></button>' +
+                       (best ? '<span class="qz-best">' + best + '</span>' : '');
+    }
+    function qzBestLine(key) {
+        var rec = (progress.quiz || {});
+        var parts = [];
+        ['easy', 'mid', 'hard'].forEach(function (lv) {
+            var r = rec[key + '|' + lv];
+            if (r) parts.push(QZ_LEVELS[lv].name + ' ' + r.best + '/' + r.total);
+        });
+        return parts.length ? '最佳成績：' + parts.join('　') : '';
+    }
+
+    // ── 開啟／關閉 ──
+    function quizOpen() {
+        if (!currentKey) return;
+        qzStopTimer();
+        qz = null;
+        document.getElementById('qz-title').textContent =
+            '測驗　' + (document.getElementById('current-title').textContent || '');
+        document.getElementById('qz-mask').classList.add('on');
+        document.body.style.overflow = 'hidden';
+        qzRenderLevels();
+    }
+    function quizClose() {
+        if (qz && !qz.done && qz.idx < qz.items.length) {
+            if (!confirm('測驗還沒結束，確定要離開嗎？本次成績不會被記錄。')) return;
+        }
+        qzStopTimer();
+        qz = null;
+        document.getElementById('qz-mask').classList.remove('on');
+        document.body.style.overflow = '';
+    }
+    document.getElementById('qz-mask').addEventListener('click', function (e) {
+        if (e.target === this) quizClose();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('qz-mask').classList.contains('on')) quizClose();
+    });
+
+    // ── 難度選擇 ──
+    function qzRenderLevels() {
+        var qs = qzQuestions(currentKey);
+        var n = Math.min(qs.length, QZ_MAX);
+        var rec = (progress.quiz || {});
+        var html = '<div class="qz-intro">本回合會從這個小主題的 <b>' + qs.length + '</b> 題中' +
+                   (qs.length > QZ_MAX ? '隨機抽出 <b>' + n + '</b> 題' : '出 <b>' + n + '</b> 題') +
+                   '，每題都有倒數計時。請選擇難度：</div><div class="qz-lv">';
+        ['easy', 'mid', 'hard'].forEach(function (lv) {
+            var L = QZ_LEVELS[lv];
+            var r = rec[currentKey + '|' + lv];
+            html += '<button class="qz-lv-card" onclick="quizStart(\'' + lv + '\')">' +
+                      '<div class="qz-lv-name">' + L.name + '<em>' + L.en + '</em></div>' +
+                      '<div class="qz-lv-desc">' + L.desc + '</div>' +
+                      '<div class="qz-lv-meta">' +
+                        (L.opts ? L.opts + ' 選 1　·　' : '自我評分　·　') +
+                        '每題 ' + L.sec + ' 秒' +
+                        (r ? '　·　最佳 ' + r.best + '/' + r.total + '（' + qzMMSS(r.timeSec) + '）' : '') +
+                      '</div>' +
+                    '</button>';
+        });
+        html += '</div>';
+        document.getElementById('qz-body').innerHTML = html;
+    }
+
+    // ── 出題 ──
+    function quizStart(lv) {
+        var L = QZ_LEVELS[lv];
+        var qs = qzShuffle(qzQuestions(currentKey)).slice(0, QZ_MAX);
+        var sameKey = qzQuestions(currentKey);
+        var other = qzPool(currentKey);
+
+        var items = qs.map(function (p) {
+            var it = { num: p.num, q: p.title, ansHtml: p.desc, href: p.href || null,
+                       picked: null, right: null, used: 0 };
+            if (L.opts) {
+                var need = L.opts - 1;
+                var cand;
+                if (lv === 'mid') {
+                    cand = qzShuffle(sameKey.filter(function (x) { return x.num !== p.num; }));
+                    if (cand.length < need) cand = cand.concat(qzShuffle(other));
+                } else {
+                    cand = qzShuffle(other);
+                    if (cand.length < need) cand = cand.concat(qzShuffle(sameKey.filter(function (x) { return x.num !== p.num; })));
+                }
+                var seen = {}, wrongs = [];
+                for (var i = 0; i < cand.length && wrongs.length < need; i++) {
+                    var t = qzBrief(cand[i].desc, 52);
+                    if (t && !seen[t] && t !== qzBrief(p.desc, 52)) { seen[t] = 1; wrongs.push(t); }
+                }
+                var opts = wrongs.map(function (t) { return { text: t, ok: false }; });
+                opts.push({ text: qzBrief(p.desc, 52), ok: true });
+                it.options = qzShuffle(opts);
+            }
+            return it;
+        });
+
+        qz = { key: currentKey, lv: lv, items: items, idx: 0, score: 0,
+               startAt: Date.now(), totalSec: 0, done: false, revealed: false };
+        qzRenderItem();
+    }
+
+    // ── 計時 ──
+    function qzStopTimer() {
+        if (qz && qz.timer) { clearInterval(qz.timer); qz.timer = null; }
+    }
+    function qzStartTimer() {
+        var L = QZ_LEVELS[qz.lv];
+        qz.left = L.sec;
+        qz.qStart = Date.now();
+        qzPaintTimer();
+        qz.timer = setInterval(function () {
+            qz.left -= 0.25;
+            if (qz.left <= 0) {
+                qz.left = 0;
+                qzStopTimer();
+                qzPaintTimer();
+                qzTimeUp();
+            } else {
+                qzPaintTimer();
+            }
+        }, 250);
+    }
+    function qzPaintTimer() {
+        var L = QZ_LEVELS[qz.lv];
+        var fill = document.getElementById('qz-tfill');
+        var clock = document.getElementById('qz-clock');
+        if (!fill || !clock) return;
+        var pct = Math.max(0, qz.left / L.sec * 100);
+        fill.style.width = pct + '%';
+        fill.className = 'qz-tfill' + (pct <= 20 ? ' danger' : (pct <= 45 ? ' warn' : ''));
+        clock.textContent = '本題 ' + Math.ceil(qz.left) + 's　·　總計 ' + qzMMSS((Date.now() - qz.startAt) / 1000);
+    }
+    function qzMMSS(sec) {
+        sec = Math.max(0, Math.round(sec));
+        var m = Math.floor(sec / 60), r = sec % 60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
+    }
+
+    // ── 顯示一題 ──
+    function qzRenderItem() {
+        var L = QZ_LEVELS[qz.lv];
+        var it = qz.items[qz.idx];
+        qz.revealed = false;
+
+        var head = '<div class="qz-bar-row">' +
+                     '<span class="qz-step">' + L.name + '　第 ' + (qz.idx + 1) + ' / ' + qz.items.length + ' 題</span>' +
+                     '<span class="qz-clock" id="qz-clock"></span>' +
+                   '</div>' +
+                   '<div class="qz-tbar"><div class="qz-tfill" id="qz-tfill"></div></div>' +
+                   '<div class="qz-q"><span class="qz-qn">' + it.num + '</span>' + it.q + '</div>';
+
+        var body;
+        if (L.opts) {
+            body = '<div class="qz-opts" id="qz-opts">' +
+                   it.options.map(function (o, i) {
+                       return '<button class="qz-opt" data-i="' + i + '" onclick="qzPick(' + i + ')">' +
+                              '<span class="qz-tag">' + 'ABCDEF'[i] + '</span>' + o.text + '</button>';
+                   }).join('') + '</div><div id="qz-fb"></div>';
+        } else {
+            body = '<textarea class="qz-ta" id="qz-ta" placeholder="先自己把答案寫下來（可留白，只在心裡想也行）…"></textarea>' +
+                   '<div class="qz-acts"><button class="qz-btn solid" onclick="qzReveal()">看標準答案</button></div>' +
+                   '<div id="qz-fb"></div>';
+        }
+        document.getElementById('qz-body').innerHTML = head + body;
+        qzStartTimer();
+    }
+
+    // ── 選擇題作答 ──
+    function qzPick(i) {
+        if (qz.revealed) return;
+        qz.revealed = true;
+        qzStopTimer();
+        var it = qz.items[qz.idx];
+        it.used = (Date.now() - qz.qStart) / 1000;
+        it.picked = i;
+        it.right = !!it.options[i].ok;
+        if (it.right) qz.score++;
+
+        var btns = document.querySelectorAll('#qz-opts .qz-opt');
+        btns.forEach(function (b, k) {
+            b.setAttribute('disabled', 'disabled');
+            if (it.options[k].ok) b.classList.add('right');
+            else if (k === i) b.classList.add('wrong');
+        });
+        qzFeedback(it);
+    }
+    function qzTimeUp() {
+        if (qz.revealed) return;
+        var L = QZ_LEVELS[qz.lv];
+        var it = qz.items[qz.idx];
+        it.used = L.sec;
+        if (L.opts) {
+            qz.revealed = true;
+            it.picked = -1; it.right = false;
+            document.querySelectorAll('#qz-opts .qz-opt').forEach(function (b, k) {
+                b.setAttribute('disabled', 'disabled');
+                if (it.options[k].ok) b.classList.add('right');
+            });
+            qzFeedback(it, true);
+        } else {
+            qzReveal(true);
+        }
+    }
+    function qzFeedback(it, timeout) {
+        var el = document.getElementById('qz-fb');
+        var ok = it.right;
+        el.innerHTML =
+            '<div class="qz-fb ' + (ok ? 'ok' : 'no') + '">' +
+              '<b>' + (ok ? '✓ 答對了' : (timeout ? '⏱ 時間到' : '✗ 答錯了')) + '</b>' +
+              (ok ? '' : '正確答案：' + qzBrief(it.ansHtml, 90)) +
+            '</div>' +
+            '<div class="qz-acts"><button class="qz-btn solid" onclick="qzNext()">' +
+              (qz.idx + 1 < qz.items.length ? '下一題 →' : '看成績 →') + '</button></div>';
+    }
+
+    // ── 高級：翻開答案自評 ──
+    function qzReveal(timeout) {
+        if (qz.revealed) return;
+        qz.revealed = true;
+        qzStopTimer();
+        var it = qz.items[qz.idx];
+        it.used = Math.min(QZ_LEVELS[qz.lv].sec, (Date.now() - qz.qStart) / 1000);
+        var ta = document.getElementById('qz-ta');
+        if (ta) { it.mine = ta.value.trim(); ta.setAttribute('readonly', 'readonly'); }
+        document.querySelectorAll('.qz-btn.solid').forEach(function (b) {
+            if (b.textContent.indexOf('看標準答案') >= 0) b.remove();
+        });
+        document.getElementById('qz-fb').innerHTML =
+            (timeout ? '<div class="qz-fb no"><b>⏱ 時間到</b>先看看標準答案吧。</div>' : '') +
+            '<div class="qz-ans"><div class="qz-ans-t">STANDARD ANSWER　標準答案</div>' + it.ansHtml + '</div>' +
+            '<div class="qz-acts">' +
+              '<button class="qz-btn ok" onclick="qzSelf(true)">✓ 我答對了</button>' +
+              '<button class="qz-btn no" onclick="qzSelf(false)">✗ 沒答對</button>' +
+            '</div>';
+    }
+    function qzSelf(ok) {
+        var it = qz.items[qz.idx];
+        if (it.right !== null) return;
+        it.right = !!ok;
+        if (ok) qz.score++;
+        qzNext();
+    }
+
+    // ── 下一題／收尾 ──
+    function qzNext() {
+        qzStopTimer();
+        if (qz.idx + 1 < qz.items.length) { qz.idx++; qzRenderItem(); }
+        else { qzFinish(); }
+    }
+    function qzFinish() {
+        qz.done = true;
+        qz.totalSec = (Date.now() - qz.startAt) / 1000;
+        var L = QZ_LEVELS[qz.lv];
+        var total = qz.items.length, score = qz.score;
+        var pct = Math.round(score / total * 100);
+
+        // 紀錄最佳成績
+        progress.quiz = progress.quiz || {};
+        var rk = qz.key + '|' + qz.lv;
+        var old = progress.quiz[rk];
+        var better = !old || score > old.best || (score === old.best && qz.totalSec < old.timeSec);
+        if (better) {
+            progress.quiz[rk] = { best: score, total: total,
+                                  timeSec: Math.round(qz.totalSec), at: new Date().toISOString() };
+        }
+        saveProgress();
+        renderQuizEntry(qz.key, '');
+
+        var word = pct === 100 ? '全對。這一節你已經很熟了。'
+                 : pct >= 80  ? '很不錯，只差一點點。'
+                 : pct >= 60  ? '底子有了，把錯的那幾題再讀一次。'
+                 : pct >= 40  ? '再讀一輪，然後回來考一次。'
+                 :              '別氣餒——先把這一節的文章讀過，再來就會很不一樣。';
+
+        var rev = qz.items.map(function (it) {
+            return '<div class="qz-rev ' + (it.right ? 'r' : 'w') + '">' +
+                     '<div class="qz-rev-q"><span class="qz-qn">' + it.num + '</span>' +
+                       (it.right ? '✓ ' : '✗ ') + it.q + '</div>' +
+                     '<div class="qz-rev-a">' +
+                       (it.right ? '' : '<i>正確答案：</i>') + qzBrief(it.ansHtml, 110) +
+                     '</div>' +
+                     (it.href ? '<a class="qz-rev-link" href="' + it.href + '" target="_blank">讀全文 →</a>' : '') +
+                   '</div>';
+        }).join('');
+
+        document.getElementById('qz-body').innerHTML =
+            '<div class="qz-score">' +
+              '<div class="qz-score-n">' + score + '<small> / ' + total + '</small></div>' +
+              '<div class="qz-score-pct">' + pct + '%</div>' +
+              '<div class="qz-score-meta">' + L.name + '　·　用時 ' + qzMMSS(qz.totalSec) +
+                '　·　平均每題 ' + (qz.totalSec / total).toFixed(1) + ' 秒' +
+                (better ? '<br><b style="color:var(--gold)">★ 刷新最佳成績</b>' : '') +
+              '</div>' +
+              '<div class="qz-word">' + word + '</div>' +
+            '</div>' +
+            '<div class="qz-acts" style="justify-content:center">' +
+              '<button class="qz-btn solid" onclick="quizStart(\'' + qz.lv + '\')">再考一次</button>' +
+              '<button class="qz-btn" onclick="qzRenderLevels()">換難度</button>' +
+              '<button class="qz-btn" onclick="quizClose()">關閉</button>' +
+            '</div>' +
+            '<div class="qz-rev-t">REVIEW　逐題檢討</div>' + rev;
+    }
+
     // ═══════════════ 閱讀進度 ═══════════════
     var PKEY = 'ccjz_progress_v1';
     var currentKey = null;
@@ -1937,13 +2434,13 @@
     function loadProgress() {
         try {
             var raw = localStorage.getItem(PKEY);
-            if (!raw) return { v: 1, read: {}, updatedAt: null };
+            if (!raw) return { v: 1, read: {}, quiz: {}, updatedAt: null };
             var o = JSON.parse(raw);
             if (!o || typeof o !== 'object' || !o.read || typeof o.read !== 'object') {
-                return { v: 1, read: {}, updatedAt: null };
+                return { v: 1, read: {}, quiz: {}, updatedAt: null };
             }
-            return { v: 1, read: o.read, updatedAt: o.updatedAt || null };
-        } catch (e) { return { v: 1, read: {}, updatedAt: null }; }
+            return { v: 1, read: o.read, quiz: (o.quiz && typeof o.quiz === 'object') ? o.quiz : {}, updatedAt: o.updatedAt || null };
+        } catch (e) { return { v: 1, read: {}, quiz: {}, updatedAt: null }; }
     }
     function saveProgress() {
         progress.updatedAt = new Date().toISOString();
@@ -2068,7 +2565,8 @@
             exportedAt: d.toISOString(),
             total: allNums().length,
             count: Object.keys(progress.read).length,
-            read: progress.read
+            read: progress.read,
+            quiz: progress.quiz || {}
         };
         var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
         var url = URL.createObjectURL(blob);
@@ -2101,10 +2599,22 @@
                 if (!valid[k]) { skip++; return; }
                 if (!progress.read[k]) { progress.read[k] = o.read[k] || new Date().toISOString(); add++; }
             });
+            var qadd = 0;
+            if (o.quiz && typeof o.quiz === 'object') {
+                progress.quiz = progress.quiz || {};
+                Object.keys(o.quiz).forEach(function (rk) {
+                    var inc = o.quiz[rk], cur = progress.quiz[rk];
+                    if (!inc || typeof inc.best !== 'number') return;
+                    if (!cur || inc.best > cur.best || (inc.best === cur.best && inc.timeSec < cur.timeSec)) {
+                        progress.quiz[rk] = inc; qadd++;
+                    }
+                });
+            }
             saveProgress();
             renderHomeProgress();
-            if (currentKey) { renderSecProgress(currentKey); syncChecks(); }
-            alert('匯入完成。\n新增 ' + add + ' 筆，目前共 ' + Object.keys(progress.read).length +
+            if (currentKey) { renderSecProgress(currentKey); syncChecks(); renderQuizEntry(currentKey, ''); }
+            alert('匯入完成。\n新增 ' + add + ' 筆已讀' + (qadd ? '、更新 ' + qadd + ' 筆測驗成績' : '') +
+                  '，目前共 ' + Object.keys(progress.read).length +
                   ' 筆已讀。' + (skip ? '\n（略過 ' + skip + ' 筆對不上題號的資料）' : ''));
         };
         r.readAsText(f, 'utf-8');
@@ -2114,9 +2624,10 @@
     function clearProgress() {
         if (!confirm('確定要清除全部閱讀紀錄嗎？\n此動作無法復原，建議先「匯出進度」備份。')) return;
         progress.read = {};
+        progress.quiz = {};
         saveProgress();
         renderHomeProgress();
-        if (currentKey) { renderSecProgress(currentKey); syncChecks(); }
+        if (currentKey) { renderSecProgress(currentKey); syncChecks(); renderQuizEntry(currentKey, ''); }
     }
 
     // ── 把畫面上的勾選狀態同步回目前資料 ──
@@ -2230,6 +2741,7 @@
         document.getElementById('current-title').textContent = title;
         document.getElementById('current-subtitle').textContent = range || '';
         renderSecProgress(key);
+        renderQuizEntry(key, title);
 
         var list = document.getElementById('post-list');
         var arr = posts[key];
