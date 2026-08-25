@@ -302,8 +302,63 @@
         }
         .creed-note b { color: #7A5D1E; }
 
+
+        /* ── 閱讀進度：勾選框 ── */
+        .rd { flex-shrink: 0; display: inline-flex; align-items: center; cursor: pointer; padding-top: 1px; }
+        .rd input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .rd-box {
+            width: 20px; height: 20px; background: #fff;
+            border: 1.5px solid rgba(201,168,76,.55);
+            border-radius: 4px; display: block; position: relative; transition: .15s;
+        }
+        .rd:hover .rd-box { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.13); }
+        .rd input:checked + .rd-box { background: var(--gold); border-color: var(--gold); }
+        .rd input:checked + .rd-box::after {
+            content: ''; position: absolute; left: 6px; top: 2px;
+            width: 5px; height: 10px; border: solid #fff;
+            border-width: 0 2px 2px 0; transform: rotate(45deg);
+        }
+        .post-card.read, .acc-card.read { border-left-color: #8FA37A; }
+        .post-card.read .post-title, .acc-card.read .acc-qt { opacity: .62; }
+        .post-card.read .post-num,  .acc-card.read .acc-num { opacity: .5; }
+
+        /* ── 閱讀進度：進度條與面板 ── */
+        .pg-bar { flex: 1; height: 7px; background: rgba(26,18,8,.10); border-radius: 99px; overflow: hidden; }
+        .pg-fill { height: 100%; border-radius: 99px; transition: width .35s ease;
+                   background: linear-gradient(90deg, var(--gold), #E4CD86); }
+        .pg-panel {
+            background: #fff; box-shadow: 0 2px 14px rgba(0,0,0,.06);
+            border-top: 3px solid var(--gold); padding: 26px 28px;
+            margin-top: 36px; text-align: left;
+        }
+        .pg-title { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 4px; color: var(--gold); margin-bottom: 18px; }
+        .pg-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 11px; }
+        .pg-big { font-family: 'Cinzel', serif; font-size: 34px; font-weight: 700; color: var(--ink); line-height: 1; }
+        .pg-of { font-size: 13px; color: var(--smoke); }
+        .pg-pct { margin-left: auto; font-family: 'Cinzel', serif; font-size: 16px; color: var(--gold); font-weight: 700; }
+        .pg-rows { margin-top: 22px; }
+        .pg-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+        .pg-name { font-size: 12.5px; color: var(--ink); width: 200px; flex-shrink: 0; }
+        .pg-num { font-size: 12px; color: var(--smoke); width: 68px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+        .pg-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(26,18,8,.08); }
+        .pg-btn {
+            font-family: inherit; font-size: 12px; letter-spacing: 1px;
+            padding: 8px 15px; border: 1px solid var(--gold); color: var(--gold);
+            background: #fff; cursor: pointer; transition: .18s;
+        }
+        .pg-btn:hover { background: var(--gold); color: #fff; }
+        .pg-btn.danger { border-color: #C0A0A0; color: #A06060; }
+        .pg-btn.danger:hover { background: #A06060; border-color: #A06060; color: #fff; }
+        .pg-time { margin-top: 13px; font-size: 11px; color: var(--smoke); }
+        .pg-hint { margin-top: 5px; font-size: 11px; color: var(--smoke); line-height: 1.75; }
+        .pg-sec { display: flex; align-items: center; gap: 12px; margin-top: 13px; max-width: 430px; }
+
         /* ── 手機響應式 ── */
         @media (max-width: 600px) {
+            .pg-panel { padding: 20px 18px; }
+            .pg-name { width: auto; flex: 1; font-size: 12px; }
+            .pg-big { font-size: 28px; }
+
             .creed { padding: 30px 20px 26px; }
             .creed-title { font-size: 26px; letter-spacing: 5px; }
             .creed-line { font-size: 16px; line-height: 1.95; }
@@ -370,6 +425,9 @@
                     <p>習題、使徒信經、禱告 · 第 173–211 問</p>
                 </div>
             </div>
+
+            <!-- 閱讀進度 -->
+            <div class="pg-panel" id="home-progress"></div>
         </div>
 
         <!-- 問題列表 -->
@@ -377,11 +435,14 @@
             <div class="section-intro">
                 <h2 id="current-title"></h2>
                 <p id="current-subtitle"></p>
+                <div id="sec-progress"></div>
             </div>
             <div id="post-list"></div>
         </div>
 
     </main>
+
+    <input type="file" id="import-file" accept="application/json,.json" style="display:none">
 
     <script>
     // ── 資料結構：章節 → 中主題 → 小主題 ──
@@ -1799,6 +1860,7 @@
         document.getElementById('welcome-screen').style.display = 'block';
         document.getElementById('list-screen').style.display = 'none';
         document.getElementById('content-area').scrollTop = 0;
+        renderHomeProgress();
     }
 
     function showChapter(chapterId) {
@@ -1861,6 +1923,222 @@
         loadPosts(key, label, range);
     }
 
+
+    // ═══════════════ 閱讀進度 ═══════════════
+    var PKEY = 'ccjz_progress_v1';
+    var currentKey = null;
+    var storageOK = (function () {
+        try { localStorage.setItem('__ccjz_t', '1'); localStorage.removeItem('__ccjz_t'); return true; }
+        catch (e) { return false; }
+    })();
+    var warnedOnce = false;
+    var progress = loadProgress();
+
+    function loadProgress() {
+        try {
+            var raw = localStorage.getItem(PKEY);
+            if (!raw) return { v: 1, read: {}, updatedAt: null };
+            var o = JSON.parse(raw);
+            if (!o || typeof o !== 'object' || !o.read || typeof o.read !== 'object') {
+                return { v: 1, read: {}, updatedAt: null };
+            }
+            return { v: 1, read: o.read, updatedAt: o.updatedAt || null };
+        } catch (e) { return { v: 1, read: {}, updatedAt: null }; }
+    }
+    function saveProgress() {
+        progress.updatedAt = new Date().toISOString();
+        if (!storageOK) {
+            if (!warnedOnce) {
+                warnedOnce = true;
+                alert('提醒：這個瀏覽器目前無法使用本機儲存，勾選只會保留到關閉分頁為止。\n' +
+                      '（常見原因：無痕視窗，或以特殊方式開啟檔案）\n' +
+                      '離開前可用「匯出進度」把紀錄存成檔案。');
+            }
+            return;
+        }
+        try { localStorage.setItem(PKEY, JSON.stringify(progress)); }
+        catch (e) {
+            storageOK = false;
+            if (!warnedOnce) { warnedOnce = true; alert('無法儲存進度：本機儲存空間已滿或被停用。'); }
+        }
+    }
+    function isRead(num) { return !!progress.read[String(num)]; }
+    function setRead(num, on) {
+        var k = String(num);
+        if (on) { progress.read[k] = new Date().toISOString(); }
+        else { delete progress.read[k]; }
+        saveProgress();
+    }
+
+    function numsOfKey(key) {
+        return (posts[key] || []).map(function (p) { return String(p.num); });
+    }
+    function numsOfChapter(chId) {
+        var ch = structure[chId];
+        if (!ch) return [];
+        var a = [];
+        ch.groups.forEach(function (g) {
+            g.subs.forEach(function (sub) { a = a.concat(numsOfKey(sub.key)); });
+        });
+        return a;
+    }
+    function allNums() {
+        var a = [];
+        Object.keys(posts).forEach(function (k) { a = a.concat(numsOfKey(k)); });
+        return a;
+    }
+    function countRead(nums) {
+        return nums.filter(function (n) { return isRead(n); }).length;
+    }
+    function pgBar(done, total) {
+        var pct = total ? Math.round(done / total * 100) : 0;
+        return '<div class="pg-bar"><div class="pg-fill" style="width:' + pct + '%"></div></div>';
+    }
+    function fmtTime(iso) {
+        try {
+            var d = new Date(iso);
+            var p = function (n) { return (n < 10 ? '0' : '') + n; };
+            return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) +
+                   ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+        } catch (e) { return iso; }
+    }
+    function chk(num) {
+        var on = isRead(num);
+        return '<label class="rd" title="勾選表示已讀">' +
+               '<input type="checkbox" data-num="' + num + '"' + (on ? ' checked' : '') + '>' +
+               '<span class="rd-box"></span></label>';
+    }
+
+    // ── 首頁總進度 ──
+    function renderHomeProgress() {
+        var el = document.getElementById('home-progress');
+        if (!el) return;
+        var all = allNums(), done = countRead(all);
+        var pct = all.length ? Math.round(done / all.length * 100) : 0;
+
+        var rows = '';
+        ['ch1', 'ch2', 'ch3', 'app'].forEach(function (id) {
+            if (!structure[id]) return;
+            var ns = numsOfChapter(id), d = countRead(ns);
+            rows += '<div class="pg-row">' +
+                      '<span class="pg-name">' + structure[id].label.replace(/^(Chapter \d+|Appendix)\s*/, '') + '</span>' +
+                      pgBar(d, ns.length) +
+                      '<span class="pg-num">' + d + ' / ' + ns.length + '</span>' +
+                    '</div>';
+        });
+
+        el.innerHTML =
+            '<div class="pg-title">READING PROGRESS　閱讀進度</div>' +
+            '<div class="pg-head">' +
+              '<span class="pg-big">' + done + '</span>' +
+              '<span class="pg-of">/ ' + all.length + ' 問已讀</span>' +
+              '<span class="pg-pct">' + pct + '%</span>' +
+            '</div>' +
+            pgBar(done, all.length) +
+            '<div class="pg-rows">' + rows + '</div>' +
+            '<div class="pg-tools">' +
+              '<button class="pg-btn" onclick="exportProgress()">匯出進度</button>' +
+              '<button class="pg-btn" onclick="document.getElementById(\'import-file\').click()">匯入進度</button>' +
+              '<button class="pg-btn danger" onclick="clearProgress()">清除全部</button>' +
+            '</div>' +
+            '<div class="pg-hint">' +
+              (storageOK ? '' : '<b style="color:#A06060">目前無法使用本機儲存，勾選只保留到關閉分頁為止——請務必先「匯出進度」。</b><br>') +
+              '進度存在這台裝置的瀏覽器裡。換裝置或清除瀏覽資料前，請先「匯出進度」備份；匯入時採<b>合併</b>，不會刪掉原有紀錄。</div>' +
+            (progress.updatedAt ? '<div class="pg-time">最後更新：' + fmtTime(progress.updatedAt) + '</div>' : '');
+    }
+
+    // ── 小主題進度 ──
+    function renderSecProgress(key) {
+        var el = document.getElementById('sec-progress');
+        if (!el) return;
+        var ns = numsOfKey(key), d = countRead(ns);
+        el.innerHTML = ns.length
+            ? '<div class="pg-sec">' + pgBar(d, ns.length) +
+              '<span class="pg-num">' + d + ' / ' + ns.length + ' 已讀</span></div>'
+            : '';
+    }
+
+    // ── 匯出 ──
+    function exportProgress() {
+        var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+        var stamp = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+        var payload = {
+            app: '初信造就 211 問',
+            v: 1,
+            exportedAt: d.toISOString(),
+            total: allNums().length,
+            count: Object.keys(progress.read).length,
+            read: progress.read
+        };
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = '初信造就-閱讀進度-' + stamp + '.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+
+    // ── 匯入（合併） ──
+    document.getElementById('import-file').addEventListener('change', function (e) {
+        var f = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!f) return;
+        var r = new FileReader();
+        r.onload = function () {
+            var o;
+            try { o = JSON.parse(r.result); } catch (err) { o = null; }
+            if (!o || !o.read || typeof o.read !== 'object') {
+                alert('匯入失敗：這不是有效的進度檔。');
+                return;
+            }
+            var valid = {};
+            allNums().forEach(function (n) { valid[n] = 1; });
+            var add = 0, skip = 0;
+            Object.keys(o.read).forEach(function (k) {
+                if (!valid[k]) { skip++; return; }
+                if (!progress.read[k]) { progress.read[k] = o.read[k] || new Date().toISOString(); add++; }
+            });
+            saveProgress();
+            renderHomeProgress();
+            if (currentKey) { renderSecProgress(currentKey); syncChecks(); }
+            alert('匯入完成。\n新增 ' + add + ' 筆，目前共 ' + Object.keys(progress.read).length +
+                  ' 筆已讀。' + (skip ? '\n（略過 ' + skip + ' 筆對不上題號的資料）' : ''));
+        };
+        r.readAsText(f, 'utf-8');
+    });
+
+    // ── 清除 ──
+    function clearProgress() {
+        if (!confirm('確定要清除全部閱讀紀錄嗎？\n此動作無法復原，建議先「匯出進度」備份。')) return;
+        progress.read = {};
+        saveProgress();
+        renderHomeProgress();
+        if (currentKey) { renderSecProgress(currentKey); syncChecks(); }
+    }
+
+    // ── 把畫面上的勾選狀態同步回目前資料 ──
+    function syncChecks() {
+        document.querySelectorAll('#post-list input[type=checkbox][data-num]').forEach(function (cb) {
+            var on = isRead(cb.getAttribute('data-num'));
+            cb.checked = on;
+            var card = cb.closest('.post-card, .acc-card');
+            if (card) card.classList.toggle('read', on);
+        });
+    }
+
+    // ── 勾選事件 ──
+    document.getElementById('post-list').addEventListener('change', function (e) {
+        var cb = e.target;
+        if (!cb || !cb.matches || !cb.matches('input[type=checkbox][data-num]')) return;
+        setRead(cb.getAttribute('data-num'), cb.checked);
+        var card = cb.closest('.post-card, .acc-card');
+        if (card) card.classList.toggle('read', cb.checked);
+        if (currentKey) renderSecProgress(currentKey);
+    });
+
     // ── 附錄：把 desc 整理成好讀的排版 ──
     function beautify(html) {
         var lines = html.split('<br>').map(function (x) { return x.trim(); })
@@ -1891,8 +2169,9 @@
 
     function renderAccordion(arr) {
         return arr.map(function (p) {
-            return '<div class="acc-card">' +
+            return '<div class="acc-card' + (isRead(p.num) ? ' read' : '') + '">' +
                      '<div class="acc-q">' +
+                       chk(p.num) +
                        '<span class="acc-num">' + p.num + '</span>' +
                        '<span class="acc-qt">' + p.title + '</span>' +
                        '<span class="acc-toggle">+</span>' +
@@ -1947,8 +2226,10 @@
     }
 
     function loadPosts(key, title, range) {
+        currentKey = key;
         document.getElementById('current-title').textContent = title;
         document.getElementById('current-subtitle').textContent = range || '';
+        renderSecProgress(key);
 
         var list = document.getElementById('post-list');
         var arr = posts[key];
@@ -1961,7 +2242,8 @@
             list.innerHTML = renderAccordion(arr);
         } else {
             list.innerHTML = arr.map(function (p) {
-                return '<div class="post-card">' +
+                return '<div class="post-card' + (isRead(p.num) ? ' read' : '') + '">' +
+                         chk(p.num) +
                          '<span class="post-num">' + p.num + '</span>' +
                          '<div class="post-body">' +
                            '<div class="post-title">' + p.title + '</div>' +
@@ -1978,10 +2260,14 @@
     document.getElementById('post-list').addEventListener('click', function (e) {
         var q = e.target.closest('.acc-q');
         if (!q) return;
+        if (e.target.closest('.rd')) return;   // 點勾選框時不展開
         var card = q.parentElement;
         var open = card.classList.toggle('open');
         card.querySelector('.acc-toggle').textContent = open ? '−' : '+';
     });
+
+    // 首次進入即顯示進度
+    renderHomeProgress();
     </script>
 </body>
 </html>
