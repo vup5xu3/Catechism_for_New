@@ -304,23 +304,32 @@
 
 
         /* ── 閱讀進度：勾選框 ── */
-        .rd { flex-shrink: 0; display: inline-flex; align-items: center; cursor: pointer; padding-top: 1px; }
+        .rd {
+            position: absolute; top: 5px; right: 6px; z-index: 3;
+            display: inline-flex; cursor: pointer; padding: 3px;
+        }
         .rd input { position: absolute; opacity: 0; width: 0; height: 0; }
         .rd-box {
-            width: 20px; height: 20px; background: #fff;
-            border: 1.5px solid rgba(201,168,76,.55);
-            border-radius: 4px; display: block; position: relative; transition: .15s;
+            width: 15px; height: 15px; background: transparent;
+            border: 1.5px solid rgba(26,18,8,.16);
+            border-radius: 4px; display: block; position: relative;
+            transition: border-color .15s, background .15s;
         }
-        .rd:hover .rd-box { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.13); }
+        .rd:hover .rd-box { border-color: var(--gold); background: rgba(201,168,76,.1); }
+        .rd input:focus-visible + .rd-box { box-shadow: 0 0 0 3px rgba(201,168,76,.28); }
         .rd input:checked + .rd-box { background: var(--gold); border-color: var(--gold); }
         .rd input:checked + .rd-box::after {
-            content: ''; position: absolute; left: 6px; top: 2px;
-            width: 5px; height: 10px; border: solid #fff;
-            border-width: 0 2px 2px 0; transform: rotate(45deg);
+            content: ''; position: absolute; left: 4px; top: 1px;
+            width: 4px; height: 8px; border: solid #fff;
+            border-width: 0 1.6px 1.6px 0; transform: rotate(45deg);
         }
-        .post-card.read, .acc-card.read { border-left-color: #8FA37A; }
-        .post-card.read .post-title, .acc-card.read .acc-qt { opacity: .62; }
-        .post-card.read .post-num,  .acc-card.read .acc-num { opacity: .5; }
+        .post-card, .acc-card { position: relative; }
+        .post-card.read, .acc-card.read { border-left-color: #93A87C; }
+        .post-card.read .post-title, .acc-card.read .acc-qt { opacity: .6; }
+        .post-card.read .post-num,  .acc-card.read .acc-num { opacity: .48; }
+        .post-title { padding-right: 34px; }
+        .acc-q { padding-top: 29px !important; }
+        .acc-qt { padding-right: 4px; }
 
         /* ── 閱讀進度：進度條與面板 ── */
         .pg-bar { flex: 1; height: 7px; background: rgba(26,18,8,.10); border-radius: 99px; overflow: hidden; }
@@ -351,20 +360,30 @@
         .pg-btn.danger:hover { background: #A06060; border-color: #A06060; color: #fff; }
         .pg-time { margin-top: 13px; font-size: 11px; color: var(--smoke); }
         .pg-hint { margin-top: 5px; font-size: 11px; color: var(--smoke); line-height: 1.75; }
-        .pg-sec { display: flex; align-items: center; gap: 12px; margin-top: 13px; max-width: 430px; }
+        .sec-row { display: flex; align-items: center; gap: 16px; margin-top: 15px; }
+        .pg-sec { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .pg-sec .pg-bar { height: 8px; }
+        .pg-sec .pg-num { width: auto; min-width: 74px; }
+        #sec-progress { flex: 1; min-width: 0; }
+        #quiz-entry { flex-shrink: 0; }
+        #quiz-best { margin-top: 8px; font-size: 11.5px; color: var(--smoke); letter-spacing: .3px; }
 
 
         /* ── 測驗：入口按鈕 ── */
         .qz-launch {
             display: inline-flex; align-items: center; gap: 7px;
-            margin-top: 14px; padding: 9px 18px;
-            font-family: inherit; font-size: 13px; letter-spacing: 1px;
+            padding: 9px 20px; border-radius: 999px; white-space: nowrap;
+            font-family: inherit; font-size: 12.5px; letter-spacing: .8px; font-weight: 500;
             border: 1px solid var(--gold); background: var(--gold); color: #fff;
-            cursor: pointer; transition: .18s;
+            cursor: pointer; box-shadow: 0 2px 9px rgba(201,168,76,.3);
+            transition: background .18s, box-shadow .18s, transform .18s;
         }
-        .qz-launch:hover { background: #B8963C; border-color: #B8963C; }
-        .qz-launch[disabled] { opacity: .4; cursor: not-allowed; }
-        .qz-best { margin-left: 10px; font-size: 11.5px; color: var(--smoke); }
+        .qz-launch:hover {
+            background: #BC9A3E; border-color: #BC9A3E;
+            box-shadow: 0 5px 16px rgba(201,168,76,.42); transform: translateY(-1px);
+        }
+        .qz-launch:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(201,168,76,.3); }
+        .qz-launch .qz-n { opacity: .78; font-size: 11.5px; }
 
         /* ── 測驗：遮罩 ── */
         .qz-mask {
@@ -477,6 +496,9 @@
 
         /* ── 手機響應式 ── */
         @media (max-width: 600px) {
+            .sec-row { gap: 10px; }
+            .qz-launch { padding: 8px 14px; font-size: 12px; }
+            .pg-sec .pg-num { min-width: 62px; font-size: 11.5px; }
             .qz-mask { padding: 0; }
             .qz-box { max-width: 100%; min-height: 100vh; }
             .qz-body { padding: 20px 16px 28px; }
@@ -564,8 +586,11 @@
             <div class="section-intro">
                 <h2 id="current-title"></h2>
                 <p id="current-subtitle"></p>
-                <div id="sec-progress"></div>
-                <div id="quiz-entry"></div>
+                <div class="sec-row">
+                    <div id="sec-progress"></div>
+                    <div id="quiz-entry"></div>
+                </div>
+                <div id="quiz-best"></div>
             </div>
             <div id="post-list"></div>
         </div>
@@ -2112,13 +2137,14 @@
     // ── 入口按鈕 ──
     function renderQuizEntry(key, title) {
         var el = document.getElementById('quiz-entry');
+        var bl = document.getElementById('quiz-best');
         if (!el) return;
         var qs = qzQuestions(key);
-        if (qs.length < 2) { el.innerHTML = ''; return; }
+        if (qs.length < 2) { el.innerHTML = ''; if (bl) bl.innerHTML = ''; return; }
+        el.innerHTML = '<button class="qz-launch" onclick="quizOpen()" title="以這個小主題出題，三種難度、皆有計時">' +
+                       '✎ 測驗<span class="qz-n">' + qs.length + ' 題</span></button>';
         var best = qzBestLine(key);
-        el.innerHTML = '<button class="qz-launch" onclick="quizOpen()">✎ 開始測驗' +
-                       '<span style="opacity:.8">（' + qs.length + ' 題）</span></button>' +
-                       (best ? '<span class="qz-best">' + best + '</span>' : '');
+        if (bl) bl.innerHTML = best || '';
     }
     function qzBestLine(key) {
         var rec = (progress.quiz || {});
